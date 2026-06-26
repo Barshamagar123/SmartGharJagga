@@ -1,6 +1,7 @@
 {
   "name": "smart-gharjagga-backend",
   "version": "1.0.0",
+  "description": "Smart GharJagga - AI-Powered Real Estate Platform for Nepal",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
@@ -61,7 +62,7 @@
     "jest-junit": "^16.0.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.4",
-    "prisma": "^7.8.0",
+    "prisma": "^6.0.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
@@ -69,7 +70,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@prisma/client": "^7.8.0",
+    "@prisma/client": "^6.0.0",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.6.0",
     "compression": "^1.8.1",
