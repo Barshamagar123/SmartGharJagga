@@ -21,6 +21,7 @@ enum Role {
   SELLER
   AGENT
   ADMIN
+  VERIFIED
 }
 
 enum Language {
