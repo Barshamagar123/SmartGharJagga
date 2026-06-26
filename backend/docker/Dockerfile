@@ -1,5 +1,3 @@
-# docker/Dockerfile
-
 # ============================================
 # BUILD STAGE
 # ============================================
@@ -9,12 +7,11 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
 
-# Install dependencies
+# Install all dependencies (including dev)
 RUN npm ci
 
-# Copy source code
+# Copy source code and prisma schema
 COPY . .
 
 # Generate Prisma client
@@ -30,9 +27,11 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install production dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install ONLY production dependencies (skip prepare script)
+RUN npm ci --only=production --ignore-scripts
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
