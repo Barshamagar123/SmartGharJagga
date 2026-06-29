@@ -13,16 +13,10 @@ import { errorHandler, notFoundHandler } from '@/middleware/error.middleware';
 
 const app: Application = express();
 
-// ============================================
-// SECURITY & UTILITY MIDDLEWARE
-// ============================================
 app.use(helmet());
 app.use(cors({ origin: config.CORS_ORIGIN }));
 app.use(compression());
 
-// ============================================
-// LOGGING
-// ============================================
 if (config.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
@@ -48,9 +42,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ============================================
 app.use('/api/v1', router);  // ✅ This mounts router at /api/v1
 
-// ============================================
-// ROOT ROUTE (optional)
-// ============================================
+
 app.get('/', (_req, res) => {
   res.status(200).json({
     name: 'Smart GharJagga API',
@@ -59,9 +51,7 @@ app.get('/', (_req, res) => {
   });
 });
 
-// ============================================
-// HEALTH CHECK (at root level)
-// ============================================
+
 app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'OK',
