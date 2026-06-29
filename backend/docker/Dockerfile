@@ -5,20 +5,20 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies for native modules (bcrypt)
-RUN apk add --no-cache python3 make g++
-
-# Copy package files
+# Copy package files first (for better caching)
 COPY package*.json ./
 
 # Install all dependencies (including dev)
-RUN npm ci
+RUN npm ci --ignore-scripts
 
-# Copy source code and prisma schema
+# Copy source code
 COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate
+
+# Build TypeScript (creates dist/)
+RUN npm run build
 
 # ============================================
 # PRODUCTION STAGE
@@ -27,30 +27,22 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
-
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (tsx + bcrypt native modules)
-RUN npm ci
+# Install ONLY production dependencies
+RUN npm ci --only=production --ignore-scripts
 
-# Clean up build dependencies
-RUN apk del python3 make g++
-
-# Copy source and prisma
-COPY --from=builder /app/src ./src
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 USER nodejs
 
 EXPOSE 5001
 
-# Run migrations then start server
-CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx src/server.ts"]
+CMD ["node", "dist/server.js"]
