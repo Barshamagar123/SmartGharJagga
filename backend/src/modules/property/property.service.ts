@@ -17,7 +17,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // Helper: Get file URLs
+  // Helper: Get file URLs from uploaded files
   // ============================================
   private getFileUrls(files: Express.Multer.File[], folder: 'images' | 'videos'): string[] {
     if (!files || files.length === 0) return [];
@@ -25,7 +25,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 1. CREATE PROPERTY
+  // 1. CREATE PROPERTY (ALL DATA IN FORM-DATA)
   // ============================================
   async createProperty(
     userId: string,
@@ -38,8 +38,13 @@ export class PropertyService {
       throw new ApiError(403, 'Only sellers and admins can list properties');
     }
 
+    // ✅ Get image and video URLs from uploaded files
     const imageUrls = this.getFileUrls(imageFiles || [], 'images');
     const videoUrls = this.getFileUrls(videoFiles || [], 'videos');
+
+    console.log('📦 Data:', data);
+    console.log('📸 Images:', imageUrls);
+    console.log('📹 Videos:', videoUrls);
 
     const propertyId = `PROP-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
@@ -58,8 +63,8 @@ export class PropertyService {
         propertyType: data.propertyType,
         purpose: 'SALE',
         amenities: data.amenities || [],
-        images: imageUrls.length > 0 ? imageUrls : data.images || [],
-        videos: videoUrls.length > 0 ? videoUrls : data.videos || [],
+        images: imageUrls.length > 0 ? imageUrls : [],
+        videos: videoUrls.length > 0 ? videoUrls : [],
         mainImage: imageUrls.length > 0 ? imageUrls[0] : null,
         parking: data.parking || false,
         floor: data.floor,
@@ -261,7 +266,6 @@ export class PropertyService {
       throw new ApiError(403, 'You are not authorized to delete this property');
     }
 
-    // Delete associated files
     const allFiles = [...property.images, ...property.videos];
     if (allFiles.length > 0) {
       allFiles.forEach((filePath) => {

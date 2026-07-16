@@ -18,7 +18,7 @@ export class PropertyController {
   constructor(private propertyService: PropertyService) {}
 
   // ============================================
-  // 1. CREATE PROPERTY
+  // 1. CREATE PROPERTY - ALL DATA IN FORM-DATA!
   // ============================================
   createProperty = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -32,6 +32,18 @@ export class PropertyController {
       throw new ApiError(401, 'User role not found');
     }
 
+    // ✅ Parse data from form-data
+    let data = req.body;
+    if (req.body.data) {
+      try {
+        data = typeof req.body.data === 'string' 
+          ? JSON.parse(req.body.data) 
+          : req.body.data;
+      } catch (error) {
+        throw new ApiError(400, 'Invalid JSON data in data field');
+      }
+    }
+
     const files = req.files as Express.Multer.File[] | undefined;
     const images = files?.filter((file) => file.fieldname === 'images') || [];
     const videos = files?.filter((file) => file.fieldname === 'videos') || [];
@@ -39,7 +51,7 @@ export class PropertyController {
     const property = await this.propertyService.createProperty(
       userId,
       userRole,
-      req.body,
+      data,
       images,
       videos
     );
@@ -104,6 +116,18 @@ export class PropertyController {
       throw new ApiError(400, 'Property ID is required');
     }
 
+    // ✅ Parse data from form-data
+    let data = req.body;
+    if (req.body.data) {
+      try {
+        data = typeof req.body.data === 'string' 
+          ? JSON.parse(req.body.data) 
+          : req.body.data;
+      } catch (error) {
+        throw new ApiError(400, 'Invalid JSON data in data field');
+      }
+    }
+
     const files = req.files as Express.Multer.File[] | undefined;
     const images = files?.filter((file) => file.fieldname === 'images') || [];
     const videos = files?.filter((file) => file.fieldname === 'videos') || [];
@@ -112,7 +136,7 @@ export class PropertyController {
       id,
       userId,
       userRole,
-      req.body,
+      data,
       images,
       videos
     );

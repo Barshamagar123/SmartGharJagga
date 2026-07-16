@@ -28,11 +28,12 @@ router.get('/:id', propertyController.getPropertyById);
 // PROTECTED ROUTES
 // ============================================
 
+// ✅ CREATE PROPERTY - ALL DATA IN FORM-DATA!
 router.post(
   '/',
   authMiddleware,
   requireRole('SELLER', 'ADMIN'),
-  uploadPropertyMedia,
+  uploadPropertyMedia,  // Handles both images and videos
   validate(createPropertySchema),
   propertyController.createProperty
 );
@@ -46,7 +47,7 @@ router.get(
 router.put(
   '/:id',
   authMiddleware,
-  uploadPropertyMedia,
+  uploadPropertyMedia,  // Handles both images and videos
   validate(updatePropertySchema),
   propertyController.updateProperty
 );

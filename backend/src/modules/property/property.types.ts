@@ -19,7 +19,7 @@ export interface CreatePropertyRequest {
   floor?: number;
   yearBuilt?: number;
   images?: string[];
-  videos?: string[];  // ✅ NEW
+  videos?: string[];
 }
 
 export interface UpdatePropertyRequest {
@@ -39,7 +39,7 @@ export interface UpdatePropertyRequest {
   yearBuilt?: number;
   status?: PropertyStatus;
   images?: string[];
-  videos?: string[];  // ✅ NEW
+  videos?: string[];
 }
 
 export interface PropertyFilter {
@@ -57,43 +57,6 @@ export interface PropertyFilter {
   limit?: number;
   sortBy?: 'price' | 'createdAt' | 'views';
   sortOrder?: 'asc' | 'desc';
-}
-
-export interface PropertyResponse {
-  id: string;
-  propertyId: string;
-  title: string;
-  description?: string;
-  price: number;
-  location: string;
-  latitude?: number;
-  longitude?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  area?: number;
-  propertyType: PropertyType;
-  amenities: string[];
-  images: string[];
-  videos: string[];  // ✅ NEW
-  mainImage?: string;
-  status: PropertyStatus;
-  parking: boolean;
-  floor?: number;
-  yearBuilt?: number;
-  views: number;
-  favoritesCount: number;
-  isFeatured: boolean;
-  isVerified: boolean;
-  userId: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    avatarUrl?: string;
-  };
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface AuthRequest extends Request {

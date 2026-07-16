@@ -13,7 +13,6 @@ export const createPropertySchema = z.object({
     bedrooms: z.number().int().min(0).optional(),
     bathrooms: z.number().int().min(0).optional(),
     area: z.number().positive().optional(),
-    // ✅ UPDATE: Match your schema exactly
     propertyType: z.enum([
       'HOUSE',
       'RESIDENTIAL_LAND',
