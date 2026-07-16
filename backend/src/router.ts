@@ -2,11 +2,10 @@
 
 import { Router } from 'express';
 import authRoutes from '@/modules/auth/auth.routes';
+import propertyRoutes from '@/modules/property/property.routes';
 
 const router = Router();
 
-// ✅ FIX: Use '/' instead of '/health' for root of this router
-// Since this is mounted at /api/v1, '/' becomes /api/v1
 router.get('/', (_req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -16,10 +15,9 @@ router.get('/', (_req, res) => {
   });
 });
 
-// Auth routes
 router.use('/auth', authRoutes);
+router.use('/properties', propertyRoutes);
 
-// Health check at /api/v1/health
 router.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'OK',

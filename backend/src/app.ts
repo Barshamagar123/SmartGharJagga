@@ -6,13 +6,19 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { config } from '@/config';
-import { router } from '@/router';  // ✅ Make sure this import is correct
+import { router } from '@/router';
 import { errorHandler, notFoundHandler } from '@/middleware/error.middleware';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app: Application = express();
 
+// Middleware
 app.use(helmet());
 app.use(cors({ origin: config.CORS_ORIGIN }));
 app.use(compression());
@@ -21,9 +27,6 @@ if (config.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-// ============================================
-// RATE LIMITING
-// ============================================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -31,27 +34,16 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ============================================
-// BODY PARSERS (MUST be before routes!)
-// ============================================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ============================================
-// API ROUTES
-// ============================================
-app.use('/api/v1', router);  // ✅ This mounts router at /api/v1
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// API routes
+app.use('/api/v1', router);
 
-app.get('/', (_req, res) => {
-  res.status(200).json({
-    name: 'Smart GharJagga API',
-    version: '1.0.0',
-    status: 'running',
-  });
-});
-
-
+// Health check
 app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -61,9 +53,7 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// ============================================
-// ERROR HANDLING
-// ============================================
+// Error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
 

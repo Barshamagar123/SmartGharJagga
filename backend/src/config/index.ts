@@ -1,3 +1,5 @@
+// src/config/index.ts
+
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,9 +16,13 @@ export const config = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
 
+  // ✅ ADD THESE - Cloudinary
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
+
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@smartgharjagga.com',
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Admin@123',
-
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
 };

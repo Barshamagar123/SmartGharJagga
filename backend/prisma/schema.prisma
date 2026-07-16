@@ -31,9 +31,8 @@ enum Language {
 
 enum PropertyType {
   HOUSE
-  APARTMENT
-  BUNGALOW
-  VILLA
+  
+
   RESIDENTIAL_LAND
   COMMERCIAL_LAND
   AGRICULTURAL_LAND
@@ -47,7 +46,7 @@ enum PropertyType {
 
 enum Purpose {
   SALE
-  RENT
+ 
 }
 
 enum PropertyStatus {
@@ -55,7 +54,7 @@ enum PropertyStatus {
   APPROVED
   REJECTED
   SOLD
-  RENTED
+
 }
 
 enum SubscriptionPlan {
@@ -109,7 +108,7 @@ model User {
   sentMessages    Message[]       @relation("sender")
   receivedMessages Message[]      @relation("receiver")
   preferences     UserPreference?
-  agent           Agent?
+ 
   matches         Match[]
   commissions     Commission[]    @relation("buyer")
   notifications   Notification[]
@@ -173,6 +172,8 @@ model Property {
   purpose         Purpose
   amenities       String[]        @default([])
   images          String[]        @default([])
+    videos          String[]        @default([])      // ✅ NEW: Video URLs
+
   mainImage       String?
   status          PropertyStatus  @default(PENDING)
   parking         Boolean         @default(false)
@@ -183,8 +184,7 @@ model Property {
   isFeatured      Boolean         @default(false)
   isVerified      Boolean         @default(false)
   rejectionReason String?
-    agent           Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)  // 👈 ADD THIS
-  agentId         String?         // 👈 ADD THIS
+  
   // Relations
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
@@ -211,42 +211,7 @@ model Property {
 
 // --------------------------------------------
 // AGENT MODEL (FULLY UPDATED)
-// --------------------------------------------
-model Agent {
-  id                String          @id @default(uuid())
-  licenseNumber     String          @unique
-  company           String?
-  specialization    String[]        @default([])
-  experience        Int             @default(0)
-  rating            Decimal         @default(0) @db.Decimal(3,2)
-  totalSales        Int             @default(0)
-  location          String?
-  agentImage        String?
-  verified          Boolean         @default(false)
-  verificationStatus String         @default("PENDING")
-  verificationDoc   String?
-  subscriptionPlan  SubscriptionPlan @default(FREE)
-  subscriptionExpiry DateTime?
-  
-  // Relations
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            String          @unique
-  properties        Property[]
-  matches           Match[]
-  commissions       Commission[]
-  reviews           Review[]
-  analytics         Analytics[]     // 👈 ADDED: Opposite for Analytics
-  
-  // Audit
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
 
-  @@index([userId])
-  @@index([licenseNumber])
-  @@index([rating])
-  @@index([verified])
-  @@map("agents")
-}
 
 // --------------------------------------------
 // FAVORITE MODEL
@@ -284,7 +249,6 @@ model Match {
   userId           String
   property         Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   propertyId       String?
-  agent            Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
   agentId          String?
   
   // Audit
@@ -366,8 +330,7 @@ model Commission {
   // Relations
   property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyId      String
-  agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  agentId         String
+ 
   buyer           User            @relation("buyer", fields: [buyerId], references: [id], onDelete: Cascade)
   buyerId         String
   
@@ -376,7 +339,7 @@ model Commission {
   updatedAt       DateTime        @updatedAt
 
   @@index([propertyId])
-  @@index([agentId])
+
   @@index([status])
   @@map("commissions")
 }
@@ -412,14 +375,13 @@ model Review {
   // Relations
   reviewer        User            @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
   reviewerId      String
-  agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  agentId         String
+  
   
   // Audit
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  @@index([agentId])
+
   @@index([reviewerId])
   @@index([rating])
   @@map("reviews")
@@ -465,7 +427,6 @@ model Analytics {
   userId          String?
   property        Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   propertyId      String?
-  agent           Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
   agentId         String?
   
   // Audit
