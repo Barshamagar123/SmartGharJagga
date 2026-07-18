@@ -6,6 +6,7 @@ import propertyRoutes from '@/modules/property/property.routes';
 import matchingRoutes from '@/modules/matching/matching.routes'; 
 import mapRoutes from '@/modules/map/map.routes'; 
 import qrRoutes from '@/modules/qr/qr.routes';  // ✅ ADD THIS
+import languageRoutes from '@/modules/language/language.routes';  // ✅ ADD THIS
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use('/properties', propertyRoutes);
 router.use('/matching', matchingRoutes);  
 router.use('/map', mapRoutes); 
 router.use('/qr', qrRoutes);  
+router.use('/language', languageRoutes);  // ✅ ADD THIS
 
 router.get('/health', (_req, res) => {
   res.status(200).json({

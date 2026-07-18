@@ -1,0 +1,11 @@
+{
+  "notFound": "स्रोत फेला परेन",
+  "unauthorized": "अनाधिकृत पहुँच",
+  "forbidden": "पहुँच अस्वीकार",
+  "validationError": "मान्यता त्रुटि",
+  "serverError": "आन्तरिक सर्भर त्रुटि",
+  "invalidToken": "अमान्य वा म्याद सकिएको टोकन",
+  "emailExists": "इमेल पहिले नै दर्ता भएको छ",
+  "invalidCredentials": "अमान्य इमेल वा पासवर्ड",
+  "invalidPropertyType": "अमान्य सम्पत्ति प्रकार"
+}

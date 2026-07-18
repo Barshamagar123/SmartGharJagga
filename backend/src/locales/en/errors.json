@@ -1,0 +1,11 @@
+{
+  "notFound": "Resource not found",
+  "unauthorized": "Unauthorized access",
+  "forbidden": "Access denied",
+  "validationError": "Validation error",
+  "serverError": "Internal server error",
+  "invalidToken": "Invalid or expired token",
+  "emailExists": "Email already registered",
+  "invalidCredentials": "Invalid email or password",
+  "invalidPropertyType": "Invalid property type"
+}

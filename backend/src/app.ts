@@ -6,18 +6,25 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';  // ✅ ADD THIS
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { config } from '@/config';
 import { router } from '@/router';
 import { errorHandler, notFoundHandler } from '@/middleware/error.middleware';
+import { languageMiddleware } from '@/middleware/language.middleware';  // ✅ ADD THIS
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app: Application = express();
+// ✅ Cookie parser
+app.use(cookieParser());
 
+// ✅ Language middleware
+app.use(languageMiddleware);
 // Middleware
 app.use(helmet());
 app.use(cors({ origin: config.CORS_ORIGIN }));
