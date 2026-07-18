@@ -1,6 +1,6 @@
 // src/modules/property/property.service.ts
 
-import { PrismaClient, PropertyType, PropertyStatus } from '@prisma/client';
+import { PrismaClient, PropertyStatus } from '@prisma/client';
 import { ApiError } from '@/utils/apiError';
 import { FileService } from '@/services/internal/file.service';
 import {
