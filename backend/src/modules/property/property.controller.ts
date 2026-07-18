@@ -44,10 +44,16 @@ export class PropertyController {
       }
     }
 
-    const files = req.files as Express.Multer.File[] | undefined;
-    const images = files?.filter((file) => file.fieldname === 'images') || [];
-    const videos = files?.filter((file) => file.fieldname === 'videos') || [];
+   const files = req.files as {
+  images?: Express.Multer.File[];
+  videos?: Express.Multer.File[];
+};
 
+const images = files?.images || [];
+const videos = files?.videos || [];
+
+console.log("Images:", images);
+console.log("Videos:", videos);
     const property = await this.propertyService.createProperty(
       userId,
       userRole,
@@ -128,10 +134,16 @@ export class PropertyController {
       }
     }
 
-    const files = req.files as Express.Multer.File[] | undefined;
-    const images = files?.filter((file) => file.fieldname === 'images') || [];
-    const videos = files?.filter((file) => file.fieldname === 'videos') || [];
+  const files = req.files as {
+  images?: Express.Multer.File[];
+  videos?: Express.Multer.File[];
+};
 
+const images = files?.images || [];
+const videos = files?.videos || [];
+
+console.log("Images:", images);
+console.log("Videos:", videos);
     const property = await this.propertyService.updateProperty(
       id,
       userId,
