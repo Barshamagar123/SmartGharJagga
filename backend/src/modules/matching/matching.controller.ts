@@ -48,20 +48,7 @@ export class MatchingController {
   });
 
   // ============================================
-  // 3. Get Agent Matches
-  // ============================================
-  getAgentMatches = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      throw new ApiError(401, 'Authentication required');
-    }
-
-    const matches = await this.matchingService.getAgentMatches(userId);
-    ApiResponse.success(res, 200, 'Agent matches fetched successfully', matches);
-  });
-
-  // ============================================
-  // 4. Get User Preferences
+  // 3. Get User Preferences
   // ============================================
   getUserPreferences = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -74,7 +61,7 @@ export class MatchingController {
   });
 
   // ============================================
-  // 5. Get Match Count
+  // 4. Get Match Count
   // ============================================
   getMatchCount = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -84,5 +71,27 @@ export class MatchingController {
 
     const count = await this.matchingService.getMatchCount(userId);
     ApiResponse.success(res, 200, 'Match count fetched successfully', { count });
+  });
+
+  // ============================================
+  // 5. Update Preferences from Behavior (Learning)
+  // ============================================
+  updateFromBehavior = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    const { propertyId } = req.body;
+    if (!propertyId) {
+      throw new ApiError(400, 'Property ID is required');
+    }
+
+    const preferences = await this.matchingService.updatePreferencesFromBehavior(
+      userId,
+      propertyId
+    );
+
+    ApiResponse.success(res, 200, 'Preferences updated from behavior', preferences);
   });
 }

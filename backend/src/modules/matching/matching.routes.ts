@@ -18,11 +18,6 @@ const router = Router();
 // PROTECTED ROUTES (Auth Required)
 // ============================================
 
-/**
- * @route POST /api/v1/matching/preferences
- * @desc Save user preferences for AI matching
- * @access Private
- */
 router.post(
   '/preferences',
   authMiddleware,
@@ -30,48 +25,28 @@ router.post(
   matchingController.savePreferences
 );
 
-/**
- * @route GET /api/v1/matching/properties
- * @desc Get matched properties based on user preferences
- * @access Private
- */
 router.get(
   '/properties',
   authMiddleware,
   matchingController.getPropertyMatches
 );
 
-/**
- * @route GET /api/v1/matching/agents
- * @desc Get matched agents based on user preferences
- * @access Private
- */
-router.get(
-  '/agents',
-  authMiddleware,
-  matchingController.getAgentMatches
-);
-
-/**
- * @route GET /api/v1/matching/preferences
- * @desc Get user preferences
- * @access Private
- */
 router.get(
   '/preferences',
   authMiddleware,
   matchingController.getUserPreferences
 );
 
-/**
- * @route GET /api/v1/matching/count
- * @desc Get number of matching properties
- * @access Private
- */
 router.get(
   '/count',
   authMiddleware,
   matchingController.getMatchCount
+);
+
+router.post(
+  '/learn',
+  authMiddleware,
+  matchingController.updateFromBehavior
 );
 
 export default router;

@@ -1,14 +1,9 @@
 // src/modules/matching/matching.service.ts
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PropertyType, Purpose } from '@prisma/client';
 import { ApiError } from '@/utils/apiError';
 import { VectorService } from './vector.service';
-import {
-  UserPreferences,
-  MatchResult,
-  AgentMatchResult,
-  PreferenceRequest,
-} from './matching.types';
+import { PreferenceRequest, MatchResult } from './matching.types';
 
 export class MatchingService {
   private vectorService: VectorService;
@@ -66,7 +61,6 @@ export class MatchingService {
   // 2. Get Property Matches
   // ============================================
   async getPropertyMatches(userId: string): Promise<MatchResult[]> {
-    // Get user preferences
     const preferences = await this.prisma.userPreference.findUnique({
       where: { userId },
     });
@@ -75,23 +69,14 @@ export class MatchingService {
       throw new ApiError(404, 'User preferences not found. Please set preferences first.');
     }
 
-    // Get user vector
     const userVector = preferences.propertyVector as number[];
     if (!userVector || userVector.length === 0) {
-      throw new ApiError(400, 'User preferences vector not found. Please update preferences.');
+      throw new ApiError(400, 'User preferences vector not found.');
     }
 
-    // Get all approved properties
     const properties = await this.prisma.property.findMany({
       where: {
         status: 'APPROVED',
-        // Filter by user's preferences
-        propertyType: preferences.propertyType || undefined,
-        bedrooms: preferences.bedrooms ? { gte: preferences.bedrooms - 1 } : undefined,
-        price: {
-          gte: preferences.budgetMin || 0,
-          lte: preferences.budgetMax || 999999999,
-        },
       },
       include: {
         user: {
@@ -109,7 +94,6 @@ export class MatchingService {
       return [];
     }
 
-    // Calculate similarity scores
     const matches = properties.map((property) => {
       const propertyVector = this.vectorService.createPropertyVector({
         price: Number(property.price),
@@ -136,86 +120,18 @@ export class MatchingService {
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
         images: property.images || [],
-        mainImage: property.mainImage || null,
+        mainImage: property.mainImage || undefined,
         matchScore: score,
         matchPercentage: `${Math.round(score * 100)}%`,
       };
     });
 
-    // Sort by score (highest first)
     matches.sort((a, b) => b.matchScore - a.matchScore);
-
-    // Return top 10 matches
     return matches.slice(0, 10);
   }
 
   // ============================================
-  // 3. Get Agent Matches
-  // ============================================
-  async getAgentMatches(userId: string): Promise<AgentMatchResult[]> {
-    // Get user preferences
-    const preferences = await this.prisma.userPreference.findUnique({
-      where: { userId },
-    });
-
-    if (!preferences) {
-      throw new ApiError(404, 'User preferences not found. Please set preferences first.');
-    }
-
-    const userVector = preferences.propertyVector as number[];
-    if (!userVector || userVector.length === 0) {
-      throw new ApiError(400, 'User preferences vector not found.');
-    }
-
-    // Get all verified agents
-    const agents = await this.prisma.agent.findMany({
-      where: {
-        verified: true,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    if (agents.length === 0) {
-      return [];
-    }
-
-    // Calculate similarity scores for agents
-    const matches = agents.map((agent) => {
-      // Create agent vector based on specialization and location
-      const agentVector = this.createAgentVector(agent);
-
-      const score = this.vectorService.calculateCosineSimilarity(
-        userVector,
-        agentVector
-      );
-
-      return {
-        agentId: agent.id,
-        agentName: agent.user.name,
-        company: agent.company || 'Independent',
-        experience: agent.experience || 0,
-        rating: Number(agent.rating) || 0,
-        specialization: agent.specialization || [],
-        matchScore: score,
-        matchPercentage: `${Math.round(score * 100)}%`,
-      };
-    });
-
-    matches.sort((a, b) => b.matchScore - a.matchScore);
-    return matches.slice(0, 5);
-  }
-
-  // ============================================
-  // 4. Get User Preferences
+  // 3. Get User Preferences
   // ============================================
   async getUserPreferences(userId: string) {
     const preferences = await this.prisma.userPreference.findUnique({
@@ -230,7 +146,7 @@ export class MatchingService {
   }
 
   // ============================================
-  // 5. Get Match Count
+  // 4. Get Match Count
   // ============================================
   async getMatchCount(userId: string): Promise<number> {
     const preferences = await this.prisma.userPreference.findUnique({
@@ -290,28 +206,55 @@ export class MatchingService {
   }
 
   // ============================================
-  // Helper: Create Agent Vector
+  // 5. Update Preferences Based on Behavior (Learning)
   // ============================================
-  private createAgentVector(agent: any): number[] {
-    // Map specialization to numeric values
-    const specializationValue = agent.specialization?.length || 0;
-    
-    // Map location to numeric value
-    const locationValue = agent.location 
-      ? this.vectorService['normalizeLocation'](agent.location)
-      : 0.5;
+  async updatePreferencesFromBehavior(userId: string, propertyId: string) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
 
-    // Experience value (normalized)
-    const experienceValue = Math.min((agent.experience || 0) / 20, 1);
+    if (!property) {
+      throw new ApiError(404, 'Property not found');
+    }
 
-    // Rating value (normalized)
-    const ratingValue = (Number(agent.rating) || 0) / 5;
+    const existing = await this.prisma.userPreference.findUnique({
+      where: { userId },
+    });
 
-    return [
-      locationValue,
-      specializationValue / 5,
-      experienceValue,
-      ratingValue,
-    ];
+    if (!existing) {
+      throw new ApiError(404, 'User preferences not found');
+    }
+
+    // Adjust budget based on viewed property
+    const currentBudgetMin = Number(existing.budgetMin) || 0;
+    const currentBudgetMax = Number(existing.budgetMax) || 100000000;
+    const propertyPrice = Number(property.price);
+
+    const newBudgetMin = Math.min(currentBudgetMin, propertyPrice * 0.8);
+    const newBudgetMax = Math.max(currentBudgetMax, propertyPrice * 1.2);
+
+    // Update preferences
+    return await this.prisma.userPreference.update({
+      where: { userId },
+      data: {
+        budgetMin: newBudgetMin,
+        budgetMax: newBudgetMax,
+        propertyType: property.propertyType,
+        bedrooms: property.bedrooms || existing.bedrooms,
+        bathrooms: property.bathrooms || existing.bathrooms,
+        amenities: property.amenities,
+        propertyVector: this.vectorService.createUserVector({
+          budgetMin: newBudgetMin,
+          budgetMax: newBudgetMax,
+          location: existing.location || 'Kathmandu',
+          propertyType: property.propertyType,
+          bedrooms: property.bedrooms || 0,
+          bathrooms: property.bathrooms || 0,
+          amenities: property.amenities,
+          purpose: property.purpose,
+          parkingNeeded: property.parking,
+        }),
+      },
+    });
   }
 }

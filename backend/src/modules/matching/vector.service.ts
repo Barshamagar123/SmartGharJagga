@@ -107,7 +107,6 @@ export class VectorService {
   // ============================================
   
   private normalizeBudget(value: number): number {
-    // Nepal market: max 5 Crore (50,000,000)
     return Math.min(value / 50000000, 1);
   }
 
@@ -125,9 +124,6 @@ export class VectorService {
   private normalizePropertyType(type: PropertyType): number {
     const typeMap: { [key: string]: number } = {
       'HOUSE': 1.0,
-      'APARTMENT': 0.9,
-      'BUNGALOW': 0.85,
-      'VILLA': 0.95,
       'RESIDENTIAL_LAND': 0.7,
       'COMMERCIAL_LAND': 0.6,
       'AGRICULTURAL_LAND': 0.5,
@@ -150,8 +146,7 @@ export class VectorService {
   }
 
   private normalizeAmenities(amenities: string[]): number {
-    const count = amenities ? amenities.length : 0;
-    return Math.min(count / 10, 1);
+    return Math.min(amenities.length / 10, 1);
   }
 
   private normalizePurpose(purpose: Purpose): number {

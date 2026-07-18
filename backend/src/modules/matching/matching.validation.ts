@@ -9,9 +9,6 @@ export const preferenceSchema = z.object({
     location: z.string().min(1, 'Location is required'),
     propertyType: z.enum([
       'HOUSE',
-      'APARTMENT',
-      'BUNGALOW',
-      'VILLA',
       'RESIDENTIAL_LAND',
       'COMMERCIAL_LAND',
       'AGRICULTURAL_LAND',
@@ -25,7 +22,7 @@ export const preferenceSchema = z.object({
     bedrooms: z.number().int().min(0).default(0),
     bathrooms: z.number().int().min(0).default(0),
     amenities: z.array(z.string()).default([]),
-    purpose: z.enum(['SALE', 'RENT']),
+    purpose: z.enum(['SALE']),
     parkingNeeded: z.boolean().default(false),
   }),
 });
