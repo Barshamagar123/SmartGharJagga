@@ -59,14 +59,19 @@ enum PropertyStatus {
 
 enum SubscriptionPlan {
   FREE
-  PROFESSIONAL
+  
   PREMIUM
-  AGENCY
+
+}
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
 }
 
 enum MatchType {
   PROPERTY
-  AGENT
+  
 }
 
 enum CommissionStatus {
@@ -249,14 +254,14 @@ model Match {
   userId           String
   property         Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   propertyId       String?
-  agentId          String?
+  
   
   // Audit
   createdAt        DateTime        @default(now())
 
   @@index([userId])
   @@index([propertyId])
-  @@index([agentId])
+
   @@index([similarityScore])
   @@map("matches")
 }
@@ -294,14 +299,15 @@ model Message {
 // --------------------------------------------
 model Subscription {
   id              String          @id @default(uuid())
+
   planType        SubscriptionPlan
   price           Decimal         @db.Decimal(10,2)
   startDate       DateTime        @default(now())
   endDate         DateTime
-  status          String          @default("ACTIVE")
   features        Json?
   paymentId       String?
-  
+  status          SubscriptionStatus @default(ACTIVE)
+
   // Relations
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
