@@ -4,6 +4,7 @@ import { Router } from 'express';
 import authRoutes from '@/modules/auth/auth.routes';
 import propertyRoutes from '@/modules/property/property.routes';
 import matchingRoutes from '@/modules/matching/matching.routes'; 
+import mapRoutes from '@/modules/map/map.routes'; 
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.get('/', (_req, res) => {
 router.use('/auth', authRoutes);
 router.use('/properties', propertyRoutes);
 router.use('/matching', matchingRoutes);  
+router.use('/map', mapRoutes); 
 
 router.get('/health', (_req, res) => {
   res.status(200).json({
