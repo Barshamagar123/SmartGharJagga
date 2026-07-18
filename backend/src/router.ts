@@ -5,6 +5,7 @@ import authRoutes from '@/modules/auth/auth.routes';
 import propertyRoutes from '@/modules/property/property.routes';
 import matchingRoutes from '@/modules/matching/matching.routes'; 
 import mapRoutes from '@/modules/map/map.routes'; 
+import qrRoutes from '@/modules/qr/qr.routes';  // ✅ ADD THIS
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use('/auth', authRoutes);
 router.use('/properties', propertyRoutes);
 router.use('/matching', matchingRoutes);  
 router.use('/map', mapRoutes); 
+router.use('/qr', qrRoutes);  
 
 router.get('/health', (_req, res) => {
   res.status(200).json({
