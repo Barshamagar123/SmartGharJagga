@@ -19,6 +19,18 @@ const router = Router();
 // ============================================
 // PUBLIC ROUTES
 // ============================================
+router.get(
+  '/stats',
+  authMiddleware,
+  requireRole('ADMIN'),
+  propertyController.getPropertyStats
+);
+router.get(
+  '/favorites',
+  authMiddleware,
+  requireRole('BUYER'),
+  propertyController.getFavorites
+);
 
 router.get('/', propertyController.getProperties);
 router.get('/map', propertyController.getPropertiesForMap);
@@ -69,16 +81,8 @@ router.post(
   propertyController.toggleFavorite
 );
 
-router.get(
-  '/favorites',
-  authMiddleware,
-  requireRole('BUYER'),
-  propertyController.getFavorites
-);
 
-// ============================================
-// ADMIN ROUTES
-// ============================================
+
 
 router.put(
   '/:id/status',
@@ -87,11 +91,6 @@ router.put(
   propertyController.updatePropertyStatus
 );
 
-router.get(
-  '/stats',
-  authMiddleware,
-  requireRole('ADMIN'),
-  propertyController.getPropertyStats
-);
+
 
 export default router;

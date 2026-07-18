@@ -16,17 +16,13 @@ export class PropertyService {
     this.fileService = new FileService();
   }
 
-  // ============================================
-  // Helper: Get file URLs from uploaded files
-  // ============================================
+
   private getFileUrls(files: Express.Multer.File[], folder: 'images' | 'videos'): string[] {
     if (!files || files.length === 0) return [];
     return files.map((file) => `/uploads/properties/${folder}/${file.filename}`);
   }
 
-  // ============================================
-  // 1. CREATE PROPERTY (ALL DATA IN FORM-DATA)
-  // ============================================
+
   async createProperty(
     userId: string,
     userRole: string,
@@ -77,9 +73,6 @@ export class PropertyService {
     return property;
   }
 
-  // ============================================
-  // 2. GET ALL PROPERTIES
-  // ============================================
   async getProperties(filters: PropertyFilter) {
     const {
       search,
@@ -187,9 +180,7 @@ export class PropertyService {
     return property;
   }
 
-  // ============================================
-  // 4. UPDATE PROPERTY
-  // ============================================
+  
   async updateProperty(
     id: string,
     userId: string,
@@ -250,9 +241,6 @@ export class PropertyService {
     return updatedProperty;
   }
 
-  // ============================================
-  // 5. DELETE PROPERTY
-  // ============================================
   async deleteProperty(id: string, userId: string, userRole: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -280,9 +268,7 @@ export class PropertyService {
     return { message: 'Property deleted successfully' };
   }
 
-  // ============================================
-  // 6. GET USER PROPERTIES
-  // ============================================
+
   async getUserProperties(userId: string) {
     const properties = await this.prisma.property.findMany({
       where: { userId },
@@ -303,9 +289,7 @@ export class PropertyService {
     return properties;
   }
 
-  // ============================================
-  // 7. ADMIN: UPDATE PROPERTY STATUS
-  // ============================================
+
   async updatePropertyStatus(id: string, status: PropertyStatus, reason?: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -327,9 +311,7 @@ export class PropertyService {
     return updatedProperty;
   }
 
-  // ============================================
-  // 8. GET PROPERTIES FOR MAP
-  // ============================================
+  
   async getPropertiesForMap() {
     const properties = await this.prisma.property.findMany({
       where: {
@@ -356,15 +338,35 @@ export class PropertyService {
   // ============================================
   // 9. GET PROPERTY STATS
   // ============================================
-  async getPropertyStats() {
+// ============================================
+// 9. GET PROPERTY STATS - FIXED!
+// ============================================
+async getPropertyStats() {
+  try {
     const total = await this.prisma.property.count();
     const pending = await this.prisma.property.count({ where: { status: 'PENDING' } });
     const approved = await this.prisma.property.count({ where: { status: 'APPROVED' } });
     const sold = await this.prisma.property.count({ where: { status: 'SOLD' } });
     const rejected = await this.prisma.property.count({ where: { status: 'REJECTED' } });
 
-    return { total, pending, approved, sold, rejected };
+    return { 
+      total: total || 0,
+      pending: pending || 0,
+      approved: approved || 0,
+      sold: sold || 0,
+      rejected: rejected || 0 
+    };
+  } catch (error) {
+    console.error('Error fetching property stats:', error);
+    return { 
+      total: 0, 
+      pending: 0, 
+      approved: 0, 
+      sold: 0, 
+      rejected: 0 
+    };
   }
+}
 
   // ============================================
   // 10. TOGGLE FAVORITE
