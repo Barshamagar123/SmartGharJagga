@@ -2,10 +2,9 @@
 
 import { z } from 'zod';
 
-export const createSubscriptionSchema = z.object({
+export const initiateSubscriptionSchema = z.object({
   body: z.object({
     planType: z.enum(['FREE', 'PREMIUM']),
-    paymentMethod: z.enum(['khalti', 'esewa', 'stripe']),
-    paymentDetails: z.any().optional(),
+    paymentMethod: z.enum(['KHALTI', 'ESEWA']),
   }),
 });

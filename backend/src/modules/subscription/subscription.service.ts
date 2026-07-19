@@ -1,164 +1,71 @@
 // src/modules/subscription/subscription.service.ts
 
-import { PrismaClient, SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
+import { PrismaClient, SubscriptionPlan, SubscriptionStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { ApiError } from '@/utils/apiError';
-import { CreateSubscriptionRequest, SubscriptionResponse } from './subscription.types';
+import { PaymentService } from './payment.service';
+import { InitiateSubscriptionRequest, InitiatePaymentResponse } from './subscription.types';
 
 export class SubscriptionService {
-  constructor(private prisma: PrismaClient) {}
+  private paymentService: PaymentService;
+
+  constructor(private prisma: PrismaClient) {
+    this.paymentService = new PaymentService();
+  }
 
   // ============================================
-  // 1. Get All Subscription Plans
+  // 1. GET PLANS
   // ============================================
   getPlans() {
     return {
-      buyer: [
-        {
-          id: 'buyer-free',
-          name: 'Free',
-          description: 'Basic property search',
-          price: 0,
-          currency: 'NPR',
-          duration: 0,
-          type: 'BUYER',
-          features: [
-            'Basic property search',
-            '5 favorites',
-            '5 AI matches per month',
-            'Standard support',
-          ],
-        },
-        {
-          id: 'buyer-premium',
-          name: 'Premium',
-          description: 'Unlimited AI-powered property matching',
-          price: 999,
-          currency: 'NPR',
-          duration: 30,
-          type: 'BUYER',
-          features: [
-            'Unlimited AI matches',
-            'Unlimited favorites',
-            'Property alerts',
-            'WhatsApp notifications',
-            'Market insights',
-            'Price trends',
-            'Priority support',
-          ],
-        },
-      ],
-      seller: [
-        {
-          id: 'seller-free',
-          name: 'Free',
-          description: 'Basic property listing',
-          price: 0,
-          currency: 'NPR',
-          duration: 0,
-          type: 'SELLER',
-          features: [
-            '3 photos per listing',
-            'Basic listing',
-            'Manual search visibility',
-            'Standard support',
-          ],
-        },
-        {
-          id: 'seller-premium',
-          name: 'Premium',
-          description: 'Featured listings with AI matching',
-          price: 4000,
-          currency: 'NPR',
-          duration: 30,
-          type: 'SELLER',
-          features: [
-            '20 photos per listing',
-            'Featured badge',
-            'TOP position in search',
-            'AI buyer matching',
-            'Buyer insights',
-            'Advanced analytics',
-            'Priority support',
-            'WhatsApp alerts',
-          ],
-        },
-      ],
+      free: {
+        id: 'free',
+        name: 'Free',
+        price: 0,
+        currency: 'NPR',
+        duration: 0,
+        features: ['3 photos per listing', 'Basic listing', 'Manual search'],
+      },
+      premium: {
+        id: 'premium',
+        name: 'Premium',
+        price: 4000,
+        currency: 'NPR',
+        duration: 30,
+        features: [
+          '20 photos per listing',
+          'Featured badge',
+          'TOP position in search',
+          'AI buyer matching',
+          'Buyer insights',
+          'Advanced analytics',
+          'Priority support',
+        ],
+      },
     };
   }
 
   // ============================================
-  // 2. Get User's Current Subscription
+  // 2. INITIATE SUBSCRIPTION
   // ============================================
-  async getUserSubscription(userId: string): Promise<SubscriptionResponse | null> {
-    const subscription = await this.prisma.subscription.findFirst({
-      where: {
-        userId,
-        status: 'ACTIVE',
-        endDate: {
-          gt: new Date(),
-        },
-      },
-      orderBy: {
-        endDate: 'desc',
-      },
-    });
-
-    if (!subscription) {
-      return null;
-    }
-
-    const daysRemaining = Math.ceil(
-      (subscription.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    return {
-      id: subscription.id,
-      userId: subscription.userId,
-      planType: subscription.planType,
-      status: subscription.status,
-      startDate: subscription.startDate,
-      endDate: subscription.endDate,
-      price: Number(subscription.price),
-      features: subscription.features,
-      isActive: subscription.status === 'ACTIVE' && subscription.endDate > new Date(),
-      daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
-    };
-  }
-
-  // ============================================
-  // 3. Create Subscription
-  // ============================================
-  async createSubscription(
+  async initiateSubscription(
     userId: string,
-    data: CreateSubscriptionRequest
-  ): Promise<SubscriptionResponse> {
+    data: InitiateSubscriptionRequest
+  ): Promise<InitiatePaymentResponse> {
     const { planType, paymentMethod } = data;
 
-    // Get plan details
-    const plans = this.getPlans();
-    let plan: any = null;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-    // Find plan in buyer or seller
-    for (const category of ['buyer', 'seller']) {
-      const found = (plans as any)[category].find((p: any) => p.id === `${category}-${planType.toLowerCase()}`);
-      if (found) {
-        plan = found;
-        break;
-      }
+    if (!user) {
+      throw new ApiError(404, 'User not found');
     }
 
-    if (!plan) {
-      throw new ApiError(400, 'Invalid plan type');
-    }
-
-    // Check if user already has active subscription
     const existing = await this.prisma.subscription.findFirst({
       where: {
         userId,
-        status: 'ACTIVE',
-        endDate: {
-          gt: new Date(),
-        },
+        isActive: true,
+        endDate: { gt: new Date() },
       },
     });
 
@@ -166,130 +73,205 @@ export class SubscriptionService {
       throw new ApiError(400, 'You already have an active subscription');
     }
 
-    // Calculate end date
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + plan.duration);
+    const plan = this.getPlanDetails(planType);
+    if (!plan) {
+      throw new ApiError(400, 'Invalid plan');
+    }
+
+    const transactionId = this.paymentService.generateTransactionId();
 
     // Create subscription
     const subscription = await this.prisma.subscription.create({
       data: {
         userId,
-        planType: planType,
-        status: 'ACTIVE',
-        startDate,
-        endDate,
+        planType,
+        status: 'EXPIRED',
+        isActive: false,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
         price: plan.price,
         features: plan.features,
-        paymentId: `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+        // ✅ Store transactionId
+        paymentId: transactionId,
       },
     });
 
-    // Update user role if needed
-    await this.prisma.user.update({
-      where: { id: userId },
+    // Create payment record (PENDING)
+    const payment = await this.prisma.payment.create({
       data: {
-        role: planType === 'PREMIUM' ? 'SELLER' : 'BUYER',
-      },
-    });
-
-    const daysRemaining = Math.ceil(
-      (endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    return {
-      id: subscription.id,
-      userId: subscription.userId,
-      planType: subscription.planType,
-      status: subscription.status,
-      startDate: subscription.startDate,
-      endDate: subscription.endDate,
-      price: Number(subscription.price),
-      features: subscription.features,
-      isActive: true,
-      daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
-    };
-  }
-
-  // ============================================
-  // 4. Cancel Subscription
-  // ============================================
-  async cancelSubscription(userId: string): Promise<void> {
-    const subscription = await this.prisma.subscription.findFirst({
-      where: {
+        subscriptionId: subscription.id,
         userId,
-        status: 'ACTIVE',
-        endDate: {
-          gt: new Date(),
+        amount: plan.price,
+        paymentMethod: paymentMethod,
+        transactionId: transactionId,
+        paymentStatus: 'PENDING',
+        paymentData: {
+          initiatedAt: new Date().toISOString(),
+          planType: planType,
+          customerName: user.name,
+          customerEmail: user.email,
         },
       },
     });
 
+    const paymentUrl = this.paymentService.generatePaymentUrl(
+      plan.price,
+      transactionId,
+      paymentMethod,
+      user
+    );
+
+    return {
+      subscriptionId: subscription.id,
+      paymentId: payment.id,
+      transactionId,
+      amount: plan.price,
+      paymentUrl,
+      paymentMethod,
+    };
+  }
+
+  // ============================================
+  // 3. ACTIVATE SUBSCRIPTION (After Payment)
+  // ============================================
+  async activateSubscription(transactionId: string, paymentData: any) {
+    // ✅ FIX: Use paymentId instead of transactionId
+    const subscription = await this.prisma.subscription.findFirst({
+      where: {
+        paymentId: transactionId,  // ✅ Use paymentId field
+        isActive: false,
+      },
+    });
+
     if (!subscription) {
-      throw new ApiError(404, 'No active subscription found');
+      throw new ApiError(404, 'Subscription not found');
     }
 
-    await this.prisma.subscription.update({
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        transactionId: transactionId,
+        paymentStatus: 'PENDING',
+      },
+    });
+
+    if (!payment) {
+      throw new ApiError(404, 'Payment not found');
+    }
+
+    const updatedPayment = await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        paymentStatus: 'SUCCESS',
+        paidAt: new Date(),
+        paymentData: {
+          ...(payment.paymentData as any),
+          success: true,
+          response: paymentData,
+          completedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    const activatedSubscription = await this.prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        isActive: true,
+        status: 'ACTIVE',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        paymentId: payment.id,
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: subscription.userId },
+      data: { role: 'SELLER' },
+    });
+
+    return {
+      success: true,
+      message: 'Payment successful! Subscription activated.',
+      subscription: activatedSubscription,
+      payment: updatedPayment,
+    };
+  }
+
+  // ============================================
+  // 4. HANDLE PAYMENT FAILURE
+  // ============================================
+  async handlePaymentFailure(transactionId: string, failureReason: string) {
+    // ✅ FIX: Use paymentId instead of transactionId
+    const subscription = await this.prisma.subscription.findFirst({
+      where: {
+        paymentId: transactionId,  // ✅ Use paymentId field
+        isActive: false,
+      },
+    });
+
+    if (!subscription) {
+      throw new ApiError(404, 'Subscription not found');
+    }
+
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        transactionId: transactionId,
+        paymentStatus: 'PENDING',
+      },
+    });
+
+    if (!payment) {
+      throw new ApiError(404, 'Payment not found');
+    }
+
+    const updatedPayment = await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        paymentStatus: 'FAILED',
+        failureReason: failureReason,
+        paymentData: {
+          ...(payment.paymentData as any),
+          success: false,
+          failureReason,
+          failedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    const cancelledSubscription = await this.prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         status: 'CANCELLED',
       },
     });
+
+    return {
+      success: false,
+      message: 'Payment failed',
+      subscription: cancelledSubscription,
+      payment: updatedPayment,
+    };
   }
 
   // ============================================
-  // 5. Check if User Has Premium Access
+  // 5. GET USER SUBSCRIPTION
   // ============================================
-  async hasPremiumAccess(userId: string, feature: string): Promise<boolean> {
+  async getUserSubscription(userId: string) {
     const subscription = await this.prisma.subscription.findFirst({
       where: {
         userId,
-        status: 'ACTIVE',
-        endDate: {
-          gt: new Date(),
-        },
+        isActive: true,
+        endDate: { gt: new Date() },
       },
-    });
-
-    if (!subscription) {
-      return false;
-    }
-
-    if (subscription.planType !== 'PREMIUM') {
-      return false;
-    }
-
-    // Check if feature is included
-    const features = subscription.features as string[];
-    if (!features || features.length === 0) {
-      return true; // Premium has all features
-    }
-
-    return features.includes(feature);
-  }
-
-  // ============================================
-  // 6. Get Subscription Status
-  // ============================================
-  async getSubscriptionStatus(userId: string): Promise<{
-    isActive: boolean;
-    planType: SubscriptionPlan;
-    daysRemaining: number;
-    features: string[];
-  }> {
-    const subscription = await this.prisma.subscription.findFirst({
-      where: {
-        userId,
-        status: 'ACTIVE',
-        endDate: {
-          gt: new Date(),
+      include: {
+        payments: {
+          orderBy: { createdAt: 'desc' },
         },
       },
     });
 
     if (!subscription) {
       return {
-        isActive: false,
+        hasActiveSubscription: false,
         planType: 'FREE',
         daysRemaining: 0,
         features: [],
@@ -301,95 +283,208 @@ export class SubscriptionService {
     );
 
     return {
-      isActive: true,
+      hasActiveSubscription: true,
       planType: subscription.planType,
       daysRemaining: daysRemaining > 0 ? daysRemaining : 0,
-      features: subscription.features as string[] || [],
+      features: subscription.features,
+      startDate: subscription.startDate,
+      endDate: subscription.endDate,
+      payments: subscription.payments.map((p) => ({
+        id: p.id,
+        amount: Number(p.amount),
+        status: p.paymentStatus,
+        method: p.paymentMethod,
+        paidAt: p.paidAt,
+        transactionId: p.transactionId,
+      })),
     };
   }
 
   // ============================================
-  // 7. Get Subscription History
+  // 6. GET PAYMENT HISTORY
   // ============================================
-  async getSubscriptionHistory(userId: string) {
-    const subscriptions = await this.prisma.subscription.findMany({
+  async getPaymentHistory(userId: string) {
+    const payments = await this.prisma.payment.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      include: {
+        subscription: {
+          select: {
+            id: true,
+            planType: true,
+            isActive: true,
+          },
+        },
+      },
     });
 
-    return subscriptions.map((sub) => ({
-      id: sub.id,
-      planType: sub.planType,
-      status: sub.status,
-      startDate: sub.startDate,
-      endDate: sub.endDate,
-      price: Number(sub.price),
+    return payments.map((p) => ({
+      id: p.id,
+      amount: Number(p.amount),
+      method: p.paymentMethod,
+      status: p.paymentStatus,
+      transactionId: p.transactionId,
+      paidAt: p.paidAt,
+      createdAt: p.createdAt,
+      subscription: {
+        id: p.subscriptionId,
+        planType: p.subscription.planType,
+        isActive: p.subscription.isActive,
+      },
     }));
   }
 
   // ============================================
-  // 8. Check and Expire Subscriptions (Cron Job)
+  // 7. GET PAYMENT BY ID
   // ============================================
-  async expireSubscriptions(): Promise<void> {
-    const expired = await this.prisma.subscription.updateMany({
+  async getPaymentById(paymentId: string, userId: string) {
+    const payment = await this.prisma.payment.findFirst({
       where: {
-        status: 'ACTIVE',
-        endDate: {
-          lt: new Date(),
-        },
+        id: paymentId,
+        userId,
       },
-      data: {
-        status: 'EXPIRED',
+      include: {
+        subscription: true,
       },
     });
 
-    console.log(`✅ Expired ${expired.count} subscriptions`);
+    if (!payment) {
+      throw new ApiError(404, 'Payment not found');
+    }
+
+    return payment;
   }
 
   // ============================================
-  // 9. Get Subscription Analytics (Admin)
+  // 8. CANCEL SUBSCRIPTION
   // ============================================
-  async getSubscriptionAnalytics() {
-    const total = await this.prisma.subscription.count();
-    const active = await this.prisma.subscription.count({
+  async cancelSubscription(userId: string) {
+    const subscription = await this.prisma.subscription.findFirst({
       where: {
-        status: 'ACTIVE',
-        endDate: {
-          gt: new Date(),
-        },
+        userId,
+        isActive: true,
+        endDate: { gt: new Date() },
       },
     });
-    const expired = await this.prisma.subscription.count({
+
+    if (!subscription) {
+      throw new ApiError(404, 'No active subscription found');
+    }
+
+    await this.prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        isActive: false,
+        status: 'CANCELLED',
+      },
+    });
+
+    return { message: 'Subscription cancelled successfully' };
+  }
+
+  // ============================================
+  // 9. CHECK ACTIVE SUBSCRIPTION
+  // ============================================
+  async hasActiveSubscription(userId: string) {
+    const subscription = await this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        isActive: true,
+        endDate: { gt: new Date() },
+      },
+    });
+
+    return {
+      hasActive: !!subscription,
+      planType: subscription?.planType || 'FREE',
+      daysRemaining: subscription
+        ? Math.ceil((subscription.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+        : 0,
+    };
+  }
+
+  // ============================================
+  // 10. GET SUBSCRIPTION ANALYTICS (Admin)
+  // ============================================
+  async getSubscriptionAnalytics() {
+    const totalSubscriptions = await this.prisma.subscription.count();
+    const activeSubscriptions = await this.prisma.subscription.count({
+      where: { isActive: true },
+    });
+    const expiredSubscriptions = await this.prisma.subscription.count({
       where: { status: 'EXPIRED' },
     });
-    const cancelled = await this.prisma.subscription.count({
+    const cancelledSubscriptions = await this.prisma.subscription.count({
       where: { status: 'CANCELLED' },
     });
 
-    const revenue = await this.prisma.subscription.aggregate({
-      where: {
-        status: 'ACTIVE',
-      },
-      _sum: {
-        price: true,
-      },
+    const totalRevenue = await this.prisma.payment.aggregate({
+      where: { paymentStatus: 'SUCCESS' },
+      _sum: { amount: true },
+    });
+
+    const successfulPayments = await this.prisma.payment.count({
+      where: { paymentStatus: 'SUCCESS' },
+    });
+    const failedPayments = await this.prisma.payment.count({
+      where: { paymentStatus: 'FAILED' },
+    });
+    const pendingPayments = await this.prisma.payment.count({
+      where: { paymentStatus: 'PENDING' },
     });
 
     const byPlan = await this.prisma.subscription.groupBy({
       by: ['planType'],
+      where: { isActive: true },
       _count: true,
     });
 
     return {
-      total,
-      active,
-      expired,
-      cancelled,
-      revenue: Number(revenue._sum.price) || 0,
-      byPlan: byPlan.map((p) => ({
-        plan: p.planType,
-        count: p._count,
-      })),
+      subscriptions: {
+        total: totalSubscriptions,
+        active: activeSubscriptions,
+        expired: expiredSubscriptions,
+        cancelled: cancelledSubscriptions,
+        byPlan: byPlan.map((p) => ({
+          plan: p.planType,
+          count: p._count,
+        })),
+      },
+      payments: {
+        totalRevenue: Number(totalRevenue._sum.amount) || 0,
+        successful: successfulPayments,
+        failed: failedPayments,
+        pending: pendingPayments,
+      },
     };
+  }
+
+  // ============================================
+  // 11. PRIVATE HELPERS
+  // ============================================
+  private getPlanDetails(planType: SubscriptionPlan) {
+    const plans = {
+      PREMIUM: {
+        name: 'Premium',
+        price: 4000,
+        duration: 30,
+        features: [
+          '20 photos per listing',
+          'Featured badge',
+          'TOP position in search',
+          'AI buyer matching',
+          'Buyer insights',
+          'Advanced analytics',
+          'Priority support',
+        ],
+      },
+      FREE: {
+        name: 'Free',
+        price: 0,
+        duration: 0,
+        features: ['3 photos per listing', 'Basic listing', 'Manual search'],
+      },
+    };
+    return plans[planType] || null;
   }
 }

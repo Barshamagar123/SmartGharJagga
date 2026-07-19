@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { authMiddleware } from '@/middleware/auth.middleware';
 import { requireRole } from '@/middleware/role.middleware';
 import { validate } from '@/middleware/validation.middleware';
-import { createSubscriptionSchema } from './subscription.validation';
+import { initiateSubscriptionSchema } from './subscription.validation';
 
 const prisma = new PrismaClient();
 const subscriptionService = new SubscriptionService(prisma);
@@ -26,9 +26,28 @@ const router = Router();
  */
 router.get('/plans', subscriptionController.getPlans);
 
+/**
+ * @route GET /api/v1/subscriptions/payment/callback
+ * @desc Payment callback from Khalti/eSewa
+ * @access Public
+ */
+router.get('/payment/callback', subscriptionController.paymentCallback);
+
 // ============================================
-// PROTECTED ROUTES (Auth Required)
+// PROTECTED ROUTES
 // ============================================
+
+/**
+ * @route POST /api/v1/subscriptions/initiate
+ * @desc Initiate subscription with payment
+ * @access Private
+ */
+router.post(
+  '/initiate',
+  authMiddleware,
+  validate(initiateSubscriptionSchema),
+  subscriptionController.initiateSubscription
+);
 
 /**
  * @route GET /api/v1/subscriptions/me
@@ -42,37 +61,25 @@ router.get(
 );
 
 /**
- * @route GET /api/v1/subscriptions/status
- * @desc Get subscription status
+ * @route GET /api/v1/subscriptions/payments
+ * @desc Get payment history
  * @access Private
  */
 router.get(
-  '/status',
+  '/payments',
   authMiddleware,
-  subscriptionController.getSubscriptionStatus
+  subscriptionController.getPaymentHistory
 );
 
 /**
- * @route GET /api/v1/subscriptions/history
- * @desc Get subscription history
+ * @route GET /api/v1/subscriptions/payments/:paymentId
+ * @desc Get payment by ID
  * @access Private
  */
 router.get(
-  '/history',
+  '/payments/:paymentId',
   authMiddleware,
-  subscriptionController.getSubscriptionHistory
-);
-
-/**
- * @route POST /api/v1/subscriptions/subscribe
- * @desc Create new subscription
- * @access Private
- */
-router.post(
-  '/subscribe',
-  authMiddleware,
-  validate(createSubscriptionSchema),
-  subscriptionController.createSubscription
+  subscriptionController.getPaymentById
 );
 
 /**
@@ -84,6 +91,17 @@ router.post(
   '/cancel',
   authMiddleware,
   subscriptionController.cancelSubscription
+);
+
+/**
+ * @route GET /api/v1/subscriptions/premium-check
+ * @desc Check if user has premium access
+ * @access Private
+ */
+router.get(
+  '/premium-check',
+  authMiddleware,
+  subscriptionController.checkPremiumAccess
 );
 
 // ============================================

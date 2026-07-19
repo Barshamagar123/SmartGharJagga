@@ -18,7 +18,7 @@ export class SubscriptionController {
   constructor(private subscriptionService: SubscriptionService) {}
 
   // ============================================
-  // 1. Get All Plans
+  // 1. GET PLANS
   // ============================================
   getPlans = asyncHandler(async (req: Request, res: Response) => {
     const plans = this.subscriptionService.getPlans();
@@ -26,7 +26,71 @@ export class SubscriptionController {
   });
 
   // ============================================
-  // 2. Get User's Subscription
+  // 2. INITIATE SUBSCRIPTION
+  // ============================================
+  initiateSubscription = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    const { planType, paymentMethod } = req.body;
+
+    if (!planType || !paymentMethod) {
+      throw new ApiError(400, 'Plan type and payment method are required');
+    }
+
+    const result = await this.subscriptionService.initiateSubscription(userId, {
+      planType,
+      paymentMethod,
+    });
+
+    ApiResponse.success(res, 200, 'Payment initiated successfully', result);
+  });
+
+  // ============================================
+  // 3. PAYMENT CALLBACK
+  // ============================================
+  paymentCallback = asyncHandler(async (req: Request, res: Response) => {
+    const transactionId = req.query.transactionId as string;
+    const status = req.query.status as string;
+
+    console.log('📥 Payment callback:', { transactionId, status });
+
+    try {
+      let result;
+
+      if (status === 'success' || status === 'SUCCESS') {
+        result = await this.subscriptionService.activateSubscription(
+          transactionId,
+          req.query
+        );
+      } else {
+        result = await this.subscriptionService.handlePaymentFailure(
+          transactionId,
+          'Payment failed or cancelled by user'
+        );
+      }
+
+      if (result.success) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL || 'http://localhost:3000'}/subscription/success?transactionId=${transactionId}`
+        );
+      } else {
+        return res.redirect(
+          `${process.env.FRONTEND_URL || 'http://localhost:3000'}/subscription/failed?transactionId=${transactionId}`
+        );
+      }
+    } catch (error: any) {
+      console.error('❌ Payment callback error:', error.message);
+      return res.redirect(
+        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/subscription/failed?transactionId=${transactionId}&error=${error.message}`
+      );
+    }
+  });
+
+  // ============================================
+  // 4. GET USER SUBSCRIPTION
   // ============================================
   getUserSubscription = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -39,24 +103,39 @@ export class SubscriptionController {
   });
 
   // ============================================
-  // 3. Create Subscription
+  // 5. GET PAYMENT HISTORY
   // ============================================
-  createSubscription = asyncHandler(async (req: AuthRequest, res: Response) => {
+  getPaymentHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new ApiError(401, 'Authentication required');
     }
 
-    const subscription = await this.subscriptionService.createSubscription(
-      userId,
-      req.body
-    );
-
-    ApiResponse.success(res, 201, 'Subscription created successfully', subscription);
+    const payments = await this.subscriptionService.getPaymentHistory(userId);
+    ApiResponse.success(res, 200, 'Payment history fetched successfully', payments);
   });
 
   // ============================================
-  // 4. Cancel Subscription
+  // 6. GET PAYMENT BY ID - FIXED!
+  // ============================================
+  getPaymentById = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    // ✅ FIX: Cast paymentId to string
+    const paymentId = req.params.paymentId as string;
+    if (!paymentId) {
+      throw new ApiError(400, 'Payment ID is required');
+    }
+
+    const payment = await this.subscriptionService.getPaymentById(paymentId, userId);
+    ApiResponse.success(res, 200, 'Payment fetched successfully', payment);
+  });
+
+  // ============================================
+  // 7. CANCEL SUBSCRIPTION
   // ============================================
   cancelSubscription = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -64,38 +143,25 @@ export class SubscriptionController {
       throw new ApiError(401, 'Authentication required');
     }
 
-    await this.subscriptionService.cancelSubscription(userId);
-    ApiResponse.success(res, 200, 'Subscription cancelled successfully');
+    const result = await this.subscriptionService.cancelSubscription(userId);
+    ApiResponse.success(res, 200, 'Subscription cancelled successfully', result);
   });
 
   // ============================================
-  // 5. Get Subscription Status
+  // 8. CHECK PREMIUM ACCESS
   // ============================================
-  getSubscriptionStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+  checkPremiumAccess = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new ApiError(401, 'Authentication required');
     }
 
-    const status = await this.subscriptionService.getSubscriptionStatus(userId);
-    ApiResponse.success(res, 200, 'Subscription status fetched successfully', status);
+    const status = await this.subscriptionService.hasActiveSubscription(userId);
+    ApiResponse.success(res, 200, 'Premium access status', status);
   });
 
   // ============================================
-  // 6. Get Subscription History
-  // ============================================
-  getSubscriptionHistory = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      throw new ApiError(401, 'Authentication required');
-    }
-
-    const history = await this.subscriptionService.getSubscriptionHistory(userId);
-    ApiResponse.success(res, 200, 'Subscription history fetched successfully', history);
-  });
-
-  // ============================================
-  // 7. Get Subscription Analytics (Admin)
+  // 9. GET ANALYTICS (Admin)
   // ============================================
   getSubscriptionAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
     const analytics = await this.subscriptionService.getSubscriptionAnalytics();

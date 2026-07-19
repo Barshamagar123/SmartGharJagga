@@ -1,16 +1,10 @@
 // src/modules/subscription/subscription.types.ts
 
-import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
+import { SubscriptionPlan, SubscriptionStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 
-export interface SubscriptionPlanData {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  duration: number; // in days
-  features: string[];
-  type: 'BUYER' | 'SELLER';
+export interface InitiateSubscriptionRequest {
+  planType: SubscriptionPlan;
+  paymentMethod: PaymentMethod;
 }
 
 export interface SubscriptionResponse {
@@ -18,23 +12,30 @@ export interface SubscriptionResponse {
   userId: string;
   planType: SubscriptionPlan;
   status: SubscriptionStatus;
+  isActive: boolean;
   startDate: Date;
   endDate: Date;
   price: number;
   features: any;
-  isActive: boolean;
   daysRemaining: number;
 }
 
-export interface CreateSubscriptionRequest {
-  planType: SubscriptionPlan;
-  paymentMethod: 'khalti' | 'esewa' | 'stripe';
-  paymentDetails?: any;
+export interface PaymentResponse {
+  id: string;
+  subscriptionId: string;
+  userId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  transactionId: string;
+  paymentStatus: PaymentStatus;
+  paidAt?: Date;
 }
 
-export interface SubscriptionStatusResponse {
-  isActive: boolean;
-  planType: SubscriptionPlan;
-  daysRemaining: number;
-  features: string[];
+export interface InitiatePaymentResponse {
+  subscriptionId: string;
+  paymentId: string;
+  transactionId: string;
+  amount: number;
+  paymentUrl: string;
+  paymentMethod: PaymentMethod;
 }
