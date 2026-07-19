@@ -8,6 +8,7 @@ import mapRoutes from '@/modules/map/map.routes';
 import qrRoutes from '@/modules/qr/qr.routes';  
 import languageRoutes from '@/modules/language/language.routes';  
 import subscriptionRoutes from '@/modules/subscription/subscription.routes'; 
+import messageRoutes from '@/modules/message/message.routes'; // ✅ ADD THIS
 
 const router = Router();
 
@@ -27,6 +28,7 @@ router.use('/map', mapRoutes);
 router.use('/qr', qrRoutes);  
 router.use('/language', languageRoutes);  
 router.use('/subscriptions', subscriptionRoutes); 
+router.use('/messages', messageRoutes); // ✅ ADD THIS
 
 router.get('/health', (_req, res) => {
   res.status(200).json({
