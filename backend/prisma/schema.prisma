@@ -12,10 +12,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
-// ENUMS
-// ============================================================
-
 enum Role {
   BUYER
   SELLER
@@ -31,7 +27,6 @@ enum Language {
 
 enum PropertyType {
   HOUSE
-  
 
   RESIDENTIAL_LAND
   COMMERCIAL_LAND
@@ -46,7 +41,6 @@ enum PropertyType {
 
 enum Purpose {
   SALE
- 
 }
 
 enum PropertyStatus {
@@ -54,24 +48,22 @@ enum PropertyStatus {
   APPROVED
   REJECTED
   SOLD
-
 }
 
 enum SubscriptionPlan {
   FREE
-  
   PREMIUM
-
 }
+
 enum SubscriptionStatus {
   ACTIVE
   EXPIRED
   CANCELLED
+  PENDING
 }
 
 enum MatchType {
   PROPERTY
-  
 }
 
 enum CommissionStatus {
@@ -86,44 +78,50 @@ enum MessageStatus {
   READ
 }
 
-// ============================================================
-// MODELS
-// ============================================================
+enum PaymentMethod {
+  KHALTI
+  ESEWA
+  STRIPE
+}
 
-// --------------------------------------------
-// USER MODEL (FULLY UPDATED)
-// --------------------------------------------
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
 model User {
-  id              String          @id @default(uuid())
-  email           String          @unique
+  id              String    @id @default(uuid())
+  email           String    @unique
   passwordHash    String
   name            String
   phone           String?
-  role            Role            @default(BUYER)
-  languagePref    Language        @default(ENGLISH)
+  role            Role      @default(BUYER)
+  languagePref    Language  @default(ENGLISH)
   avatarUrl       String?
-  isVerified      Boolean         @default(false)
-  isActive        Boolean         @default(true)
-  isEmailVerified Boolean         @default(false)
+  isVerified      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  isEmailVerified Boolean   @default(false)
   lastLogin       DateTime?
-  
+
   // Relations
-  properties      Property[]
-  favorites       Favorite[]
-  sentMessages    Message[]       @relation("sender")
-  receivedMessages Message[]      @relation("receiver")
-  preferences     UserPreference?
- 
-  matches         Match[]
-  commissions     Commission[]    @relation("buyer")
-  notifications   Notification[]
-  reviews         Review[]        @relation("reviewer")
-  subscriptions   Subscription[]  // 👈 ADDED: Opposite for Subscription
-  analytics       Analytics[]     // 👈 ADDED: Opposite for Analytics
-  
+  properties       Property[]
+  favorites        Favorite[]
+  sentMessages     Message[]       @relation("sender")
+  receivedMessages Message[]       @relation("receiver")
+  preferences      UserPreference?
+
+  matches       Match[]
+  commissions   Commission[]   @relation("buyer")
+  notifications Notification[]
+  reviews       Review[]       @relation("reviewer")
+  subscriptions Subscription[] // 👈 ADDED: Opposite for Subscription
+  analytics     Analytics[] // 👈 ADDED: Opposite for Analytics
+  payments      Payment[]
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([email])
   @@index([role])
@@ -135,25 +133,25 @@ model User {
 // USER PREFERENCES (For AI Matching)
 // --------------------------------------------
 model UserPreference {
-  id              String          @id @default(uuid())
-  budgetMin       Decimal?        @db.Decimal(15,2)
-  budgetMax       Decimal?        @db.Decimal(15,2)
-  propertyType    PropertyType?
-  location        String?
-  bedrooms        Int?
-  bathrooms       Int?
-  amenities       String[]
-  purpose         Purpose?
-  parkingNeeded   Boolean?
-  propertyVector  Float[]         @default([])
-  
+  id             String        @id @default(uuid())
+  budgetMin      Decimal?      @db.Decimal(15, 2)
+  budgetMax      Decimal?      @db.Decimal(15, 2)
+  propertyType   PropertyType?
+  location       String?
+  bedrooms       Int?
+  bathrooms      Int?
+  amenities      String[]
+  purpose        Purpose?
+  parkingNeeded  Boolean?
+  propertyVector Float[]       @default([])
+
   // Relations
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String          @unique
-  
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("user_preferences")
 }
@@ -162,47 +160,47 @@ model UserPreference {
 // PROPERTY MODEL
 // --------------------------------------------
 model Property {
-  id              String          @id @default(uuid())
-  propertyId      String          @unique
-  title           String
-  description     String?
-  price           Decimal         @db.Decimal(15,2)
-  location        String
-  latitude        Float?
-  longitude       Float?
-  bedrooms        Int?
-  bathrooms       Int?
-  area            Float?
-  propertyType    PropertyType
-  purpose         Purpose
-  amenities       String[]        @default([])
-  images          String[]        @default([])
-    videos          String[]        @default([])      // ✅ NEW: Video URLs
+  id           String       @id @default(uuid())
+  propertyId   String       @unique
+  title        String
+  description  String?
+  price        Decimal      @db.Decimal(15, 2)
+  location     String
+  latitude     Float?
+  longitude    Float?
+  bedrooms     Int?
+  bathrooms    Int?
+  area         Float?
+  propertyType PropertyType
+  purpose      Purpose
+  amenities    String[]     @default([])
+  images       String[]     @default([])
+  videos       String[]     @default([]) // ✅ NEW: Video URLs
 
   mainImage       String?
-  status          PropertyStatus  @default(PENDING)
-  parking         Boolean         @default(false)
+  status          PropertyStatus @default(PENDING)
+  parking         Boolean        @default(false)
   floor           Int?
   yearBuilt       Int?
-  views           Int             @default(0)
-  favoritesCount  Int             @default(0)
-  isFeatured      Boolean         @default(false)
-  isVerified      Boolean         @default(false)
+  views           Int            @default(0)
+  favoritesCount  Int            @default(0)
+  isFeatured      Boolean        @default(false)
+  isVerified      Boolean        @default(false)
   rejectionReason String?
-  
+
   // Relations
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  favorites       Favorite[]
-  messages        Message[]
-  matches         Match[]
-  commissions     Commission[]
-  qrCodes         QRCode[]
-  analytics       Analytics[]
-  
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  favorites   Favorite[]
+  messages    Message[]
+  matches     Match[]
+  commissions Commission[]
+  qrCodes     QRCode[]
+  analytics   Analytics[]
+
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([price])
   @@index([location])
@@ -217,21 +215,20 @@ model Property {
 // --------------------------------------------
 // AGENT MODEL (FULLY UPDATED)
 
-
 // --------------------------------------------
 // FAVORITE MODEL
 // --------------------------------------------
 model Favorite {
-  id              String          @id @default(uuid())
-  
+  id String @id @default(uuid())
+
   // Relations
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  propertyId      String
-  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+
   // Audit
-  createdAt       DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, propertyId])
   @@index([userId])
@@ -243,25 +240,23 @@ model Favorite {
 // MATCH MODEL (AI Matching Results)
 // --------------------------------------------
 model Match {
-  id               String          @id @default(uuid())
-  similarityScore  Decimal         @db.Decimal(5,2)
-  matchType        MatchType
-  isViewed         Boolean         @default(false)
-  isContacted      Boolean         @default(false)
-  
+  id              String    @id @default(uuid())
+  similarityScore Decimal   @db.Decimal(5, 2)
+  matchType       MatchType
+  isViewed        Boolean   @default(false)
+  isContacted     Boolean   @default(false)
+
   // Relations
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId           String
-  property         Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  propertyId       String?
-  
-  
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+
   // Audit
-  createdAt        DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([propertyId])
-
   @@index([similarityScore])
   @@map("matches")
 }
@@ -270,22 +265,22 @@ model Match {
 // MESSAGE MODEL
 // --------------------------------------------
 model Message {
-  id              String          @id @default(uuid())
-  message         String          @db.Text
-  isRead          Boolean         @default(false)
-  status          MessageStatus   @default(SENT)
-  
+  id      String        @id @default(uuid())
+  message String        @db.Text
+  isRead  Boolean       @default(false)
+  status  MessageStatus @default(SENT)
+
   // Relations
-  sender          User            @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
-  senderId        String
-  receiver        User            @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  receiverId      String
-  property        Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  propertyId      String?
-  
+  sender     User      @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   String
+  receiver   User      @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId String
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([senderId])
   @@index([receiverId])
@@ -298,54 +293,79 @@ model Message {
 // SUBSCRIPTION MODEL
 // --------------------------------------------
 model Subscription {
-  id              String          @id @default(uuid())
+  id String @id @default(uuid())
 
-  planType        SubscriptionPlan
-  price           Decimal         @db.Decimal(10,2)
-  startDate       DateTime        @default(now())
-  endDate         DateTime
-  features        Json?
-  paymentId       String?
-  status          SubscriptionStatus @default(ACTIVE)
-
+  planType      SubscriptionPlan
+  price         Decimal            @db.Decimal(10, 2)
+  startDate     DateTime           @default(now())
+  endDate       DateTime
+  features      Json?
+  paymentId     String?
+  transactionId String?
+  status        SubscriptionStatus @default(PENDING)
+  paymentMethod PaymentMethod?
+  paymentStatus PaymentStatus?
+  payments      Payment[]
   // Relations
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([endDate])
+  @@index([transactionId])
   @@map("subscriptions")
 }
 
-// --------------------------------------------
-// COMMISSION MODEL
-// --------------------------------------------
-model Commission {
-  id              String          @id @default(uuid())
-  amount          Decimal         @db.Decimal(15,2)
-  percentage      Decimal         @db.Decimal(5,2)
-  status          CommissionStatus @default(PENDING)
-  transactionId   String?
-  paymentDate     DateTime?
-  
+model Payment {
+  id             String        @id @default(uuid())
+  subscriptionId String
+  userId         String
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  transactionId  String        @unique
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentData    Json?
+  failureReason  String?
+
   // Relations
-  property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  propertyId      String
- 
-  buyer           User            @relation("buyer", fields: [buyerId], references: [id], onDelete: Cascade)
-  buyerId         String
-  
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([subscriptionId])
+  @@index([userId])
+  @@index([transactionId])
+  @@index([paymentStatus])
+  @@map("payments")
+}
+
+model Commission {
+  id            String           @id @default(uuid())
+  amount        Decimal          @db.Decimal(15, 2)
+  percentage    Decimal          @db.Decimal(5, 2)
+  status        CommissionStatus @default(PENDING)
+  transactionId String?
+  paymentDate   DateTime?
+
+  // Relations
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+
+  buyer   User   @relation("buyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  buyerId String
+
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([propertyId])
-
   @@index([status])
   @@map("commissions")
 }
@@ -354,16 +374,16 @@ model Commission {
 // QR CODE MODEL
 // --------------------------------------------
 model QRCode {
-  id              String          @id @default(uuid())
-  qrCode          String          @db.Text
-  expiresAt       DateTime?
-  
+  id        String    @id @default(uuid())
+  qrCode    String    @db.Text
+  expiresAt DateTime?
+
   // Relations
-  property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  propertyId      String
-  
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+
   // Audit
-  generatedAt     DateTime        @default(now())
+  generatedAt DateTime @default(now())
 
   @@index([propertyId])
   @@index([generatedAt])
@@ -374,19 +394,17 @@ model QRCode {
 // REVIEW MODEL
 // --------------------------------------------
 model Review {
-  id              String          @id @default(uuid())
-  rating          Int             @db.SmallInt
-  comment         String?         @db.Text
-  
-  // Relations
-  reviewer        User            @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
-  reviewerId      String
-  
-  
-  // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id      String  @id @default(uuid())
+  rating  Int     @db.SmallInt
+  comment String? @db.Text
 
+  // Relations
+  reviewer   User   @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewerId String
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([reviewerId])
   @@index([rating])
@@ -397,19 +415,19 @@ model Review {
 // NOTIFICATION MODEL
 // --------------------------------------------
 model Notification {
-  id              String          @id @default(uuid())
-  title           String
-  message         String
-  type            String
-  isRead          Boolean         @default(false)
-  data            Json?
-  
+  id      String  @id @default(uuid())
+  title   String
+  message String
+  type    String
+  isRead  Boolean @default(false)
+  data    Json?
+
   // Relations
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          String
-  
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
   // Audit
-  createdAt       DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([isRead])
@@ -421,22 +439,22 @@ model Notification {
 // ANALYTICS MODEL
 // --------------------------------------------
 model Analytics {
-  id              String          @id @default(uuid())
-  eventType       String
-  sessionId       String?
-  ipAddress       String?
-  userAgent       String?
-  metadata        Json?
-  
+  id        String  @id @default(uuid())
+  eventType String
+  sessionId String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+
   // Relations
-  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId          String?
-  property        Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  propertyId      String?
-  agentId         String?
-  
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+  agentId    String?
+
   // Audit
-  createdAt       DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@index([eventType])
   @@index([userId])
