@@ -26,14 +26,19 @@ model User {
   commissions      Commission[]    @relation("buyer")
   favorites        Favorite[]
   matches          Match[]
-  receivedMessages Message[]       @relation("receiver")
-  sentMessages     Message[]       @relation("sender")
   notifications    Notification[]
   properties       Property[]
   reviews          Review[]        @relation("reviewer")
   subscriptions    Subscription[]
     payments        Payment[]
-
+// ✅ ADD: Conversation relations
+  buyerConversations  Conversation[] @relation("buyer_conversations")
+  sellerConversations Conversation[] @relation("seller_conversations")
+  
+  // ✅ ADD: Message relations
+  sentMessages     Message[]       @relation("sent_messages")
+  receivedMessages Message[]       @relation("received_messages")
+  
   preferences      UserPreference?
 
   @@index([email])
@@ -99,6 +104,7 @@ model Property {
   messages        Message[]
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   qrCodes         QRCode[]
+  conversations   Conversation[]
 
   @@index([price])
   @@index([location])
@@ -141,9 +147,38 @@ model Match {
   @@index([similarityScore])
   @@map("matches")
 }
+model Conversation {
+  id              String          @id @default(uuid())
+  propertyId      String?
+  buyerId         String
+  sellerId        String
+  lastMessage     String?
+  lastMessageAt   DateTime        @default(now())
+  isActive        Boolean         @default(true)
+  
+  // Relations
+  property        Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  buyer           User            @relation("buyer_conversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller          User            @relation("seller_conversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  messages        Message[]
+  
+  // Audit
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([propertyId])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
 
 model Message {
   id         String        @id @default(uuid())
+    conversationId String          // ✅ ADD: Link to conversation
+  content        String          @db.Text  // ✅ Renamed from 'message' to 'content'
+  readAt         DateTime?       // ✅ ADD: When message was read
+
   message    String
   isRead     Boolean       @default(false)
   status     MessageStatus @default(SENT)
@@ -152,9 +187,12 @@ model Message {
   propertyId String?
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
+   // Relations
+  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   property   Property?     @relation(fields: [propertyId], references: [id])
-  receiver   User          @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  sender     User          @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+sender   User   @relation("sent_messages", fields: [senderId], references: [id])
+receiver User   @relation("received_messages", fields: [receiverId], references: [id])
+  @@index([conversationId])
 
   @@index([senderId])
   @@index([receiverId])
