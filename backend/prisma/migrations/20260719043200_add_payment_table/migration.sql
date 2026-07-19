@@ -1,17 +1,12 @@
 -- CreateEnum
-CREATE TYPE "PaymentMethod" AS ENUM ('KHALTI', 'ESEWA', 'STRIPE');
-
--- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED');
 
--- AlterEnum
-ALTER TYPE "SubscriptionStatus" ADD VALUE 'PENDING';
+-- CreateEnum
+CREATE TYPE "PaymentMethod" AS ENUM ('KHALTI', 'ESEWA', 'STRIPE');
 
 -- AlterTable
-ALTER TABLE "subscriptions" ADD COLUMN     "paymentMethod" "PaymentMethod",
-ADD COLUMN     "paymentStatus" "PaymentStatus",
-ADD COLUMN     "transactionId" TEXT,
-ALTER COLUMN "status" SET DEFAULT 'PENDING';
+ALTER TABLE "subscriptions" ADD COLUMN     "isActive" BOOLEAN NOT NULL DEFAULT false,
+ALTER COLUMN "status" SET DEFAULT 'EXPIRED';
 
 -- CreateTable
 CREATE TABLE "payments" (
@@ -24,6 +19,9 @@ CREATE TABLE "payments" (
     "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "paymentData" JSONB,
     "failureReason" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "refundedAt" TIMESTAMP(3),
+    "refundReason" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -44,9 +42,6 @@ CREATE INDEX "payments_transactionId_idx" ON "payments"("transactionId");
 
 -- CreateIndex
 CREATE INDEX "payments_paymentStatus_idx" ON "payments"("paymentStatus");
-
--- CreateIndex
-CREATE INDEX "subscriptions_transactionId_idx" ON "subscriptions"("transactionId");
 
 -- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "subscriptions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
