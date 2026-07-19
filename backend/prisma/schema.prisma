@@ -8,38 +8,38 @@ datasource db {
 }
 
 model User {
-  id               String          @id @default(uuid())
-  email            String          @unique
-  passwordHash     String
-  name             String
-  phone            String?
-  role             Role            @default(BUYER)
-  languagePref     Language        @default(ENGLISH)
-  avatarUrl        String?
-  isVerified       Boolean         @default(false)
-  isActive         Boolean         @default(true)
-  isEmailVerified  Boolean         @default(false)
-  lastLogin        DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  analytics        Analytics[]
-  commissions      Commission[]    @relation("buyer")
-  favorites        Favorite[]
-  matches          Match[]
-  notifications    Notification[]
-  properties       Property[]
-  reviews          Review[]        @relation("reviewer")
-  subscriptions    Subscription[]
-    payments        Payment[]
-// ✅ ADD: Conversation relations
+  id                  String         @id @default(uuid())
+  email               String         @unique
+  passwordHash        String
+  name                String
+  phone               String?
+  role                Role           @default(BUYER)
+  languagePref        Language       @default(ENGLISH)
+  avatarUrl           String?
+  isVerified          Boolean        @default(false)
+  isActive            Boolean        @default(true)
+  isEmailVerified     Boolean        @default(false)
+  lastLogin           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  analytics           Analytics[]
+  commissions         Commission[]   @relation("buyer")
+  favorites           Favorite[]
+  matches             Match[]
+  notifications       Notification[]
+  properties          Property[]
+  reviews             Review[]       @relation("reviewer")
+  subscriptions       Subscription[]
+  payments            Payment[]
+  // ✅ ADD: Conversation relations
   buyerConversations  Conversation[] @relation("buyer_conversations")
   sellerConversations Conversation[] @relation("seller_conversations")
-  
+
   // ✅ ADD: Message relations
-  sentMessages     Message[]       @relation("sent_messages")
-  receivedMessages Message[]       @relation("received_messages")
-  
-  preferences      UserPreference?
+  sentMessages     Message[] @relation("sent_messages")
+  receivedMessages Message[] @relation("received_messages")
+
+  preferences UserPreference?
 
   @@index([email])
   @@index([role])
@@ -147,24 +147,25 @@ model Match {
   @@index([similarityScore])
   @@map("matches")
 }
+
 model Conversation {
-  id              String          @id @default(uuid())
-  propertyId      String?
-  buyerId         String
-  sellerId        String
-  lastMessage     String?
-  lastMessageAt   DateTime        @default(now())
-  isActive        Boolean         @default(true)
-  
+  id            String   @id @default(uuid())
+  propertyId    String?
+  buyerId       String
+  sellerId      String
+  lastMessage   String?
+  lastMessageAt DateTime @default(now())
+  isActive      Boolean  @default(true)
+
   // Relations
-  property        Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  buyer           User            @relation("buyer_conversations", fields: [buyerId], references: [id], onDelete: Cascade)
-  seller          User            @relation("seller_conversations", fields: [sellerId], references: [id], onDelete: Cascade)
-  messages        Message[]
-  
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  buyer    User      @relation("buyer_conversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller   User      @relation("seller_conversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  messages Message[]
+
   // Audit
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([buyerId])
   @@index([sellerId])
@@ -174,26 +175,25 @@ model Conversation {
 }
 
 model Message {
-  id         String        @id @default(uuid())
-    conversationId String          // ✅ ADD: Link to conversation
-  content        String          @db.Text  // ✅ Renamed from 'message' to 'content'
-  readAt         DateTime?       // ✅ ADD: When message was read
+  id             String    @id @default(uuid())
+  conversationId String // ✅ ADD: Link to conversation
+  content        String    @db.Text // ✅ Renamed from 'message' to 'content'
+  readAt         DateTime? // ✅ ADD: When message was read
 
-  message    String
-  isRead     Boolean       @default(false)
-  status     MessageStatus @default(SENT)
-  senderId   String
-  receiverId String
-  propertyId String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-   // Relations
-  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  property   Property?     @relation(fields: [propertyId], references: [id])
-sender   User   @relation("sent_messages", fields: [senderId], references: [id])
-receiver User   @relation("received_messages", fields: [receiverId], references: [id])
+  isRead       Boolean       @default(false)
+  status       MessageStatus @default(SENT)
+  senderId     String
+  receiverId   String
+  propertyId   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  // Relations
+  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  property     Property?     @relation(fields: [propertyId], references: [id])
+  sender       User          @relation("sent_messages", fields: [senderId], references: [id])
+  receiver     User          @relation("received_messages", fields: [receiverId], references: [id])
+
   @@index([conversationId])
-
   @@index([senderId])
   @@index([receiverId])
   @@index([propertyId])
@@ -214,36 +214,37 @@ model Subscription {
   updatedAt DateTime           @updatedAt
   status    SubscriptionStatus @default(EXPIRED)
   user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isActive        Boolean           @default(false)    // ✅ NEW! Simple boolean!
-  payments        Payment[]         // ✅ All payments for this subscription
+  isActive  Boolean            @default(false) // ✅ NEW! Simple boolean!
+  payments  Payment[] // ✅ All payments for this subscription
 
   @@index([userId])
   @@index([status])
   @@index([endDate])
   @@map("subscriptions")
 }
+
 model Payment {
-  id              String          @id @default(uuid())
-  subscriptionId  String
-  userId          String
-  amount          Decimal         @db.Decimal(10,2)
-  paymentMethod   PaymentMethod
-  transactionId   String          @unique
-  paymentStatus   PaymentStatus   @default(PENDING)
-  paymentData     Json?           // ✅ Store full payment response
-  failureReason   String?         // ✅ Why payment failed
-  
+  id             String        @id @default(uuid())
+  subscriptionId String
+  userId         String
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod
+  transactionId  String        @unique
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentData    Json? // ✅ Store full payment response
+  failureReason  String? // ✅ Why payment failed
+
   // ✅ Additional tracking fields
-  paidAt          DateTime?       // ✅ When payment was completed
-  refundedAt      DateTime?       // ✅ If refunded
-  refundReason    String?         // ✅ Why refunded
-  
+  paidAt       DateTime? // ✅ When payment was completed
+  refundedAt   DateTime? // ✅ If refunded
+  refundReason String? // ✅ Why refunded
+
   // Relations
-  subscription    Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([subscriptionId])
   @@index([userId])
@@ -251,6 +252,7 @@ model Payment {
   @@index([paymentStatus])
   @@map("payments")
 }
+
 model Commission {
   id            String           @id @default(uuid())
   amount        Decimal          @db.Decimal(15, 2)
@@ -386,12 +388,12 @@ enum SubscriptionStatus {
 enum MatchType {
   PROPERTY
 }
+
 enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
-    REFUNDED
-
+  REFUNDED
 }
 
 enum PaymentMethod {
@@ -399,6 +401,7 @@ enum PaymentMethod {
   ESEWA
   STRIPE
 }
+
 enum CommissionStatus {
   PENDING
   PAID

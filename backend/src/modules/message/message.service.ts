@@ -2,7 +2,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { ApiError } from '@/utils/apiError';
-import { SendMessageRequest, ConversationResponse, MessageResponse } from './message.types';
+import { SendMessageRequest } from './message.types';
 
 export class MessageService {
   constructor(private prisma: PrismaClient) {}
@@ -15,13 +15,16 @@ export class MessageService {
     sellerId: string,
     propertyId?: string
   ) {
-    // Check if conversation exists
+    const whereCondition: any = {
+      buyerId,
+      sellerId,
+    };
+    if (propertyId) {
+      whereCondition.propertyId = propertyId;
+    }
+
     let conversation = await this.prisma.conversation.findFirst({
-      where: {
-        buyerId,
-        sellerId,
-        ...(propertyId ? { propertyId } : {}),
-      },
+      where: whereCondition,
       include: {
         messages: {
           orderBy: { createdAt: 'asc' },
@@ -65,7 +68,6 @@ export class MessageService {
       },
     });
 
-    // If no conversation, create one
     if (!conversation) {
       conversation = await this.prisma.conversation.create({
         data: {
@@ -74,7 +76,24 @@ export class MessageService {
           propertyId: propertyId || null,
         },
         include: {
-          messages: true,
+          messages: {
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatarUrl: true,
+                },
+              },
+              receiver: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
           property: {
             select: {
               id: true,
@@ -112,7 +131,6 @@ export class MessageService {
       throw new ApiError(400, 'Message content is required');
     }
 
-    // Validate receiver exists
     const receiver = await this.prisma.user.findUnique({
       where: { id: receiverId },
     });
@@ -121,14 +139,12 @@ export class MessageService {
       throw new ApiError(404, 'Receiver not found');
     }
 
-    // Don't allow sending message to yourself
     if (userId === receiverId) {
       throw new ApiError(400, 'You cannot send a message to yourself');
     }
 
-    let conversation;
+    let conversation: any;
 
-    // If conversationId provided, use existing conversation
     if (conversationId) {
       conversation = await this.prisma.conversation.findUnique({
         where: { id: conversationId },
@@ -138,19 +154,13 @@ export class MessageService {
         throw new ApiError(404, 'Conversation not found');
       }
 
-      // Check if user is part of this conversation
       if (conversation.buyerId !== userId && conversation.sellerId !== userId) {
         throw new ApiError(403, 'You are not part of this conversation');
       }
     } else {
-      // Determine roles: sender is buyer, receiver is seller
-      const buyerId = userId;
-      const sellerId = receiverId;
-
-      conversation = await this.getOrCreateConversation(buyerId, sellerId, propertyId);
+      conversation = await this.getOrCreateConversation(userId, receiverId, propertyId);
     }
 
-    // Create message
     const message = await this.prisma.message.create({
       data: {
         conversationId: conversation.id,
@@ -158,7 +168,7 @@ export class MessageService {
         receiverId: receiverId,
         content: content.trim(),
         status: 'SENT',
-        propertyId: propertyId || conversation.propertyId,
+        propertyId: propertyId || conversation.propertyId || null,
       },
       include: {
         sender: {
@@ -178,7 +188,6 @@ export class MessageService {
       },
     });
 
-    // Update conversation last message
     await this.prisma.conversation.update({
       where: { id: conversation.id },
       data: {
@@ -193,7 +202,7 @@ export class MessageService {
   // ============================================
   // 3. GET USER CONVERSATIONS
   // ============================================
-  async getUserConversations(userId: string): Promise<ConversationResponse[]> {
+  async getUserConversations(userId: string) {
     const conversations = await this.prisma.conversation.findMany({
       where: {
         OR: [{ buyerId: userId }, { sellerId: userId }],
@@ -246,7 +255,7 @@ export class MessageService {
       },
     });
 
-    const result: ConversationResponse[] = [];
+    const result: any[] = [];
 
     for (const conv of conversations) {
       const unreadCount = await this.prisma.message.count({
@@ -278,20 +287,17 @@ export class MessageService {
         },
       });
 
-      const isBuyer = conv.buyerId === userId;
-      const otherUser = isBuyer ? conv.seller : conv.buyer;
-
       result.push({
         id: conv.id,
-        propertyId: conv.propertyId || undefined,
+        propertyId: conv.propertyId,
         propertyTitle: conv.property?.title,
         buyerId: conv.buyerId,
         buyerName: conv.buyer.name,
-        buyerAvatar: conv.buyer.avatarUrl || undefined,
+        buyerAvatar: conv.buyer.avatarUrl,
         sellerId: conv.sellerId,
         sellerName: conv.seller.name,
-        sellerAvatar: conv.seller.avatarUrl || undefined,
-        lastMessage: conv.lastMessage || undefined,
+        sellerAvatar: conv.seller.avatarUrl,
+        lastMessage: conv.lastMessage,
         lastMessageAt: conv.lastMessageAt,
         unreadCount,
         messages: allMessages.map((m) => ({
@@ -299,12 +305,12 @@ export class MessageService {
           content: m.content,
           senderId: m.senderId,
           senderName: m.sender.name,
-          senderAvatar: m.sender.avatarUrl || undefined,
+          senderAvatar: m.sender.avatarUrl,
           receiverId: m.receiverId,
           receiverName: m.receiver.name,
-          receiverAvatar: m.receiver.avatarUrl || undefined,
+          receiverAvatar: m.receiver.avatarUrl,
           isRead: m.isRead,
-          readAt: m.readAt || undefined,
+          readAt: m.readAt,
           createdAt: m.createdAt,
         })),
       });
@@ -370,7 +376,6 @@ export class MessageService {
       throw new ApiError(404, 'Conversation not found');
     }
 
-    // Mark messages as read
     await this.prisma.message.updateMany({
       where: {
         conversationId,
@@ -392,17 +397,6 @@ export class MessageService {
   async markMessagesAsRead(userId: string, messageIds: string[]) {
     if (!messageIds || messageIds.length === 0) {
       throw new ApiError(400, 'Message IDs are required');
-    }
-
-    const messages = await this.prisma.message.findMany({
-      where: {
-        id: { in: messageIds },
-        receiverId: userId,
-      },
-    });
-
-    if (messages.length === 0) {
-      throw new ApiError(404, 'No messages found to mark as read');
     }
 
     const updated = await this.prisma.message.updateMany({
@@ -428,17 +422,6 @@ export class MessageService {
   // 6. MARK CONVERSATION AS READ
   // ============================================
   async markConversationAsRead(userId: string, conversationId: string) {
-    const conversation = await this.prisma.conversation.findFirst({
-      where: {
-        id: conversationId,
-        OR: [{ buyerId: userId }, { sellerId: userId }],
-      },
-    });
-
-    if (!conversation) {
-      throw new ApiError(404, 'Conversation not found');
-    }
-
     const updated = await this.prisma.message.updateMany({
       where: {
         conversationId,
@@ -518,7 +501,7 @@ export class MessageService {
   }
 
   // ============================================
-  // 10. CHECK UNREAD MESSAGES (For Notification)
+  // 10. CHECK UNREAD MESSAGES
   // ============================================
   async checkUnreadMessages(userId: string) {
     const count = await this.prisma.message.count({

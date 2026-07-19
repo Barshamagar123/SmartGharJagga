@@ -52,7 +52,12 @@ export class MessageController {
       throw new ApiError(401, 'Authentication required');
     }
 
-    const { conversationId } = req.params;
+    // ✅ FIX: Cast to string
+    const conversationId = req.params.conversationId as string;
+    if (!conversationId) {
+      throw new ApiError(400, 'Conversation ID is required');
+    }
+
     const conversation = await this.messageService.getConversationById(conversationId, userId);
     ApiResponse.success(res, 200, 'Conversation fetched successfully', conversation);
   });
@@ -80,7 +85,12 @@ export class MessageController {
       throw new ApiError(401, 'Authentication required');
     }
 
-    const { conversationId } = req.params;
+    // ✅ FIX: Cast to string
+    const conversationId = req.params.conversationId as string;
+    if (!conversationId) {
+      throw new ApiError(400, 'Conversation ID is required');
+    }
+
     const result = await this.messageService.markConversationAsRead(userId, conversationId);
     ApiResponse.success(res, 200, result.message, result);
   });
@@ -99,35 +109,7 @@ export class MessageController {
   });
 
   // ============================================
-  // 7. DELETE MESSAGE
-  // ============================================
-  deleteMessage = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      throw new ApiError(401, 'Authentication required');
-    }
-
-    const { messageId } = req.params;
-    const result = await this.messageService.deleteMessage(messageId, userId);
-    ApiResponse.success(res, 200, 'Message deleted', result);
-  });
-
-  // ============================================
-  // 8. DELETE CONVERSATION
-  // ============================================
-  deleteConversation = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const userId = req.user?.id;
-    if (!userId) {
-      throw new ApiError(401, 'Authentication required');
-    }
-
-    const { conversationId } = req.params;
-    const result = await this.messageService.deleteConversation(conversationId, userId);
-    ApiResponse.success(res, 200, 'Conversation deleted', result);
-  });
-
-  // ============================================
-  // 9. CHECK UNREAD (For Notification Badge)
+  // 7. CHECK UNREAD (For Notification Badge)
   // ============================================
   checkUnread = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -137,5 +119,43 @@ export class MessageController {
 
     const result = await this.messageService.checkUnreadMessages(userId);
     ApiResponse.success(res, 200, 'Unread messages fetched', result);
+  });
+
+  // ============================================
+  // 8. DELETE MESSAGE
+  // ============================================
+  deleteMessage = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    // ✅ FIX: Cast to string
+    const messageId = req.params.messageId as string;
+    if (!messageId) {
+      throw new ApiError(400, 'Message ID is required');
+    }
+
+    const result = await this.messageService.deleteMessage(messageId, userId);
+    ApiResponse.success(res, 200, 'Message deleted', result);
+  });
+
+  // ============================================
+  // 9. DELETE CONVERSATION
+  // ============================================
+  deleteConversation = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    // ✅ FIX: Cast to string
+    const conversationId = req.params.conversationId as string;
+    if (!conversationId) {
+      throw new ApiError(400, 'Conversation ID is required');
+    }
+
+    const result = await this.messageService.deleteConversation(conversationId, userId);
+    ApiResponse.success(res, 200, 'Conversation deleted', result);
   });
 }
