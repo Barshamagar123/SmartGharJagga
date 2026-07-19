@@ -1,40 +1,77 @@
 // src/components/common/Navbar/Navbar.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate }  from 'react-router-dom';
-import { useAuth, getRoleDisplay } from '../../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import MobileMenu from './MobileMenu';
 import DropdownMenu from './DropdownMenu';
+
 import type { DropdownItem } from './DropdownMenu';
 
 // ============================================
-// PROPERTY TYPES DATA
+// PROPERTY TYPES
 // ============================================
 const PROPERTY_TYPES = [
-  { label: 'House', value: 'HOUSE', icon: '🏠' },
-  { label: 'Apartment', value: 'APARTMENT', icon: '🏢' },
-  { label: 'Bungalow', value: 'BUNGALOW', icon: '🏡' },
-  { label: 'Villa', value: 'VILLA', icon: '🏘️' },
-  { label: 'Residential Land', value: 'RESIDENTIAL_LAND', icon: '🌄' },
-  { label: 'Commercial Land', value: 'COMMERCIAL_LAND', icon: '🏗️' },
-  { label: 'Agricultural Land', value: 'AGRICULTURAL_LAND', icon: '🌾' },
-  { label: 'Industrial Land', value: 'INDUSTRIAL_LAND', icon: '🏭' },
-  { label: 'Shop', value: 'SHOP', icon: '🛍️' },
-  { label: 'Office', value: 'OFFICE', icon: '💼' },
-  { label: 'Warehouse', value: 'WAREHOUSE', icon: '📦' },
-  { label: 'Hotel', value: 'HOTEL', icon: '🏨' },
-  { label: 'Restaurant', value: 'RESTAURANT', icon: '🍽️' },
+  { label: 'Houses', value: 'HOUSE' },
+  { label: 'Apartments', value: 'APARTMENT' },
+  { label: 'Bungalows', value: 'BUNGALOW' },
+  { label: 'Villas', value: 'VILLA' },
+  { label: 'Residential Land', value: 'RESIDENTIAL_LAND' },
+  { label: 'Commercial Land', value: 'COMMERCIAL_LAND' },
+  { label: 'Agricultural Land', value: 'AGRICULTURAL_LAND' },
+  { label: 'Industrial Land', value: 'INDUSTRIAL_LAND' },
+  { label: 'Shops', value: 'SHOP' },
+  { label: 'Offices', value: 'OFFICE' },
+  { label: 'Warehouses', value: 'WAREHOUSE' },
+  { label: 'Hotels', value: 'HOTEL' },
+  { label: 'Restaurants', value: 'RESTAURANT' },
+];
+
+// ============================================
+// DROPDOWN DATA
+// ============================================
+const discoverItems: DropdownItem[] = [
+  { label: 'AI Recommendations', path: '/discover/ai-recommendations' },
+  { label: 'Trending Properties', path: '/discover/trending' },
+  { label: 'New Listings', path: '/discover/new' },
+  { label: 'Price Drops', path: '/discover/price-drops' },
+  { label: 'Open Houses', path: '/discover/open-houses' },
+];
+
+const sellItems: DropdownItem[] = [
+  { label: 'Quick List', path: '/sell/quick-list' },
+  { label: 'Agent Match', path: '/sell/agent-match' },
+  { label: 'Free Valuation', path: '/sell/valuation' },
+  { label: 'Market Insights', path: '/sell/insights' },
+  { divider: true },
+  { label: 'Sell with AI', path: '/sell/ai-assist' },
+];
+
+const projectsItems: DropdownItem[] = [
+  { label: 'Featured Projects', path: '/projects/featured' },
+  { label: 'Upcoming Projects', path: '/projects/upcoming' },
+  { label: 'New Launch', path: '/projects/new-launch' },
+  { label: 'Completed Projects', path: '/projects/completed' },
+];
+
+const insightsItems: DropdownItem[] = [
+  { label: 'Market Trends', path: '/insights/market-trends' },
+  { label: 'Blog', path: '/insights/blog' },
+  { label: 'Guides & Tips', path: '/insights/guides' },
+  { label: 'Real Estate News', path: '/insights/news' },
+  { label: 'Investor Corner', path: '/insights/investor' },
 ];
 
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeItem, setActiveItem] = useState<string>('');
 
-  // Scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -53,244 +90,245 @@ const Navbar: React.FC = () => {
   };
 
   // ============================================
-  // ✅ BUY DROPDOWN ITEMS (On Hover)
+  // BUY DROPDOWN
   // ============================================
   const buyDropdownItems: DropdownItem[] = [
-    { label: 'All Properties', path: '/properties', icon: '🔍' },
+    { label: 'All Properties', path: '/properties' },
     { divider: true },
     ...PROPERTY_TYPES.map((type) => ({
       label: type.label,
       path: `/properties?type=${type.value}`,
-      icon: type.icon,
     })),
+    { divider: true },
+    { label: 'Luxury Properties', path: '/properties/luxury' },
+    { label: 'Budget Properties', path: '/properties/budget' },
   ];
 
   // ============================================
-  // ✅ USER DROPDOWN ITEMS
+  // USER DROPDOWN
   // ============================================
-  const buyerDropdownItems: DropdownItem[] = [
-    { label: 'Dashboard', path: '/dashboard', icon: '📊' },
-    { label: 'AI Matching', path: '/matching', icon: '🤖' },
-    { label: 'Favorites', path: '/favorites', icon: '❤️' },
-    { label: 'My Messages', path: '/messages', icon: '💬' },
-    { label: 'Subscription', path: '/subscription', icon: '💎' },
+  const userDropdownItems: DropdownItem[] = [
+    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'My Properties', path: '/my-properties' },
+    { label: 'Favorites', path: '/favorites' },
+    { label: 'Messages', path: '/messages' },
     { divider: true },
-    { label: 'My Profile', path: '/profile', icon: '👤' },
-    { label: 'Settings', path: '/settings', icon: '⚙️' },
+    { label: 'Profile', path: '/profile' },
+    { label: 'Settings', path: '/settings' },
+    ...(user?.role === 'ADMIN' 
+      ? [{ divider: true }, { label: 'Admin Panel', path: '/admin' }] 
+      : []),
   ];
 
-  const sellerDropdownItems: DropdownItem[] = [
-    { label: 'Dashboard', path: '/dashboard', icon: '📊' },
-    { label: 'My Properties', path: '/my-properties', icon: '🏠' },
-    { label: 'Add Property', path: '/add-property', icon: '➕' },
-    { label: 'Inquiries', path: '/inquiries', icon: '📩' },
-    { label: 'Analytics', path: '/analytics', icon: '📈' },
-    { divider: true },
-    { label: 'Subscription', path: '/subscription', icon: '💎' },
-    { label: 'My Profile', path: '/profile', icon: '👤' },
-    { label: 'Settings', path: '/settings', icon: '⚙️' },
+  // ============================================
+  // NAV ITEMS
+  // ============================================
+  const navItems = [
+    { id: 'home', label: 'Home', path: '/', isLink: true },
+    { id: 'discover', label: 'Discover', items: discoverItems, isDropdown: true },
+    { id: 'buy', label: 'Buy', items: buyDropdownItems, isDropdown: true },
+    { id: 'sell', label: 'Sell', items: sellItems, isDropdown: true },
+    { id: 'projects', label: 'Projects', items: projectsItems, isDropdown: true },
+    { id: 'insights', label: 'Insights', items: insightsItems, isDropdown: true },
   ];
-
-  const adminDropdownItems: DropdownItem[] = [
-    { label: 'Dashboard', path: '/admin', icon: '📊' },
-    { label: 'User Management', path: '/admin/users', icon: '👥' },
-    { label: 'Property Management', path: '/admin/properties', icon: '🏠' },
-    { label: 'Subscription Management', path: '/admin/subscriptions', icon: '💎' },
-    { label: 'Analytics', path: '/admin/analytics', icon: '📈' },
-    { divider: true },
-    { label: 'Settings', path: '/admin/settings', icon: '⚙️' },
-  ];
-
-  const getUserDropdownItems = (): DropdownItem[] => {
-    if (!user) return [];
-    switch (user.role) {
-      case 'BUYER': return buyerDropdownItems;
-      case 'SELLER': return sellerDropdownItems;
-      case 'ADMIN': return adminDropdownItems;
-      default: return [];
-    }
-  };
-
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'BUYER': return 'Buyer';
-      case 'SELLER': return 'Seller';
-      case 'ADMIN': return 'Admin';
-      default: return '';
-    }
-  };
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/95 backdrop-blur-md shadow-lg' 
-          : 'bg-white/80 backdrop-blur-sm shadow-sm'
-      } border-b border-gray-100/50`}>
-        <div className="container-custom">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Logo */}
-            <Link 
-              to="/" 
-              className="flex items-center gap-2.5 group transition-all duration-300 hover:scale-105"
-            >
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/25">
+      <motion.nav
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500 ${
+          isScrolled 
+            ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100/50' 
+            : 'bg-white/90 backdrop-blur-sm shadow-sm'
+        }`}
+      >
+        {/* NO PADDING - FULL WIDTH EDGE TO EDGE */}
+        <div className="w-full">
+          <div className="flex items-center justify-between h-16 md:h-20 px-0">
+            {/* ============================================
+            LOGO
+            ============================================ */}
+            <Link to="/" className="flex items-center gap-3 group flex-shrink-0 ml-4 sm:ml-6 lg:ml-8 xl:ml-12 2xl:ml-16">
+              <motion.div
+                whileHover={{ scale: 1.05, rotate: -5 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/25"
+              >
                 <span className="text-xl">🏠</span>
-              </div>
-              <div>
-                <span className="text-xl font-extrabold text-primary tracking-tight">
-                  Smart<span className="text-text-primary">GharJagga</span>
+              </motion.div>
+              <div className="hidden sm:block">
+                <span className="text-xl font-bold tracking-tight">
+                  <span className="text-primary">Smart</span>
+                  <span className="text-gray-800">GharJagga</span>
                 </span>
-                <p className="text-[10px] font-medium text-text-secondary tracking-wider uppercase -mt-0.5">
-                  AI Powered
+                <p className="text-[10px] font-medium text-gray-400 tracking-widest uppercase">
+                  Real Estate
                 </p>
               </div>
             </Link>
 
-            {/* ✅ Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-1 lg:gap-2">
-              <Link
-                to="/"
-                className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-primary-light/50 transition-all duration-200 relative group"
-              >
-                Home
-                <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4"></span>
-              </Link>
-
-              {/* ✅ BUY DROPDOWN - HOVER ONLY */}
-              <DropdownMenu
-                trigger={
-                  <span className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-primary-light/50 transition-all duration-200 cursor-pointer flex items-center gap-1">
-                    Buy
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
-                }
-                items={buyDropdownItems}
-                align="left"
-                triggerMode="hover"
-              />
-
-              {/* ✅ LIST PROPERTY BUTTON (Replaces Sell) */}
-              <Link
-                to="/add-property"
-                className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-secondary to-green-600 hover:from-green-600 hover:to-secondary rounded-lg shadow-md shadow-secondary/25 hover:shadow-lg hover:shadow-secondary/35 transition-all duration-200 flex items-center gap-2"
-              >
-                <span className="text-lg">📋</span>
-                List Property
-              </Link>
-
-              <Link
-                to="/about"
-                className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-primary-light/50 transition-all duration-200 relative group"
-              >
-                About
-                <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4"></span>
-              </Link>
-              <Link
-                to="/contact"
-                className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-primary-light/50 transition-all duration-200 relative group"
-              >
-                Contact
-                <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4"></span>
-              </Link>
-            </div>
-
-            {/* Right Section */}
-            <div className="flex items-center gap-2 lg:gap-3">
-              {/* Language Switcher */}
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-xl border border-gray-200/60 hover:border-primary/30 hover:bg-primary-light/30 transition-all duration-200"
-              >
-                {language === 'en' ? (
-                  <>
-                    <span className="text-base">🇳🇵</span>
-                    <span className="hidden sm:inline">नेपाली</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-base">🇬🇧</span>
-                    <span className="hidden sm:inline">English</span>
-                  </>
-                )}
-              </button>
-
-              {/* ✅ Desktop Auth */}
-              <div className="hidden md:flex items-center gap-2">
-                {isAuthenticated && user ? (
-                  <>
+            {/* ============================================
+            MAIN MENU
+            ============================================ */}
+            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2">
+              {navItems.map((item) => (
+                <div key={item.id} className="relative">
+                  {item.isLink ? (
+                    <Link
+                      to={item.path || '/'}
+                      className="px-4 xl:px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-primary rounded-xl hover:bg-primary/5 transition-all duration-200 relative group"
+                      onMouseEnter={() => setActiveItem(item.id)}
+                      onMouseLeave={() => setActiveItem('')}
+                    >
+                      {item.label}
+                      <span className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-primary rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
+                    </Link>
+                  ) : (
                     <DropdownMenu
                       trigger={
-                        <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-primary-light/30 transition-all duration-200 cursor-pointer group border-2 border-transparent hover:border-primary/20">
-                          <div className="relative">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white font-bold text-sm shadow-md shadow-primary/20">
-                              {user.name.charAt(0).toUpperCase()}
-                            </div>
-                            {user.isVerified && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-secondary rounded-full border-2 border-white flex items-center justify-center text-[8px]">
-                                ✓
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-semibold text-text-primary leading-tight">
-                              {user.name.split(' ')[0]}
-                            </p>
-                            <p className="text-[10px] font-medium text-text-secondary">
-                              {getRoleDisplayName(user.role)}
-                            </p>
-                          </div>
-                          <svg className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span 
+                          className="px-4 xl:px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-primary rounded-xl hover:bg-primary/5 transition-all duration-200 cursor-pointer flex items-center gap-1.5 relative group"
+                          onMouseEnter={() => setActiveItem(item.id)}
+                          onMouseLeave={() => setActiveItem('')}
+                        >
+                          {item.label}
+                          <svg 
+                            className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                              activeItem === item.id ? 'rotate-180' : ''
+                            }`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
-                        </div>
+                          <span className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-primary rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
+                        </span>
                       }
-                      items={getUserDropdownItems()}
-                      align="right"
+                      items={item.items || []}
+                      align="left"
+                      triggerMode="hover"
                     />
-                    <button
-                      onClick={handleLogout}
-                      className="px-4 py-2 text-sm font-medium text-danger hover:bg-red-50 rounded-xl transition-all duration-200"
-                    >
-                      Logout
-                    </button>
-                  </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* ============================================
+            RIGHT ACTIONS
+            ============================================ */}
+            <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-3 mr-4 sm:mr-6 lg:mr-8 xl:mr-12 2xl:mr-16">
+              {/* Language Toggle */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={toggleLanguage}
+                className="relative p-2.5 text-sm font-medium text-gray-600 hover:text-primary rounded-xl hover:bg-primary/5 transition-all duration-200"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="text-lg">{language === 'en' ? '🇳🇵' : '🇬🇧'}</span>
+                  <span className="hidden xl:inline text-xs font-medium uppercase">
+                    {language === 'en' ? 'EN' : 'नेपाली'}
+                  </span>
+                </span>
+              </motion.button>
+
+              {/* Divider */}
+              <div className="hidden sm:block w-px h-8 bg-gray-200" />
+
+              {/* Post Property CTA */}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Link
+                  to="/add-property"
+                  className="hidden md:flex items-center gap-2 px-5 xl:px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary to-primary-dark rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden xl:inline">List Property</span>
+                  <span className="xl:hidden">List</span>
+                </Link>
+              </motion.div>
+
+              {/* User */}
+              <div className="flex items-center gap-1">
+                {isAuthenticated && user ? (
+                  <DropdownMenu
+                    trigger={
+                      <motion.div 
+                        whileHover={{ scale: 1.02 }}
+                        className="flex items-center gap-2 px-2 xl:px-3 py-1.5 rounded-xl hover:bg-primary/5 transition-all duration-200 cursor-pointer group"
+                      >
+                        <div className="relative">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white font-semibold text-sm shadow-md shadow-primary/20">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                        </div>
+                        <div className="hidden xl:block text-left">
+                          <p className="text-sm font-medium text-gray-800 leading-tight">
+                            {user.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400 leading-tight">
+                            {user.role?.toLowerCase() || 'member'}
+                          </p>
+                        </div>
+                        <svg 
+                          className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 group-hover:rotate-180`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </motion.div>
+                    }
+                    items={userDropdownItems}
+                    align="right"
+                  />
                 ) : (
-                  <>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     <Link
                       to="/login"
-                      className="px-5 py-2.5 text-sm font-medium text-primary hover:bg-primary-light/50 rounded-xl transition-all duration-200"
+                      className="px-5 xl:px-6 py-2.5 text-sm font-medium text-primary border-2 border-primary/20 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all duration-200"
                     >
-                      Login
+                      Sign In
                     </Link>
-                    <Link
-                      to="/register"
-                      className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary rounded-xl shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/35 transition-all duration-200"
-                    >
-                      Register
-                    </Link>
-                  </>
+                  </motion.div>
                 )}
               </div>
 
-              {/* Mobile Menu Button */}
+              {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2.5 rounded-xl hover:bg-primary-light/30 transition-all duration-200 group"
+                className="lg:hidden p-2.5 rounded-xl hover:bg-primary/5 transition-all duration-200 group"
               >
-                <div className="w-6 h-5 flex flex-col justify-between">
-                  <span className={`block w-full h-0.5 bg-text-primary rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-                  <span className={`block w-full h-0.5 bg-text-primary rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
-                  <span className={`block w-full h-0.5 bg-text-primary rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                <div className="w-5 h-4 flex flex-col justify-between">
+                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 group-hover:bg-primary ${
+                    isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''
+                  }`} />
+                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 group-hover:bg-primary ${
+                    isMobileMenuOpen ? 'opacity-0' : ''
+                  }`} />
+                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 group-hover:bg-primary ${
+                    isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''
+                  }`} />
                 </div>
               </button>
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
+      {/* Mobile Menu */}
       <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
     </>
   );

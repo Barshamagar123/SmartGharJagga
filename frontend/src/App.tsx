@@ -1,19 +1,12 @@
-// src/App.tsx
 
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Navbar from './components/common/Navbar/Navbar';
 import { AuthProvider } from './components/context/AuthContext';
 import { LanguageProvider } from './components/context/LanguageContext';
+import HomePage from './pages/HomePage/HomePage';
 
-// Placeholder Pages
-const Home = () => (
-  <div className="container-custom py-12">
-    <h1 className="text-heading-1 font-bold text-primary">🏠 Welcome to Smart GharJagga</h1>
-    <p className="text-text-secondary mt-4 text-lg">AI-Powered Real Estate Platform for Nepal</p>
-  </div>
-);
+
 
 const Properties = () => (
   <div className="container-custom py-12">
@@ -60,7 +53,7 @@ function App() {
             <Navbar />
             <main>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<HomePage />} />
                 <Route path="/properties" element={<Properties />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
