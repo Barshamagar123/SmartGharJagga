@@ -28,7 +28,7 @@ model User {
   matches             Match[]
   notifications       Notification[]
   properties          Property[]
-  reviews             Review[]       @relation("reviewer")
+
   subscriptions       Subscription[]
   payments            Payment[]
   // ✅ ADD: Conversation relations
@@ -38,6 +38,7 @@ model User {
   // ✅ ADD: Message relations
   sentMessages     Message[] @relation("sent_messages")
   receivedMessages Message[] @relation("received_messages")
+reviews    Review[]  @relation("reviewer")  // This is fine, but needs to match
 
   preferences UserPreference?
 
@@ -105,7 +106,9 @@ model Property {
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   qrCodes         QRCode[]
   conversations   Conversation[]
-
+  reviews         Review[]
+  averageRating   Float?         @default(0)
+  totalReviews    Int            @default(0)
   @@index([price])
   @@index([location])
   @@index([propertyType])
@@ -288,14 +291,22 @@ model QRCode {
 model Review {
   id         String   @id @default(uuid())
   rating     Int      @db.SmallInt
-  comment    String?
+  comment    String? @db.Text
+    propertyId      String
+  isApproved      Boolean         @default(true)
+
   reviewerId String
+
+   property        Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+   reviewer   User  @relation("reviewer", fields: [reviewerId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  reviewer   User     @relation("reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  @@index([propertyId])
 
   @@index([reviewerId])
   @@index([rating])
+    @@unique([propertyId, reviewerId]) 
+
   @@map("reviews")
 }
 
