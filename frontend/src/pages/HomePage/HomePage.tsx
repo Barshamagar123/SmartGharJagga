@@ -9,7 +9,6 @@ const Home: React.FC = () => {
   const [propertyType, setPropertyType] = useState('');
   const [priceRange, setPriceRange] = useState('');
 
-  // Categories Data
   const categories = [
     { icon: '🏠', label: 'Houses', count: '128' },
     { icon: '🏢', label: 'Apartments', count: '94' },
@@ -19,7 +18,6 @@ const Home: React.FC = () => {
     { icon: '🏭', label: 'Commercial', count: '28' },
   ];
 
-  // Featured Properties
   const featuredProperties = [
     {
       id: 1,
@@ -101,9 +99,6 @@ const Home: React.FC = () => {
     { value: '50+', label: 'EXPERT AGENTS' },
   ];
 
-  // ============================================
-  // ANIMATIONS
-  // ============================================
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {
@@ -127,10 +122,9 @@ const Home: React.FC = () => {
   return (
     <div className="pt-16 md:pt-20 bg-[var(--color-primary)]">
       {/* ============================================
-      HERO SECTION - Full width with margin
+      HERO SECTION - px-8 (32px) padding
       ============================================ */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <div
             className="w-full h-full bg-cover bg-center"
@@ -143,15 +137,13 @@ const Home: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-primary)] via-transparent to-transparent" />
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-8 py-20">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
             className="max-w-3xl"
           >
-            {/* Trust Badges */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -160,18 +152,13 @@ const Home: React.FC = () => {
             >
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2D5A27] text-white text-xs font-semibold rounded-full">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
                 Verified Listing
               </span>
               <span className="text-sm text-[var(--color-text-secondary)] font-medium">Legal title checked</span>
             </motion.div>
 
-            {/* Main Heading */}
             <motion.h1
               className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--color-text-primary)] leading-tight"
               variants={fadeInUp}
@@ -180,25 +167,20 @@ const Home: React.FC = () => {
               <span className="block text-[#2D5A27]">Dream Property</span>
             </motion.h1>
 
-            {/* Description */}
             <motion.p
               className="mt-4 text-base sm:text-lg text-[var(--color-text-secondary)] max-w-xl leading-relaxed"
               variants={fadeInUp}
             >
-              Discover your perfect home with our premium real estate platform—curated
-              listings, honest agents, and neighborhoods you'll love coming home to.
+              Discover your perfect home with our premium real estate platform—curated listings, honest agents, and neighborhoods you'll love coming home to.
             </motion.p>
 
-            {/* Search Bar */}
             <motion.div
               className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl p-3 shadow-xl border border-[var(--color-primary-border)]"
               variants={fadeInUp}
             >
               <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
-                    📍
-                  </span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">📍</span>
                   <input
                     type="text"
                     placeholder="Location, e.g. Lalitpur"
@@ -220,9 +202,7 @@ const Home: React.FC = () => {
                   <option value="commercial">Commercial</option>
                 </select>
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
-                    💰
-                  </span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">💰</span>
                   <input
                     type="text"
                     placeholder="Price"
@@ -233,19 +213,13 @@ const Home: React.FC = () => {
                 </div>
                 <button className="px-6 py-3 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[120px]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   Search
                 </button>
               </div>
             </motion.div>
 
-            {/* Premium Tag */}
             <motion.div
               className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-surface)] rounded-xl border border-[#2D5A27]/10"
               variants={fadeInUp}
@@ -257,7 +231,6 @@ const Home: React.FC = () => {
               <span className="text-xs text-[var(--color-text-tertiary)] ml-1">• Up to Rs 5 Cr</span>
             </motion.div>
 
-            {/* Stats */}
             <motion.div
               className="mt-8 flex flex-wrap items-center gap-6 md:gap-10"
               variants={fadeInUp}
@@ -265,32 +238,23 @@ const Home: React.FC = () => {
               {stats.map((stat, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div>
-                    <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">
-                      {stat.value}
-                    </div>
-                    <div className="text-[10px] font-semibold text-[var(--color-text-tertiary)] tracking-wider">
-                      {stat.label}
-                    </div>
+                    <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">{stat.value}</div>
+                    <div className="text-[10px] font-semibold text-[var(--color-text-tertiary)] tracking-wider">{stat.label}</div>
                   </div>
-                  {index < stats.length - 1 && (
-                    <div className="w-px h-10 bg-[var(--color-primary-border)]" />
-                  )}
+                  {index < stats.length - 1 && <div className="w-px h-10 bg-[var(--color-primary-border)]" />}
                 </div>
               ))}
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
         <motion.div
           className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
           animate={{ y: [0, 10, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[var(--color-text-tertiary)] text-[10px] tracking-widest uppercase">
-              Scroll
-            </span>
+            <span className="text-[var(--color-text-tertiary)] text-[10px] tracking-widest uppercase">Scroll</span>
             <div className="w-6 h-10 rounded-full border-2 border-[var(--color-text-tertiary)]/30 flex items-start justify-center p-1">
               <motion.div
                 className="w-1.5 h-1.5 rounded-full bg-[#2D5A27]"
@@ -303,10 +267,10 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      BROWSE BY CATEGORY - With Navbar margin
+      BROWSE BY CATEGORY - px-8 (32px) padding
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -314,12 +278,8 @@ const Home: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
-              Browse By Category
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
-              Explore our property types
-            </h2>
+            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">Browse By Category</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">Explore our property types</h2>
             <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
               From city apartments to hillside villas — find a home shaped around how you actually live.
             </p>
@@ -341,15 +301,9 @@ const Home: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2D5A27] to-[#4A7D42] opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                 <div className="relative z-10">
-                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                    {category.icon}
-                  </div>
-                  <div className="font-semibold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
-                    {category.label}
-                  </div>
-                  <div className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                    {category.count} listings
-                  </div>
+                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{category.icon}</div>
+                  <div className="font-semibold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">{category.label}</div>
+                  <div className="text-sm text-[var(--color-text-tertiary)] mt-1">{category.count} listings</div>
                 </div>
               </motion.div>
             ))}
@@ -358,10 +312,10 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES - Row 1
+      FEATURED PROPERTIES - px-8 (32px) padding
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary-surface)] border-t border-[var(--color-primary-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -370,9 +324,7 @@ const Home: React.FC = () => {
             className="flex flex-col sm:flex-row justify-between items-center mb-12"
           >
             <div>
-              <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
-                Featured Properties
-              </span>
+              <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">Featured Properties</span>
               <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-1">
                 A curated selection of the season's most-loved listings.
               </h2>
@@ -382,18 +334,8 @@ const Home: React.FC = () => {
               className="mt-4 sm:mt-0 text-[#2D5A27] font-semibold hover:text-[#23461E] flex items-center gap-2 transition-colors group"
             >
               View All Properties
-              <svg
-                className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
           </motion.div>
@@ -413,70 +355,30 @@ const Home: React.FC = () => {
                 className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
               >
                 <div className="relative overflow-hidden">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
+                  <img src={property.image} alt={property.title} className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 left-4 flex gap-2">
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        property.type === 'VILLA'
-                          ? 'bg-[#D4AF37] text-white'
-                          : property.type === 'HOUSE'
-                          ? 'bg-[#2D5A27] text-white'
-                          : property.type === 'APARTMENT'
-                          ? 'bg-[#4A7D42] text-white'
-                          : 'bg-[#6B9D63] text-white'
-                      }`}
-                    >
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${property.type === 'VILLA' ? 'bg-[#D4AF37] text-white' : property.type === 'HOUSE' ? 'bg-[#2D5A27] text-white' : property.type === 'APARTMENT' ? 'bg-[#4A7D42] text-white' : 'bg-[#6B9D63] text-white'}`}>
                       {property.type}
                     </span>
-                    {property.featured && (
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
-                        ⭐ FEATURED
-                      </span>
-                    )}
+                    {property.featured && <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">⭐ FEATURED</span>}
                   </div>
                   <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                    <svg
-                      className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
+                    <svg className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>
                 </div>
-
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
-                    {property.title}
-                  </h3>
-                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1">
-                    <span>📍</span> {property.location}
-                  </p>
+                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">{property.title}</h3>
+                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1"><span>📍</span> {property.location}</p>
                   <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
                     <span>🛏️ {property.beds} Beds</span>
                     <span>🛁 {property.baths} Baths</span>
                     <span>📐 {property.sqft} sqft</span>
                   </div>
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
-                    <span className="text-2xl font-bold text-[#2D5A27]">
-                      {property.price}
-                    </span>
-                    <Link
-                      to={`/property/${property.id}`}
-                      className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-                    >
-                      View Details
-                    </Link>
+                    <span className="text-2xl font-bold text-[#2D5A27]">{property.price}</span>
+                    <Link to={`/property/${property.id}`} className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200">View Details</Link>
                   </div>
                 </div>
               </motion.div>
@@ -486,10 +388,10 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES - Row 2
+      FEATURED PROPERTIES ROW 2 - px-8 (32px) padding
       ============================================ */}
       <section className="py-12 bg-[var(--color-primary-surface)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-8">
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             variants={staggerContainer}
@@ -505,72 +407,30 @@ const Home: React.FC = () => {
                 className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
               >
                 <div className="relative overflow-hidden">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
+                  <img src={property.image} alt={property.title} className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 left-4 flex gap-2">
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        property.type === 'VILLA'
-                          ? 'bg-[#D4AF37] text-white'
-                          : property.type === 'HOUSE'
-                          ? 'bg-[#2D5A27] text-white'
-                          : property.type === 'APARTMENT'
-                          ? 'bg-[#4A7D42] text-white'
-                          : property.type === 'BUNGALOW'
-                          ? 'bg-[#6B9D63] text-white'
-                          : 'bg-[#94A3B8] text-white'
-                      }`}
-                    >
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${property.type === 'VILLA' ? 'bg-[#D4AF37] text-white' : property.type === 'HOUSE' ? 'bg-[#2D5A27] text-white' : property.type === 'APARTMENT' ? 'bg-[#4A7D42] text-white' : property.type === 'BUNGALOW' ? 'bg-[#6B9D63] text-white' : 'bg-[#94A3B8] text-white'}`}>
                       {property.type}
                     </span>
-                    {property.featured && (
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
-                        ⭐ FEATURED
-                      </span>
-                    )}
+                    {property.featured && <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">⭐ FEATURED</span>}
                   </div>
                   <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                    <svg
-                      className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
+                    <svg className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>
                 </div>
-
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
-                    {property.title}
-                  </h3>
-                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1">
-                    <span>📍</span> {property.location}
-                  </p>
+                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">{property.title}</h3>
+                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1"><span>📍</span> {property.location}</p>
                   <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
                     <span>🛏️ {property.beds} Beds</span>
                     <span>🛁 {property.baths} Baths</span>
                     <span>📐 {property.sqft} sqft</span>
                   </div>
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
-                    <span className="text-2xl font-bold text-[#2D5A27]">
-                      {property.price}
-                    </span>
-                    <Link
-                      to={`/property/${property.id}`}
-                      className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-                    >
-                      View Details
-                    </Link>
+                    <span className="text-2xl font-bold text-[#2D5A27]">{property.price}</span>
+                    <Link to={`/property/${property.id}`} className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200">View Details</Link>
                   </div>
                 </div>
               </motion.div>
@@ -580,10 +440,10 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FREE & PREMIUM SECTION - With Navbar margin
+      FREE & PREMIUM - px-8 (32px) padding
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary)] border-t border-[var(--color-primary-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -591,15 +451,11 @@ const Home: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
-              Choose Your Plan
-            </span>
+            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">Choose Your Plan</span>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
               Free vs <span className="text-[#2D5A27]">Premium</span>
             </h2>
-            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-              Get more visibility and faster sales with our premium features
-            </p>
+            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">Get more visibility and faster sales with our premium features</p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -614,48 +470,21 @@ const Home: React.FC = () => {
               <div className="text-center">
                 <span className="text-4xl mb-3 block">🆓</span>
                 <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Free</h3>
-                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">
-                  Perfect for getting started
-                </p>
+                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">Perfect for getting started</p>
                 <div className="mt-4">
                   <span className="text-4xl font-bold text-[var(--color-text-primary)]">Rs 0</span>
                   <span className="text-[var(--color-text-tertiary)]"> / month</span>
                 </div>
               </div>
-
               <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">1 Active Property Listing</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Basic Property Details</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Up to 5 Images</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Standard Visibility</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]">
-                  <span className="text-[var(--color-text-tertiary)] text-lg">✗</span>
-                  <span className="text-sm line-through">Featured Badge</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]">
-                  <span className="text-[var(--color-text-tertiary)] text-lg">✗</span>
-                  <span className="text-sm line-through">Priority Support</span>
-                </li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">1 Active Property Listing</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Basic Property Details</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Up to 5 Images</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Standard Visibility</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]"><span className="text-[var(--color-text-tertiary)] text-lg">✗</span><span className="text-sm line-through">Featured Badge</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]"><span className="text-[var(--color-text-tertiary)] text-lg">✗</span><span className="text-sm line-through">Priority Support</span></li>
               </ul>
-
-              <Link
-                to="/register"
-                className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-              >
-                Get Started Free
-              </Link>
+              <Link to="/register" className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200">Get Started Free</Link>
             </motion.div>
 
             {/* Premium Plan */}
@@ -667,67 +496,29 @@ const Home: React.FC = () => {
               className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-[#D4AF37] relative transform scale-105"
             >
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-[#D4AF37] text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg shadow-[#D4AF37]/25">
-                  MOST POPULAR
-                </span>
+                <span className="bg-[#D4AF37] text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg shadow-[#D4AF37]/25">MOST POPULAR</span>
               </div>
-
               <div className="text-center mt-2">
                 <span className="text-4xl mb-3 block">👑</span>
                 <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Premium</h3>
-                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">
-                  For serious sellers & agents
-                </p>
+                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">For serious sellers & agents</p>
                 <div className="mt-4">
                   <span className="text-4xl font-bold text-[#2D5A27]">Rs 999</span>
                   <span className="text-[var(--color-text-tertiary)]"> / month</span>
                 </div>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                  Billed monthly • Cancel anytime
-                </p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Billed monthly • Cancel anytime</p>
               </div>
-
               <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">Unlimited Property Listings</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">Premium Property Details</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">Premium Visibility & Boost</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">⭐ Featured Badge</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">24/7 Priority Support</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">AI-Powered Recommendations</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#D4AF37] text-lg">✓</span>
-                  <span className="text-sm font-medium">Advanced Analytics Dashboard</span>
-                </li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Unlimited Property Listings</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Premium Property Details</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Premium Visibility & Boost</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">⭐ Featured Badge</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">24/7 Priority Support</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">AI-Powered Recommendations</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Advanced Analytics Dashboard</span></li>
               </ul>
-
-              <Link
-                to="/premium"
-                className="block w-full mt-8 px-6 py-3 text-center text-white font-semibold bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                Upgrade to Premium
-              </Link>
+              <Link to="/premium" className="block w-full mt-8 px-6 py-3 text-center text-white font-semibold bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg">Upgrade to Premium</Link>
             </motion.div>
 
             {/* Enterprise Plan */}
@@ -741,53 +532,23 @@ const Home: React.FC = () => {
               <div className="text-center">
                 <span className="text-4xl mb-3 block">🏢</span>
                 <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Enterprise</h3>
-                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">
-                  For agencies & developers
-                </p>
+                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">For agencies & developers</p>
                 <div className="mt-4">
                   <span className="text-4xl font-bold text-[var(--color-text-primary)]">Custom</span>
                   <span className="text-[var(--color-text-tertiary)]"> / month</span>
                 </div>
                 <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Contact us for pricing</p>
               </div>
-
               <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Everything in Premium</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Unlimited Properties & Agents</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Dedicated Account Manager</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Custom Integrations</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">White-label Options</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">API Access</span>
-                </li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                  <span className="text-[#2D5A27] text-lg">✓</span>
-                  <span className="text-sm">Custom Development</span>
-                </li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Everything in Premium</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Unlimited Properties & Agents</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Dedicated Account Manager</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Custom Integrations</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">White-label Options</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">API Access</span></li>
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Custom Development</span></li>
               </ul>
-
-              <Link
-                to="/contact"
-                className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-              >
-                Contact Sales
-              </Link>
+              <Link to="/contact" className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200">Contact Sales</Link>
             </motion.div>
           </div>
 
@@ -802,73 +563,62 @@ const Home: React.FC = () => {
           </motion.p>
         </div>
       </section>
+{/* ============================================
+CTA SECTION - Height Kam + Margin Sahit
+============================================ */}
+<section className="py-8 md:py-12 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl">
+  <div className="max-w-5xl mx-auto px-8">
+    <div className="relative z-10 max-w-4xl mx-auto text-center py-4 md:py-6">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        {/* Icon - Sano */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
+          className="text-3xl md:text-4xl mb-2 block"
+        >
+          🏡
+        </motion.div>
 
-      {/* ============================================
-      CTA SECTION - With Navbar margin (100% width)
-      ============================================ */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-16 md:py-20 bg-[#2D5A27] relative overflow-hidden">
-        {/* Inner Container with Max Width */}
-        <div className="max-w-7xl mx-auto">
-          {/* Card with Border Radius */}
-          <div className="w-full rounded-2xl md:rounded-3xl bg-[#2D5A27] relative overflow-hidden px-6 sm:px-8 md:px-12 py-12 md:py-16">
-            {/* Subtle Pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4yIj48cGF0aCBkPSJNMzYgMzR2LTRoNHY0aC00em0tNCAwaC00di00aDR2NHoiLz48L2c+PC9nPjwvc3ZnPg==')] bg-repeat" />
-            </div>
+        {/* Heading - Sano */}
+        <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2">
+          Ready to find your dream home?
+        </h2>
 
-            <div className="relative z-10 max-w-4xl mx-auto text-center">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
-              >
-                {/* Icon */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
-                  className="text-5xl mb-4 block"
-                >
-                  🏡
-                </motion.div>
+        {/* Description - Sano */}
+        <p className="text-white/80 max-w-2xl mx-auto mb-4 text-sm md:text-base leading-relaxed">
+          Start exploring hand-picked homes, or talk with an expert agent — either way, we're here to help.
+        </p>
 
-                {/* Heading */}
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                  Ready to find your dream home?
-                </h2>
+        {/* Buttons - Sano */}
+        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link
+              to="/properties"
+              className="inline-flex items-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-white text-[#2D5A27] font-semibold rounded-xl hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl text-sm"
+            >
+              Explore Properties
+            </Link>
+          </motion.div>
 
-                {/* Description */}
-                <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg leading-relaxed">
-                  Start exploring hand-picked homes, or talk with an expert agent — either way, we're here to
-                  help.
-                </p>
-
-                {/* Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Link
-                      to="/properties"
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#2D5A27] font-semibold rounded-xl hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl"
-                    >
-                      Explore Properties
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Link
-                      to="/contact"
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-white/50 text-white font-semibold rounded-xl hover:bg-white hover:text-[#2D5A27] transition-all duration-200"
-                    >
-                      Contact Us
-                    </Link>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link
+              to="/contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-transparent border-2 border-white/50 text-white font-semibold rounded-xl hover:bg-white hover:text-[#2D5A27] transition-all duration-200 text-sm"
+            >
+              Contact Us
+            </Link>
+          </motion.div>
         </div>
-      </section>
+      </motion.div>
+    </div>
+  </div>
+</section>
     </div>
   );
 };

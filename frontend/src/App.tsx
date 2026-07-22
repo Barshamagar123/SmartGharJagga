@@ -6,13 +6,10 @@ import { LanguageProvider } from './components/context/LanguageContext';
 import HomePage from './pages/HomePage/HomePage';
 
 import Footer from './components/common/Footer/Footer';
+import Properties from './pages/Properties/Properties';
 
 
-const Properties = () => (
-  <div className="container-custom py-12">
-    <h1 className="text-3xl font-bold">Properties</h1>
-  </div>
-);
+
 
 const About = () => (
   <div className="container-custom py-12">
