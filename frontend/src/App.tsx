@@ -1,11 +1,11 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
 import Navbar from './components/common/Navbar/Navbar';
 import { AuthProvider } from './components/context/AuthContext';
 import { LanguageProvider } from './components/context/LanguageContext';
 import HomePage from './pages/HomePage/HomePage';
 
+import Footer from './components/common/Footer/Footer';
 
 
 const Properties = () => (
@@ -62,6 +62,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
               </Routes>
             </main>
+            <Footer />
           </div>
         </LanguageProvider>
       </AuthProvider>

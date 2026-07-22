@@ -1,179 +1,115 @@
-// src/pages/Home.tsx
+// src/pages/Home/Home.tsx
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const HomePage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedLocation, setSelectedLocation] = useState('all');
+const Home: React.FC = () => {
+  const [searchLocation, setSearchLocation] = useState('');
+  const [propertyType, setPropertyType] = useState('');
+  const [priceRange, setPriceRange] = useState('');
 
-  // ============================================
-  // STATIC DATA
-  // ============================================
+  // Categories Data
+  const categories = [
+    { icon: '🏠', label: 'Houses', count: '128' },
+    { icon: '🏢', label: 'Apartments', count: '94' },
+    { icon: '🏡', label: 'Bungalows', count: '42' },
+    { icon: '🏘️', label: 'Villas', count: '37' },
+    { icon: '🌄', label: 'Land', count: '61' },
+    { icon: '🏭', label: 'Commercial', count: '28' },
+  ];
+
+  // Featured Properties
   const featuredProperties = [
     {
       id: 1,
-      title: 'Modern Villa with Infinity Pool',
-      price: '$850,000',
-      location: 'Kathmandu, Nepal',
+      title: 'Aspen Ridge Villa',
+      price: 'Rs 4.8 Cr',
+      location: 'Lalitpur, Bhaisepati',
       beds: 5,
       baths: 4,
-      sqft: 3200,
+      sqft: '4,200',
       image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
-      type: 'Villa',
-      status: 'For Sale',
+      type: 'VILLA',
       featured: true,
     },
     {
       id: 2,
-      title: 'Luxury Apartment in City Center',
-      price: '$450,000',
-      location: 'Lalitpur, Nepal',
-      beds: 3,
-      baths: 2,
-      sqft: 1800,
-      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800',
-      type: 'Apartment',
-      status: 'For Sale',
-      featured: false,
+      title: 'Greenwood Townhouse',
+      price: 'Rs 3.2 Cr',
+      location: 'Kathmandu, Baluwatar',
+      beds: 4,
+      baths: 3,
+      sqft: '3,100',
+      image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
+      type: 'HOUSE',
+      featured: true,
     },
     {
       id: 3,
-      title: 'Spacious Family House with Garden',
-      price: '$320,000',
-      location: 'Bhaktapur, Nepal',
-      beds: 4,
-      baths: 3,
-      sqft: 2500,
-      image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
-      type: 'House',
-      status: 'For Rent',
-      featured: false,
+      title: 'Monsoon Loft',
+      price: 'Rs 1.4 Cr',
+      location: 'Kathmandu, Thamel',
+      beds: 2,
+      baths: 2,
+      sqft: '1,350',
+      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+      type: 'APARTMENT',
+      featured: true,
     },
     {
       id: 4,
-      title: 'Premium Commercial Office Space',
-      price: '$1,200,000',
-      location: 'Kathmandu, Nepal',
-      beds: 0,
+      title: 'Hilltop Bungalow',
+      price: 'Rs 2.8 Cr',
+      location: 'Pokhara, Lakeside',
+      beds: 3,
       baths: 2,
-      sqft: 5000,
-      image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',
-      type: 'Office',
-      status: 'For Sale',
+      sqft: '2,500',
+      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
+      type: 'BUNGALOW',
       featured: true,
     },
     {
       id: 5,
-      title: 'Peaceful Bungalow with Mountain View',
-      price: '$275,000',
-      location: 'Pokhara, Nepal',
-      beds: 3,
-      baths: 2,
-      sqft: 2000,
+      title: 'Modern Villa with Garden',
+      price: 'Rs 5.2 Cr',
+      location: 'Kathmandu, Budhanilkantha',
+      beds: 6,
+      baths: 5,
+      sqft: '5,000',
       image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
-      type: 'Bungalow',
-      status: 'For Sale',
-      featured: false,
+      type: 'VILLA',
+      featured: true,
     },
     {
       id: 6,
-      title: 'Modern Studio Apartment',
-      price: '$180,000',
-      location: 'Kathmandu, Nepal',
-      beds: 1,
-      baths: 1,
-      sqft: 800,
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-      type: 'Apartment',
-      status: 'For Rent',
+      title: 'City Center Apartment',
+      price: 'Rs 2.1 Cr',
+      location: 'Lalitpur, Jawalakhel',
+      beds: 3,
+      baths: 2,
+      sqft: '1,800',
+      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800',
+      type: 'APARTMENT',
       featured: false,
     },
   ];
 
-  const categories = [
-    { icon: '🏠', label: 'Houses', count: 245, color: 'from-blue-500 to-blue-600' },
-    { icon: '🏢', label: 'Apartments', count: 189, color: 'from-purple-500 to-purple-600' },
-    { icon: '🏡', label: 'Bungalows', count: 67, color: 'from-emerald-500 to-emerald-600' },
-    { icon: '🏘️', label: 'Villas', count: 43, color: 'from-amber-500 to-amber-600' },
-    { icon: '🌄', label: 'Land', count: 156, color: 'from-green-500 to-green-600' },
-    { icon: '🏭', label: 'Commercial', count: 89, color: 'from-red-500 to-red-600' },
-  ];
-
-  const testimonials = [
-    {
-      id: 1,
-      name: 'Ram Sharma',
-      location: 'Kathmandu',
-      comment: 'SmartGharJagga helped me find my dream home in just 2 weeks! The AI recommendations were spot on and the agents were incredibly professional.',
-      rating: 5,
-      avatar: 'https://ui-avatars.com/api/?name=Ram+Sharma&background=2563EB&color=fff&size=100',
-    },
-    {
-      id: 2,
-      name: 'Sita Thapa',
-      location: 'Lalitpur',
-      comment: 'The best real estate platform in Nepal. Sold my property at the right price within a month. Highly recommended for anyone looking to buy or sell.',
-      rating: 5,
-      avatar: 'https://ui-avatars.com/api/?name=Sita+Thapa&background=7C3AED&color=fff&size=100',
-    },
-    {
-      id: 3,
-      name: 'Hari Gurung',
-      location: 'Pokhara',
-      comment: 'Professional agents and amazing customer service. The virtual tour feature helped me view properties without visiting in person.',
-      rating: 4,
-      avatar: 'https://ui-avatars.com/api/?name=Hari+Gurung&background=059669&color=fff&size=100',
-    },
-  ];
-
-  const partners = [
-    { name: 'Nepal Bank', logo: '🏦' },
-    { name: 'Real Estate Nepal', logo: '🏗️' },
-    { name: 'Housing Nepal', logo: '🏠' },
-    { name: 'Property Nepal', logo: '📊' },
-    { name: 'Build Nepal', logo: '🔨' },
-  ];
-
   const stats = [
-    { value: '500+', label: 'Properties' },
-    { value: '350+', label: 'Happy Clients' },
-    { value: '50+', label: 'Expert Agents' },
-    { value: '98%', label: 'Satisfaction Rate' },
-  ];
-
-  const steps = [
-    {
-      icon: '🔍',
-      title: 'Search',
-      description: 'Browse through thousands of properties with smart filters',
-    },
-    {
-      icon: '📊',
-      title: 'Compare',
-      description: 'Compare properties side by side to make informed decisions',
-    },
-    {
-      icon: '🤝',
-      title: 'Connect',
-      description: 'Connect with agents and schedule viewings instantly',
-    },
+    { value: '500+', label: 'PROPERTIES' },
+    { value: '350+', label: 'HAPPY CLIENTS' },
+    { value: '50+', label: 'EXPERT AGENTS' },
   ];
 
   // ============================================
-  // ANIMATION VARIANTS - FIXED
+  // ANIMATIONS
   // ============================================
   const fadeInUp = {
-    hidden: { opacity: 0, y: 40 },
+    hidden: { opacity: 0, y: 30 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { 
-        duration: 0.6, 
-        ease: 'easeOut' as const 
-      }
+      transition: { duration: 0.6, ease: 'easeOut' as const }
     },
   };
 
@@ -191,9 +127,9 @@ const HomePage: React.FC = () => {
   return (
     <div className="pt-16 md:pt-20 bg-white">
       {/* ============================================
-      SECTION 1: HERO
+      HERO SECTION
       ============================================ */}
-      <section className="relative min-h-screen flex items-center overflow-hidden">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <div
@@ -203,32 +139,8 @@ const HomePage: React.FC = () => {
                 'url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920)',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        </div>
-
-        {/* Floating Particles */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-white/20 rounded-full"
-              initial={{
-                x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-                y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
-              }}
-              animate={{
-                y: [null, -100, 100, -100],
-                x: [null, 50, -50, 50],
-                opacity: [0.2, 0.8, 0.2],
-              }}
-              transition={{
-                duration: Math.random() * 10 + 10,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            />
-          ))}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         </div>
 
         {/* Hero Content */}
@@ -239,117 +151,116 @@ const HomePage: React.FC = () => {
             variants={fadeInUp}
             className="max-w-3xl"
           >
-            {/* AI Badge */}
+            {/* Trust Badges */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-wrap items-center gap-3 mb-6"
             >
-              <motion.span
-                className="text-yellow-400 text-lg"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-              >
-                ✨
-              </motion.span>
-              <span className="text-sm text-white/90 font-medium tracking-wide">
-                AI-Powered Real Estate Platform
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2D5A27] text-white text-xs font-semibold rounded-full">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Verified Listing
               </span>
+              <span className="text-sm text-[#475569] font-medium">Legal title checked</span>
             </motion.div>
 
             {/* Main Heading */}
             <motion.h1
-              className="text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-extrabold text-white leading-tight"
+              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-[#0F172A] leading-tight"
               variants={fadeInUp}
             >
               Find Your
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-                Dream Property
-              </span>
+              <span className="block text-[#2D5A27]">Dream Property</span>
             </motion.h1>
 
+            {/* Description */}
             <motion.p
-              className="mt-6 text-lg sm:text-xl text-white/80 max-w-lg"
+              className="mt-4 text-base sm:text-lg text-[#475569] max-w-xl leading-relaxed"
               variants={fadeInUp}
             >
-              Discover the perfect home with our AI-driven recommendations and expert
-              guidance. SmartGharJagga - Your trusted real estate partner in Nepal.
+              Discover your perfect home with our premium real estate platform—curated listings, honest agents, and neighborhoods you'll love coming home to.
             </motion.p>
 
             {/* Search Bar */}
             <motion.div
-              className="mt-10 bg-white/10 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-white/20"
+              className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl p-3 shadow-xl border border-[#E2E8F0]"
               variants={fadeInUp}
             >
-              <div className="flex flex-col lg:flex-row gap-3">
+              <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
-                    🔍
-                  </span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#94A3B8] text-lg">📍</span>
                   <input
                     type="text"
-                    placeholder="Search properties, locations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="Location, e.g. Lalitpur"
+                    value={searchLocation}
+                    onChange={(e) => setSearchLocation(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
                   />
                 </div>
                 <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="px-5 py-3 bg-white/90 backdrop-blur-sm rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="px-4 py-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all min-w-[140px]"
                 >
-                  <option value="all">All Types</option>
+                  <option value="">Any type</option>
                   <option value="house">House</option>
                   <option value="apartment">Apartment</option>
                   <option value="villa">Villa</option>
                   <option value="land">Land</option>
                   <option value="commercial">Commercial</option>
                 </select>
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="px-5 py-3 bg-white/90 backdrop-blur-sm rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                >
-                  <option value="all">All Locations</option>
-                  <option value="kathmandu">Kathmandu</option>
-                  <option value="lalitpur">Lalitpur</option>
-                  <option value="bhaktapur">Bhaktapur</option>
-                  <option value="pokhara">Pokhara</option>
-                </select>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 flex items-center justify-center gap-2"
-                >
+                <div className="flex-1 relative">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#94A3B8] text-lg">💰</span>
+                  <input
+                    type="text"
+                    placeholder="Price"
+                    value={priceRange}
+                    onChange={(e) => setPriceRange(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                  />
+                </div>
+                <button className="px-6 py-3 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[120px]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   Search
-                </motion.button>
+                </button>
               </div>
             </motion.div>
 
-            {/* Quick Stats */}
+            {/* Premium Tag */}
             <motion.div
-              className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6 text-white/80"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#E8F0E4] rounded-xl border border-[#2D5A27]/10"
               variants={fadeInUp}
             >
-              {stats.slice(0, 3).map((stat, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-2xl">
-                    {['🏠', '🤝', '⭐'][index]}
-                  </span>
-                  <span className="text-sm font-medium">
-                    {stat.value} {stat.label}
-                  </span>
-                  {index < 2 && <div className="w-px h-6 bg-white/20 ml-4" />}
+              <span className="text-lg">🏅</span>
+              <span className="text-sm font-semibold text-[#2D5A27]">Premium</span>
+              <span className="w-px h-5 bg-[#2D5A27]/30" />
+              <span className="text-sm text-[#475569] font-medium">Bhaisepati</span>
+              <span className="text-xs text-[#94A3B8] ml-1">• Up to Rs 5 Cr</span>
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              className="mt-8 flex flex-wrap items-center gap-6 md:gap-10"
+              variants={fadeInUp}
+            >
+              {stats.map((stat, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <div>
+                    <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">
+                      {stat.value}
+                    </div>
+                    <div className="text-[10px] font-semibold text-[#94A3B8] tracking-wider">
+                      {stat.label}
+                    </div>
+                  </div>
+                  {index < stats.length - 1 && (
+                    <div className="w-px h-10 bg-[#E2E8F0]" />
+                  )}
                 </div>
               ))}
             </motion.div>
@@ -363,10 +274,10 @@ const HomePage: React.FC = () => {
           transition={{ repeat: Infinity, duration: 2 }}
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-white/50 text-xs tracking-widest uppercase">Scroll</span>
-            <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1">
+            <span className="text-[#94A3B8] text-[10px] tracking-widest uppercase">Scroll</span>
+            <div className="w-6 h-10 rounded-full border-2 border-[#94A3B8]/30 flex items-start justify-center p-1">
               <motion.div
-                className="w-1.5 h-1.5 rounded-full bg-white"
+                className="w-1.5 h-1.5 rounded-full bg-[#2D5A27]"
                 animate={{ y: [0, 12, 0] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
               />
@@ -376,37 +287,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ============================================
-      SECTION 2: STATS COUNTER
-      ============================================ */}
-      <section className="py-16 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                className="text-center"
-              >
-                <div className="text-3xl sm:text-4xl lg:text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {stat.value}
-                </div>
-                <div className="mt-2 text-sm sm:text-base text-gray-500 font-medium">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ============================================
-      SECTION 3: CATEGORIES
+      BROWSE BY CATEGORY
       ============================================ */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -417,22 +298,19 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
-              Categories
+            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
+              Browse By Category
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mt-2">
-              Browse by{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Property Type
-              </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mt-2">
+              Explore our property types
             </h2>
-            <p className="mt-4 text-gray-500 max-w-2xl mx-auto">
-              Explore properties across different categories and find what you're looking for.
+            <p className="mt-3 text-[#475569] max-w-2xl mx-auto">
+              From city apartments to hillside villas — find a home shaped around how you actually live.
             </p>
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
@@ -442,20 +320,18 @@ const HomePage: React.FC = () => {
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                whileHover={{ scale: 1.08, y: -8 }}
-                className="group relative bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden"
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="group relative bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-[#E2E8F0]"
               >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
-                />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#2D5A27] to-[#4A7D42] opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                 <div className="relative z-10">
-                  <div className="text-5xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
                     {category.icon}
                   </div>
-                  <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                  <div className="font-semibold text-[#0F172A] group-hover:text-[#2D5A27] transition-colors">
                     {category.label}
                   </div>
-                  <div className="text-sm text-gray-400">{category.count} properties</div>
+                  <div className="text-sm text-[#94A3B8] mt-1">{category.count} listings</div>
                 </div>
               </motion.div>
             ))}
@@ -464,63 +340,9 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ============================================
-      SECTION 4: 3-STEP PROCESS
+      FEATURED PROPERTIES
       ============================================ */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
-              How It Works
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mt-2">
-              Find Your Home in{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                3 Simple Steps
-              </span>
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connecting Line */}
-            <div className="absolute top-1/3 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 hidden md:block" />
-
-            {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.2, duration: 0.6 }}
-                className="relative"
-              >
-                <div className="bg-white rounded-2xl p-8 text-center shadow-sm hover:shadow-2xl transition-all duration-300 relative z-10 border border-gray-100">
-                  <div className="relative inline-block">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-4xl mx-auto shadow-lg shadow-blue-500/20">
-                      {step.icon}
-                    </div>
-                    <span className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                      {index + 1}
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mt-4">{step.title}</h3>
-                  <p className="mt-2 text-gray-500">{step.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================
-      SECTION 5: FEATURED PROPERTIES
-      ============================================ */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-[#F8FAFC] border-t border-[#E2E8F0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -530,19 +352,16 @@ const HomePage: React.FC = () => {
             className="flex flex-col sm:flex-row justify-between items-center mb-12"
           >
             <div>
-              <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
-                Featured
+              <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
+                Featured Properties
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mt-2">
-                Premium{' '}
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Properties
-                </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mt-1">
+                A curated selection of the season's most-loved listings.
               </h2>
             </div>
             <Link
               to="/properties"
-              className="mt-4 sm:mt-0 text-blue-600 font-semibold hover:text-blue-700 flex items-center gap-2 transition-colors group"
+              className="mt-4 sm:mt-0 text-[#2D5A27] font-semibold hover:text-[#23461E] flex items-center gap-2 transition-colors group"
             >
               View All Properties
               <svg
@@ -557,85 +376,69 @@ const HomePage: React.FC = () => {
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 xl:gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {featuredProperties.map((property) => (
+            {featuredProperties.slice(0, 3).map((property) => (
               <motion.div
                 key={property.id}
                 variants={fadeInUp}
-                whileHover={{ y: -12 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300"
+                whileHover={{ y: -8 }}
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[#E2E8F0]"
               >
                 <div className="relative overflow-hidden">
                   <img
                     src={property.image}
                     alt={property.title}
-                    className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
                   />
-                  {/* Status Badge */}
                   <div className="absolute top-4 left-4 flex gap-2">
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full backdrop-blur-md ${
-                        property.status === 'For Sale'
-                          ? 'bg-green-500/90 text-white'
-                          : property.status === 'For Rent'
-                          ? 'bg-blue-500/90 text-white'
-                          : 'bg-gray-500/90 text-white'
-                      }`}
-                    >
-                      {property.status}
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                      property.type === 'VILLA' 
+                        ? 'bg-[#D4AF37] text-white' 
+                        : property.type === 'HOUSE'
+                        ? 'bg-[#2D5A27] text-white'
+                        : property.type === 'APARTMENT'
+                        ? 'bg-[#4A7D42] text-white'
+                        : 'bg-[#6B9D63] text-white'
+                    }`}>
+                      {property.type}
                     </span>
                     {property.featured && (
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-500/90 text-white backdrop-blur-md">
-                        ⭐ Featured
+                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
+                        ⭐ FEATURED
                       </span>
                     )}
                   </div>
-                  {/* Favorite Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg"
-                  >
-                    <svg
-                      className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
+                  <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                    <svg className="w-5 h-5 text-[#94A3B8] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
-                  </motion.button>
+                  </button>
                 </div>
 
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-lg font-bold text-[#0F172A] group-hover:text-[#2D5A27] transition-colors">
                     {property.title}
                   </h3>
-                  <p className="text-gray-500 text-sm flex items-center gap-1 mt-1">
+                  <p className="text-[#94A3B8] text-sm flex items-center gap-1 mt-1">
                     <span>📍</span> {property.location}
                   </p>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-3">
-                    <span className="flex items-center gap-1">🛏️ {property.beds}</span>
-                    <span className="flex items-center gap-1">🛁 {property.baths}</span>
-                    <span className="flex items-center gap-1">📐 {property.sqft} sqft</span>
+                  <div className="flex items-center gap-3 text-sm text-[#475569] mt-3">
+                    <span>🛏️ {property.beds} Beds</span>
+                    <span>🛁 {property.baths} Baths</span>
+                    <span>📐 {property.sqft} sqft</span>
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E2E8F0]">
+                    <span className="text-2xl font-bold text-[#2D5A27]">
                       {property.price}
                     </span>
                     <Link
                       to={`/property/${property.id}`}
-                      className="px-5 py-2 text-sm font-medium text-blue-600 border-2 border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-200"
+                      className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                     >
                       View Details
                     </Link>
@@ -648,96 +451,81 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ============================================
-      SECTION 6: AI RECOMMENDATIONS
+      SECOND ROW - FEATURED PROPERTIES
       ============================================ */}
-      <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0"
-            animate={{
-              background: [
-                'radial-gradient(ellipse at 20% 50%, white, transparent 70%)',
-                'radial-gradient(ellipse at 80% 50%, white, transparent 70%)',
-                'radial-gradient(ellipse at 20% 50%, white, transparent 70%)',
-              ],
-            }}
-            transition={{ duration: 10, repeat: Infinity }}
-          />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center text-white"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mb-6"
-            >
-              <span className="text-2xl">🤖</span>
-              <span className="text-sm font-medium">AI-Powered Recommendations</span>
-            </motion.div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-              Find Your Perfect Home with <span className="text-yellow-300">AI</span>
-            </h2>
-            <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg">
-              Our advanced AI algorithms analyze your preferences and suggest properties
-              that match your dream home criteria perfectly.
-            </p>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/discover/ai-recommendations"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:shadow-2xl transition-all duration-200"
-              >
-                <span>Get Started with AI</span>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ============================================
-      SECTION 7: TRUST SECTION (Partners)
-      ============================================ */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-12 bg-[#F8FAFC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10"
-          >
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Trusted Partners
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="flex flex-wrap justify-center items-center gap-8 sm:gap-12"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {partners.map((partner, index) => (
+            {featuredProperties.slice(3, 6).map((property) => (
               <motion.div
-                key={index}
+                key={property.id}
                 variants={fadeInUp}
-                whileHover={{ scale: 1.1, y: -4 }}
-                className="flex items-center gap-3 px-6 py-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
+                whileHover={{ y: -8 }}
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[#E2E8F0]"
               >
-                <span className="text-3xl">{partner.logo}</span>
-                <span className="text-sm font-semibold text-gray-700">{partner.name}</span>
+                <div className="relative overflow-hidden">
+                  <img
+                    src={property.image}
+                    alt={property.title}
+                    className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                      property.type === 'VILLA' 
+                        ? 'bg-[#D4AF37] text-white' 
+                        : property.type === 'HOUSE'
+                        ? 'bg-[#2D5A27] text-white'
+                        : property.type === 'APARTMENT'
+                        ? 'bg-[#4A7D42] text-white'
+                        : property.type === 'BUNGALOW'
+                        ? 'bg-[#6B9D63] text-white'
+                        : 'bg-[#94A3B8] text-white'
+                    }`}>
+                      {property.type}
+                    </span>
+                    {property.featured && (
+                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
+                        ⭐ FEATURED
+                      </span>
+                    )}
+                  </div>
+                  <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                    <svg className="w-5 h-5 text-[#94A3B8] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-[#0F172A] group-hover:text-[#2D5A27] transition-colors">
+                    {property.title}
+                  </h3>
+                  <p className="text-[#94A3B8] text-sm flex items-center gap-1 mt-1">
+                    <span>📍</span> {property.location}
+                  </p>
+                  <div className="flex items-center gap-3 text-sm text-[#475569] mt-3">
+                    <span>🛏️ {property.beds} Beds</span>
+                    <span>🛁 {property.baths} Baths</span>
+                    <span>📐 {property.sqft} sqft</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E2E8F0]">
+                    <span className="text-2xl font-bold text-[#2D5A27]">
+                      {property.price}
+                    </span>
+                    <Link
+                      to={`/property/${property.id}`}
+                      className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -745,9 +533,9 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ============================================
-      SECTION 8: TESTIMONIALS
+      FREE & PREMIUM SECTION
       ============================================ */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white border-t border-[#E2E8F0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -756,119 +544,245 @@ const HomePage: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
-              Testimonials
+            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
+              Choose Your Plan
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mt-2">
-              What Our{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Clients Say
-              </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mt-2">
+              Free vs <span className="text-[#2D5A27]">Premium</span>
             </h2>
+            <p className="mt-3 text-[#475569] max-w-2xl mx-auto">
+              Get more visibility and faster sales with our premium features
+            </p>
           </motion.div>
 
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {testimonials.map((testimonial) => (
-              <motion.div
-                key={testimonial.id}
-                variants={fadeInUp}
-                whileHover={{ y: -8 }}
-                className="bg-gray-50 rounded-2xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-100"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Free Plan */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[#E2E8F0]"
+            >
+              <div className="text-center">
+                <span className="text-4xl mb-3 block">🆓</span>
+                <h3 className="text-2xl font-bold text-[#0F172A]">Free</h3>
+                <p className="text-[#94A3B8] mt-2 text-sm">Perfect for getting started</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-[#0F172A]">Rs 0</span>
+                  <span className="text-[#94A3B8]"> / month</span>
+                </div>
+              </div>
+
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">1 Active Property Listing</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Basic Property Details</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Up to 5 Images</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Standard Visibility</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#94A3B8]">
+                  <span className="text-[#94A3B8] text-lg">✗</span>
+                  <span className="text-sm line-through">Featured Badge</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#94A3B8]">
+                  <span className="text-[#94A3B8] text-lg">✗</span>
+                  <span className="text-sm line-through">Priority Support</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/register"
+                className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    className="w-14 h-14 rounded-full border-4 border-white shadow-md"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                    <div className="text-sm text-gray-500">{testimonial.location}</div>
-                  </div>
+                Get Started Free
+              </Link>
+            </motion.div>
+
+            {/* Premium Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-[#D4AF37] relative transform scale-105"
+            >
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <span className="bg-[#D4AF37] text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg shadow-[#D4AF37]/25">
+                  MOST POPULAR
+                </span>
+              </div>
+
+              <div className="text-center mt-2">
+                <span className="text-4xl mb-3 block">👑</span>
+                <h3 className="text-2xl font-bold text-[#0F172A]">Premium</h3>
+                <p className="text-[#94A3B8] mt-2 text-sm">For serious sellers & agents</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-[#2D5A27]">Rs 999</span>
+                  <span className="text-[#94A3B8]"> / month</span>
                 </div>
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className={i < testimonial.rating ? 'text-yellow-400 text-lg' : 'text-gray-200 text-lg'}
-                    >
-                      ★
-                    </span>
-                  ))}
+                <p className="text-xs text-[#94A3B8] mt-1">Billed monthly • Cancel anytime</p>
+              </div>
+
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">Unlimited Property Listings</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">Premium Property Details</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">Premium Visibility & Boost</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">⭐ Featured Badge</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">24/7 Priority Support</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">AI-Powered Recommendations</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#D4AF37] text-lg">✓</span>
+                  <span className="text-sm font-medium">Advanced Analytics Dashboard</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/premium"
+                className="block w-full mt-8 px-6 py-3 text-center text-white font-semibold bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                Upgrade to Premium
+              </Link>
+            </motion.div>
+
+            {/* Enterprise Plan */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[#E2E8F0]"
+            >
+              <div className="text-center">
+                <span className="text-4xl mb-3 block">🏢</span>
+                <h3 className="text-2xl font-bold text-[#0F172A]">Enterprise</h3>
+                <p className="text-[#94A3B8] mt-2 text-sm">For agencies & developers</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-[#0F172A]">Custom</span>
+                  <span className="text-[#94A3B8]"> / month</span>
                 </div>
-                <p className="text-gray-600 leading-relaxed">"{testimonial.comment}"</p>
-              </motion.div>
-            ))}
-          </motion.div>
+                <p className="text-xs text-[#94A3B8] mt-1">Contact us for pricing</p>
+              </div>
+
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Everything in Premium</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Unlimited Properties & Agents</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Dedicated Account Manager</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Custom Integrations</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">White-label Options</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">API Access</span>
+                </li>
+                <li className="flex items-center gap-3 text-[#475569]">
+                  <span className="text-[#2D5A27] text-lg">✓</span>
+                  <span className="text-sm">Custom Development</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/contact"
+                className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+              >
+                Contact Sales
+              </Link>
+            </motion.div>
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="text-center text-[#94A3B8] text-sm mt-8"
+          >
+            * All prices are in Nepali Rupees (NPR). Cancel anytime. No hidden fees.
+          </motion.p>
         </div>
       </section>
 
       {/* ============================================
-      SECTION 9: FINAL CTA BANNER
+      CTA SECTION
       ============================================ */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 md:py-20 bg-[#0F172A] relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4yIj48cGF0aCBkPSJNMzYgMzR2LTRoNHY0aC00em0tNCAwaC00di00aDR2NHoiLz48L2c+PC9nPjwvc3ZnPg==')] bg-repeat" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-12 sm:p-16"
           >
-            {/* Animated Gradient Background */}
-            <div className="absolute inset-0 overflow-hidden">
-              <motion.div
-                className="absolute inset-0 opacity-30"
-                animate={{
-                  background: [
-                    'radial-gradient(circle at 0% 50%, white, transparent 50%)',
-                    'radial-gradient(circle at 100% 50%, white, transparent 50%)',
-                    'radial-gradient(circle at 0% 50%, white, transparent 50%)',
-                  ],
-                }}
-                transition={{ duration: 8, repeat: Infinity }}
-              />
-            </div>
-
-            <div className="relative z-10 text-center text-white">
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
+            <span className="text-5xl mb-4 block">🏡</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+              Ready to find your dream home?
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto mb-8 text-lg">
+              Start exploring hand-picked homes, or talk with an expert agent — either way, we're here to help.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/properties"
+                className="px-8 py-4 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                <span className="text-5xl mb-4 block">🏡</span>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-                  Ready to Find Your Dream Home?
-                </h2>
-                <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg">
-                  Join thousands of happy homeowners who found their perfect property through
-                  SmartGharJagga.
-                </p>
-              </motion.div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link
-                    to="/properties"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:shadow-2xl transition-all duration-200"
-                  >
-                    Explore Properties
-                  </Link>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link
-                    to="/contact"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white hover:text-blue-600 transition-all duration-200"
-                  >
-                    Contact Us
-                  </Link>
-                </motion.div>
-              </div>
+                Explore Properties
+              </Link>
+              <Link
+                to="/contact"
+                className="px-8 py-4 bg-transparent border-2 border-gray-600 text-white font-semibold rounded-xl hover:bg-white hover:text-[#0F172A] hover:border-white transition-all duration-200"
+              >
+                Contact Us
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -877,4 +791,4 @@ const HomePage: React.FC = () => {
   );
 };
 
-export default HomePage;
+export default Home;

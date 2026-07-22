@@ -1,135 +1,34 @@
-// src/components/common/Navbar/Navbar.tsx
+// src/components/layout/Navbar/Navbar.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../../context/AuthContext';
-import { useLanguage } from '../../context/LanguageContext';
-import MobileMenu from './MobileMenu';
-import DropdownMenu from './DropdownMenu';
-
-import type { DropdownItem } from './DropdownMenu';
-
-// ============================================
-// PROPERTY TYPES
-// ============================================
-const PROPERTY_TYPES = [
-  { label: 'Houses', value: 'HOUSE' },
-  { label: 'Apartments', value: 'APARTMENT' },
-  { label: 'Bungalows', value: 'BUNGALOW' },
-  { label: 'Villas', value: 'VILLA' },
-  { label: 'Residential Land', value: 'RESIDENTIAL_LAND' },
-  { label: 'Commercial Land', value: 'COMMERCIAL_LAND' },
-  { label: 'Agricultural Land', value: 'AGRICULTURAL_LAND' },
-  { label: 'Industrial Land', value: 'INDUSTRIAL_LAND' },
-  { label: 'Shops', value: 'SHOP' },
-  { label: 'Offices', value: 'OFFICE' },
-  { label: 'Warehouses', value: 'WAREHOUSE' },
-  { label: 'Hotels', value: 'HOTEL' },
-  { label: 'Restaurants', value: 'RESTAURANT' },
-];
-
-// ============================================
-// DROPDOWN DATA
-// ============================================
-const discoverItems: DropdownItem[] = [
-  { label: 'AI Recommendations', path: '/discover/ai-recommendations' },
-  { label: 'Trending Properties', path: '/discover/trending' },
-  { label: 'New Listings', path: '/discover/new' },
-  { label: 'Price Drops', path: '/discover/price-drops' },
-  { label: 'Open Houses', path: '/discover/open-houses' },
-];
-
-const sellItems: DropdownItem[] = [
-  { label: 'Quick List', path: '/sell/quick-list' },
-  { label: 'Agent Match', path: '/sell/agent-match' },
-  { label: 'Free Valuation', path: '/sell/valuation' },
-  { label: 'Market Insights', path: '/sell/insights' },
-  { divider: true },
-  { label: 'Sell with AI', path: '/sell/ai-assist' },
-];
-
-const projectsItems: DropdownItem[] = [
-  { label: 'Featured Projects', path: '/projects/featured' },
-  { label: 'Upcoming Projects', path: '/projects/upcoming' },
-  { label: 'New Launch', path: '/projects/new-launch' },
-  { label: 'Completed Projects', path: '/projects/completed' },
-];
-
-const insightsItems: DropdownItem[] = [
-  { label: 'Market Trends', path: '/insights/market-trends' },
-  { label: 'Blog', path: '/insights/blog' },
-  { label: 'Guides & Tips', path: '/insights/guides' },
-  { label: 'Real Estate News', path: '/insights/news' },
-  { label: 'Investor Corner', path: '/insights/investor' },
-];
 
 const Navbar: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
-  const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeItem, setActiveItem] = useState<string>('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [language, setLanguage] = useState('EN');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
   const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'ne' : 'en');
+    setLanguage(language === 'EN' ? 'NE' : 'EN');
   };
 
-  // ============================================
-  // BUY DROPDOWN
-  // ============================================
-  const buyDropdownItems: DropdownItem[] = [
-    { label: 'All Properties', path: '/properties' },
-    { divider: true },
-    ...PROPERTY_TYPES.map((type) => ({
-      label: type.label,
-      path: `/properties?type=${type.value}`,
-    })),
-    { divider: true },
-    { label: 'Luxury Properties', path: '/properties/luxury' },
-    { label: 'Budget Properties', path: '/properties/budget' },
-  ];
-
-  // ============================================
-  // USER DROPDOWN
-  // ============================================
-  const userDropdownItems: DropdownItem[] = [
-    { label: 'Dashboard', path: '/dashboard' },
-    { label: 'My Properties', path: '/my-properties' },
-    { label: 'Favorites', path: '/favorites' },
-    { label: 'Messages', path: '/messages' },
-    { divider: true },
-    { label: 'Profile', path: '/profile' },
-    { label: 'Settings', path: '/settings' },
-    ...(user?.role === 'ADMIN' 
-      ? [{ divider: true }, { label: 'Admin Panel', path: '/admin' }] 
-      : []),
-  ];
-
-  // ============================================
-  // NAV ITEMS
-  // ============================================
-  const navItems = [
-    { id: 'home', label: 'Home', path: '/', isLink: true },
-    { id: 'discover', label: 'Discover', items: discoverItems, isDropdown: true },
-    { id: 'buy', label: 'Buy', items: buyDropdownItems, isDropdown: true },
-    { id: 'sell', label: 'Sell', items: sellItems, isDropdown: true },
-    { id: 'projects', label: 'Projects', items: projectsItems, isDropdown: true },
-    { id: 'insights', label: 'Insights', items: insightsItems, isDropdown: true },
+  const navLinks = [
+    { label: 'Home', path: '/' },
+    { label: 'Discover', path: '/discover' },
+    { label: 'Buy', path: '/properties' },
+    { label: 'Sell', path: '/sell' },
+    { label: 'About', path: '/about' },
+    { label: 'Contact', path: '/contact' },
   ];
 
   return (
@@ -138,189 +37,86 @@ const Navbar: React.FC = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500 ${
-          isScrolled 
-            ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100/50' 
-            : 'bg-white/90 backdrop-blur-sm shadow-sm'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-[#FFF8F0]/95 backdrop-blur-xl shadow-md'
+            : 'bg-[#FFF8F0]/90 backdrop-blur-sm'
         }`}
       >
-        {/* NO PADDING - FULL WIDTH EDGE TO EDGE */}
-        <div className="w-full">
-          <div className="flex items-center justify-between h-16 md:h-20 px-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20">
             {/* ============================================
             LOGO
             ============================================ */}
-            <Link to="/" className="flex items-center gap-3 group flex-shrink-0 ml-4 sm:ml-6 lg:ml-8 xl:ml-12 2xl:ml-16">
-              <motion.div
-                whileHover={{ scale: 1.05, rotate: -5 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg shadow-primary/25"
-              >
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2D5A27] text-white shadow-lg shadow-[#2D5A27]/20">
                 <span className="text-xl">🏠</span>
-              </motion.div>
-              <div className="hidden sm:block">
+              </div>
+              <div>
                 <span className="text-xl font-bold tracking-tight">
-                  <span className="text-primary">Smart</span>
-                  <span className="text-gray-800">GharJagga</span>
+                  <span className="text-[#2D5A27]">Smart</span>
+                  <span className="text-[#1A1410]">GharJagga</span>
                 </span>
-                <p className="text-[10px] font-medium text-gray-400 tracking-widest uppercase">
-                  Real Estate
+                <p className="text-[10px] font-medium text-[#8A7A6B] tracking-wider uppercase">
+                  Real Estate Platform
                 </p>
               </div>
             </Link>
 
             {/* ============================================
-            MAIN MENU
+            NAV LINKS - Desktop
             ============================================ */}
-            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2">
-              {navItems.map((item) => (
-                <div key={item.id} className="relative">
-                  {item.isLink ? (
-                    <Link
-                      to={item.path || '/'}
-                      className="px-4 xl:px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-primary rounded-xl hover:bg-primary/5 transition-all duration-200 relative group"
-                      onMouseEnter={() => setActiveItem(item.id)}
-                      onMouseLeave={() => setActiveItem('')}
-                    >
-                      {item.label}
-                      <span className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-primary rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
-                    </Link>
-                  ) : (
-                    <DropdownMenu
-                      trigger={
-                        <span 
-                          className="px-4 xl:px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-primary rounded-xl hover:bg-primary/5 transition-all duration-200 cursor-pointer flex items-center gap-1.5 relative group"
-                          onMouseEnter={() => setActiveItem(item.id)}
-                          onMouseLeave={() => setActiveItem('')}
-                        >
-                          {item.label}
-                          <svg 
-                            className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                              activeItem === item.id ? 'rotate-180' : ''
-                            }`} 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                          <span className="absolute bottom-1 left-1/2 w-0 h-0.5 bg-primary rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
-                        </span>
-                      }
-                      items={item.items || []}
-                      align="left"
-                      triggerMode="hover"
-                    />
-                  )}
-                </div>
+            <div className="hidden lg:flex items-center gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className="px-4 py-2 text-sm font-medium text-[#4A3F38] hover:text-[#2D5A27] rounded-lg hover:bg-[#E8F0E4] transition-all duration-200 relative group"
+                >
+                  {link.label}
+                  <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#2D5A27] rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
+                </Link>
               ))}
             </div>
 
             {/* ============================================
             RIGHT ACTIONS
             ============================================ */}
-            <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-3 mr-4 sm:mr-6 lg:mr-8 xl:mr-12 2xl:mr-16">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Language Toggle */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={toggleLanguage}
-                className="relative p-2.5 text-sm font-medium text-gray-600 hover:text-primary rounded-xl hover:bg-primary/5 transition-all duration-200"
+                className="px-3 py-1.5 text-sm font-medium text-[#4A3F38] hover:text-[#2D5A27] rounded-lg hover:bg-[#E8F0E4] transition-all duration-200"
               >
-                <span className="flex items-center gap-1.5">
-                  <span className="text-lg">{language === 'en' ? '🇳🇵' : '🇬🇧'}</span>
-                  <span className="hidden xl:inline text-xs font-medium uppercase">
-                    {language === 'en' ? 'EN' : 'नेपाली'}
-                  </span>
-                </span>
-              </motion.button>
+                {language}
+              </button>
 
-              {/* Divider */}
-              <div className="hidden sm:block w-px h-8 bg-gray-200" />
-
-              {/* Post Property CTA */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              {/* List Property Button */}
+              <Link
+                to="/add-property"
+                className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                <Link
-                  to="/add-property"
-                  className="hidden md:flex items-center gap-2 px-5 xl:px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary to-primary-dark rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all duration-200"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="hidden xl:inline">List Property</span>
-                  <span className="xl:hidden">List</span>
-                </Link>
-              </motion.div>
+                <span>+</span>
+                <span>List Property</span>
+              </Link>
 
-              {/* User */}
-              <div className="flex items-center gap-1">
-                {isAuthenticated && user ? (
-                  <DropdownMenu
-                    trigger={
-                      <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        className="flex items-center gap-2 px-2 xl:px-3 py-1.5 rounded-xl hover:bg-primary/5 transition-all duration-200 cursor-pointer group"
-                      >
-                        <div className="relative">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white font-semibold text-sm shadow-md shadow-primary/20">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                        </div>
-                        <div className="hidden xl:block text-left">
-                          <p className="text-sm font-medium text-gray-800 leading-tight">
-                            {user.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 leading-tight">
-                            {user.role?.toLowerCase() || 'member'}
-                          </p>
-                        </div>
-                        <svg 
-                          className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 group-hover:rotate-180`} 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </motion.div>
-                    }
-                    items={userDropdownItems}
-                    align="right"
-                  />
-                ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Link
-                      to="/login"
-                      className="px-5 xl:px-6 py-2.5 text-sm font-medium text-primary border-2 border-primary/20 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all duration-200"
-                    >
-                      Sign In
-                    </Link>
-                  </motion.div>
-                )}
-              </div>
+              {/* Sign In Button */}
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+              >
+                Sign In
+              </Link>
 
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2.5 rounded-xl hover:bg-primary/5 transition-all duration-200 group"
+                className="lg:hidden p-2 rounded-lg hover:bg-[#E8F0E4] transition-all duration-200"
               >
                 <div className="w-5 h-4 flex flex-col justify-between">
-                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 group-hover:bg-primary ${
-                    isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''
-                  }`} />
-                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 group-hover:bg-primary ${
-                    isMobileMenuOpen ? 'opacity-0' : ''
-                  }`} />
-                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 group-hover:bg-primary ${
-                    isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''
-                  }`} />
+                  <span className={`block w-full h-0.5 bg-[#1A1410] rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
+                  <span className={`block w-full h-0.5 bg-[#1A1410] rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
+                  <span className={`block w-full h-0.5 bg-[#1A1410] rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
                 </div>
               </button>
             </div>
@@ -328,8 +124,78 @@ const Navbar: React.FC = () => {
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
-      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+      {/* ============================================
+      MOBILE MENU
+      ============================================ */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: isMobileMenuOpen ? 0 : '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed top-0 right-0 h-full w-80 bg-[#FFF8F0] shadow-2xl z-50 lg:hidden"
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-[#E8DDD0]">
+            <span className="text-xl font-bold text-[#2D5A27]">Menu</span>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 rounded-lg hover:bg-[#E8F0E4] transition-all duration-200"
+            >
+              <svg className="w-6 h-6 text-[#1A1410]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Nav Items */}
+          <div className="flex-1 overflow-y-auto py-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center px-6 py-3 text-[#4A3F38] hover:text-[#2D5A27] hover:bg-[#E8F0E4] transition-all duration-200"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="h-px bg-[#E8DDD0] my-2" />
+            <Link
+              to="/add-property"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-2 mx-4 px-4 py-3 mt-4 text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 justify-center"
+            >
+              <span>+</span>
+              <span>List Property</span>
+            </Link>
+            <Link
+              to="/login"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center justify-center mx-4 px-4 py-3 mt-3 text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+            >
+              Sign In
+            </Link>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-[#E8DDD0]">
+            <button
+              onClick={toggleLanguage}
+              className="w-full px-4 py-3 text-sm font-medium text-[#4A3F38] hover:text-[#2D5A27] hover:bg-[#E8F0E4] rounded-lg transition-all duration-200"
+            >
+              Switch to {language === 'EN' ? 'Nepali (नेपाली)' : 'English'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
     </>
   );
 };
