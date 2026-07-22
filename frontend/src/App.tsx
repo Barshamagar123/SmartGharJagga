@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage/HomePage';
 
 import Footer from './components/common/Footer/Footer';
 import Properties from './pages/Properties/Properties';
+import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
 
 
 
@@ -52,6 +53,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/properties" element={<Properties />} />
+                 <Route path="/property/:slug" element={<PropertyDetail />} />
+
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/login" element={<Login />} />
