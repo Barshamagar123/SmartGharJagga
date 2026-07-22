@@ -3,6 +3,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Button } from '../../components/common/Button/Button';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '../../components/common/Card/Card';
 
 const Home: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('');
@@ -152,11 +161,17 @@ const Home: React.FC = () => {
             >
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2D5A27] text-white text-xs font-semibold rounded-full">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 Verified Listing
               </span>
-              <span className="text-sm text-[var(--color-text-secondary)] font-medium">Legal title checked</span>
+              <span className="text-sm text-[var(--color-text-secondary)] font-medium">
+                Legal title checked
+              </span>
             </motion.div>
 
             <motion.h1
@@ -171,7 +186,8 @@ const Home: React.FC = () => {
               className="mt-4 text-base sm:text-lg text-[var(--color-text-secondary)] max-w-xl leading-relaxed"
               variants={fadeInUp}
             >
-              Discover your perfect home with our premium real estate platform—curated listings, honest agents, and neighborhoods you'll love coming home to.
+              Discover your perfect home with our premium real estate platform—curated
+              listings, honest agents, and neighborhoods you'll love coming home to.
             </motion.p>
 
             <motion.div
@@ -180,7 +196,9 @@ const Home: React.FC = () => {
             >
               <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">📍</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
+                    📍
+                  </span>
                   <input
                     type="text"
                     placeholder="Location, e.g. Lalitpur"
@@ -202,7 +220,9 @@ const Home: React.FC = () => {
                   <option value="commercial">Commercial</option>
                 </select>
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">💰</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
+                    💰
+                  </span>
                   <input
                     type="text"
                     placeholder="Price"
@@ -211,12 +231,28 @@ const Home: React.FC = () => {
                     className="w-full pl-11 pr-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
                   />
                 </div>
-                <button className="px-6 py-3 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[120px]">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="min-w-[120px]"
+                  leftIcon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  }
+                >
                   Search
-                </button>
+                </Button>
               </div>
             </motion.div>
 
@@ -227,8 +263,12 @@ const Home: React.FC = () => {
               <span className="text-lg">🏅</span>
               <span className="text-sm font-semibold text-[#2D5A27]">Premium</span>
               <span className="w-px h-5 bg-[#2D5A27]/30" />
-              <span className="text-sm text-[var(--color-text-secondary)] font-medium">Bhaisepati</span>
-              <span className="text-xs text-[var(--color-text-tertiary)] ml-1">• Up to Rs 5 Cr</span>
+              <span className="text-sm text-[var(--color-text-secondary)] font-medium">
+                Bhaisepati
+              </span>
+              <span className="text-xs text-[var(--color-text-tertiary)] ml-1">
+                • Up to Rs 5 Cr
+              </span>
             </motion.div>
 
             <motion.div
@@ -238,10 +278,16 @@ const Home: React.FC = () => {
               {stats.map((stat, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <div>
-                    <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">{stat.value}</div>
-                    <div className="text-[10px] font-semibold text-[var(--color-text-tertiary)] tracking-wider">{stat.label}</div>
+                    <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">
+                      {stat.value}
+                    </div>
+                    <div className="text-[10px] font-semibold text-[var(--color-text-tertiary)] tracking-wider">
+                      {stat.label}
+                    </div>
                   </div>
-                  {index < stats.length - 1 && <div className="w-px h-10 bg-[var(--color-primary-border)]" />}
+                  {index < stats.length - 1 && (
+                    <div className="w-px h-10 bg-[var(--color-primary-border)]" />
+                  )}
                 </div>
               ))}
             </motion.div>
@@ -254,7 +300,9 @@ const Home: React.FC = () => {
           transition={{ repeat: Infinity, duration: 2 }}
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[var(--color-text-tertiary)] text-[10px] tracking-widest uppercase">Scroll</span>
+            <span className="text-[var(--color-text-tertiary)] text-[10px] tracking-widest uppercase">
+              Scroll
+            </span>
             <div className="w-6 h-10 rounded-full border-2 border-[var(--color-text-tertiary)]/30 flex items-start justify-center p-1">
               <motion.div
                 className="w-1.5 h-1.5 rounded-full bg-[#2D5A27]"
@@ -267,7 +315,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      BROWSE BY CATEGORY - px-8 (32px) padding
+      BROWSE BY CATEGORY - Using Card Component
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -278,10 +326,15 @@ const Home: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">Browse By Category</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">Explore our property types</h2>
+            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
+              Browse By Category
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
+              Explore our property types
+            </h2>
             <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-              From city apartments to hillside villas — find a home shaped around how you actually live.
+              From city apartments to hillside villas — find a home shaped around how you
+              actually live.
             </p>
           </motion.div>
 
@@ -297,14 +350,25 @@ const Home: React.FC = () => {
                 key={index}
                 variants={fadeInUp}
                 whileHover={{ scale: 1.05, y: -5 }}
-                className="group relative bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-[var(--color-primary-border)]"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#2D5A27] to-[#4A7D42] opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-                <div className="relative z-10">
-                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">{category.icon}</div>
-                  <div className="font-semibold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">{category.label}</div>
-                  <div className="text-sm text-[var(--color-text-tertiary)] mt-1">{category.count} listings</div>
-                </div>
+                <Card
+                  variant="hover"
+                  padding="md"
+                  className="text-center cursor-pointer border border-[var(--color-primary-border)] group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#2D5A27] to-[#4A7D42] opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl" />
+                  <div className="relative z-10">
+                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                      {category.icon}
+                    </div>
+                    <CardTitle className="text-base font-semibold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
+                      {category.label}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-[var(--color-text-tertiary)] mt-1">
+                      {category.count} listings
+                    </CardDescription>
+                  </div>
+                </Card>
               </motion.div>
             ))}
           </motion.div>
@@ -312,7 +376,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES - px-8 (32px) padding
+      FEATURED PROPERTIES ROW 1 - Using Card Component
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary-surface)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -324,7 +388,9 @@ const Home: React.FC = () => {
             className="flex flex-col sm:flex-row justify-between items-center mb-12"
           >
             <div>
-              <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">Featured Properties</span>
+              <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
+                Featured Properties
+              </span>
               <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-1">
                 A curated selection of the season's most-loved listings.
               </h2>
@@ -334,8 +400,18 @@ const Home: React.FC = () => {
               className="mt-4 sm:mt-0 text-[#2D5A27] font-semibold hover:text-[#23461E] flex items-center gap-2 transition-colors group"
             >
               View All Properties
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </motion.div>
@@ -352,35 +428,80 @@ const Home: React.FC = () => {
                 key={property.id}
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
               >
-                <div className="relative overflow-hidden">
-                  <img src={property.image} alt={property.title} className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${property.type === 'VILLA' ? 'bg-[#D4AF37] text-white' : property.type === 'HOUSE' ? 'bg-[#2D5A27] text-white' : property.type === 'APARTMENT' ? 'bg-[#4A7D42] text-white' : 'bg-[#6B9D63] text-white'}`}>
-                      {property.type}
-                    </span>
-                    {property.featured && <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">⭐ FEATURED</span>}
+                <Card variant="hover" padding="none" className="overflow-hidden border border-[var(--color-primary-border)]">
+                  {/* Image Section */}
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={property.image}
+                      alt={property.title}
+                      className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          property.type === 'VILLA'
+                            ? 'bg-[#D4AF37] text-white'
+                            : property.type === 'HOUSE'
+                            ? 'bg-[#2D5A27] text-white'
+                            : property.type === 'APARTMENT'
+                            ? 'bg-[#4A7D42] text-white'
+                            : 'bg-[#6B9D63] text-white'
+                        }`}
+                      >
+                        {property.type}
+                      </span>
+                      {property.featured && (
+                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
+                          ⭐ FEATURED
+                        </span>
+                      )}
+                    </div>
+                    <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                      <svg
+                        className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                  <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                    <svg className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">{property.title}</h3>
-                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1"><span>📍</span> {property.location}</p>
-                  <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
-                    <span>🛏️ {property.beds} Beds</span>
-                    <span>🛁 {property.baths} Baths</span>
-                    <span>📐 {property.sqft} sqft</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
-                    <span className="text-2xl font-bold text-[#2D5A27]">{property.price}</span>
-                    <Link to={`/property/${property.id}`} className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200">View Details</Link>
-                  </div>
-                </div>
+
+                  {/* Content */}
+                  <CardContent className="p-6">
+                    <CardTitle className="text-lg group-hover:text-[#2D5A27] transition-colors">
+                      {property.title}
+                    </CardTitle>
+                    <CardDescription className="text-sm flex items-center gap-1 mt-1">
+                      <span>📍</span> {property.location}
+                    </CardDescription>
+
+                    <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
+                      <span>🛏️ {property.beds} Beds</span>
+                      <span>🛁 {property.baths} Baths</span>
+                      <span>📐 {property.sqft} sqft</span>
+                    </div>
+
+                    <CardFooter className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)] px-0">
+                      <span className="text-2xl font-bold text-[#2D5A27]">
+                        {property.price}
+                      </span>
+                      <Link
+                        to={`/property/${property.id}`}
+                        className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                      >
+                        View Details
+                      </Link>
+                    </CardFooter>
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
           </motion.div>
@@ -388,7 +509,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES ROW 2 - px-8 (32px) padding
+      FEATURED PROPERTIES ROW 2 - Using Card Component
       ============================================ */}
       <section className="py-12 bg-[var(--color-primary-surface)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -404,35 +525,82 @@ const Home: React.FC = () => {
                 key={property.id}
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
               >
-                <div className="relative overflow-hidden">
-                  <img src={property.image} alt={property.title} className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${property.type === 'VILLA' ? 'bg-[#D4AF37] text-white' : property.type === 'HOUSE' ? 'bg-[#2D5A27] text-white' : property.type === 'APARTMENT' ? 'bg-[#4A7D42] text-white' : property.type === 'BUNGALOW' ? 'bg-[#6B9D63] text-white' : 'bg-[#94A3B8] text-white'}`}>
-                      {property.type}
-                    </span>
-                    {property.featured && <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">⭐ FEATURED</span>}
+                <Card variant="hover" padding="none" className="overflow-hidden border border-[var(--color-primary-border)]">
+                  {/* Image Section */}
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={property.image}
+                      alt={property.title}
+                      className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          property.type === 'VILLA'
+                            ? 'bg-[#D4AF37] text-white'
+                            : property.type === 'HOUSE'
+                            ? 'bg-[#2D5A27] text-white'
+                            : property.type === 'APARTMENT'
+                            ? 'bg-[#4A7D42] text-white'
+                            : property.type === 'BUNGALOW'
+                            ? 'bg-[#6B9D63] text-white'
+                            : 'bg-[#94A3B8] text-white'
+                        }`}
+                      >
+                        {property.type}
+                      </span>
+                      {property.featured && (
+                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
+                          ⭐ FEATURED
+                        </span>
+                      )}
+                    </div>
+                    <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                      <svg
+                        className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                  <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                    <svg className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">{property.title}</h3>
-                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1"><span>📍</span> {property.location}</p>
-                  <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
-                    <span>🛏️ {property.beds} Beds</span>
-                    <span>🛁 {property.baths} Baths</span>
-                    <span>📐 {property.sqft} sqft</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
-                    <span className="text-2xl font-bold text-[#2D5A27]">{property.price}</span>
-                    <Link to={`/property/${property.id}`} className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200">View Details</Link>
-                  </div>
-                </div>
+
+                  {/* Content */}
+                  <CardContent className="p-6">
+                    <CardTitle className="text-lg group-hover:text-[#2D5A27] transition-colors">
+                      {property.title}
+                    </CardTitle>
+                    <CardDescription className="text-sm flex items-center gap-1 mt-1">
+                      <span>📍</span> {property.location}
+                    </CardDescription>
+
+                    <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
+                      <span>🛏️ {property.beds} Beds</span>
+                      <span>🛁 {property.baths} Baths</span>
+                      <span>📐 {property.sqft} sqft</span>
+                    </div>
+
+                    <CardFooter className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)] px-0">
+                      <span className="text-2xl font-bold text-[#2D5A27]">
+                        {property.price}
+                      </span>
+                      <Link
+                        to={`/property/${property.id}`}
+                        className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                      >
+                        View Details
+                      </Link>
+                    </CardFooter>
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
           </motion.div>
@@ -440,7 +608,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FREE & PREMIUM - px-8 (32px) padding
+      FREE & PREMIUM - Using Card Component
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -451,11 +619,15 @@ const Home: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">Choose Your Plan</span>
+            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
+              Choose Your Plan
+            </span>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
               Free vs <span className="text-[#2D5A27]">Premium</span>
             </h2>
-            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">Get more visibility and faster sales with our premium features</p>
+            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+              Get more visibility and faster sales with our premium features
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -465,26 +637,54 @@ const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[var(--color-primary-border)]"
             >
-              <div className="text-center">
-                <span className="text-4xl mb-3 block">🆓</span>
-                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Free</h3>
-                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">Perfect for getting started</p>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-[var(--color-text-primary)]">Rs 0</span>
-                  <span className="text-[var(--color-text-tertiary)]"> / month</span>
-                </div>
-              </div>
-              <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">1 Active Property Listing</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Basic Property Details</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Up to 5 Images</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Standard Visibility</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]"><span className="text-[var(--color-text-tertiary)] text-lg">✗</span><span className="text-sm line-through">Featured Badge</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]"><span className="text-[var(--color-text-tertiary)] text-lg">✗</span><span className="text-sm line-through">Priority Support</span></li>
-              </ul>
-              <Link to="/register" className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200">Get Started Free</Link>
+              <Card variant="elevated" padding="lg" className="border-2 border-[var(--color-primary-border)] text-center h-full">
+                <CardContent>
+                  <span className="text-4xl mb-3 block">🆓</span>
+                  <CardTitle>Free</CardTitle>
+                  <CardDescription>Perfect for getting started</CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-[var(--color-text-primary)]">
+                      Rs 0
+                    </span>
+                    <span className="text-[var(--color-text-tertiary)]"> / month</span>
+                  </div>
+
+                  <ul className="mt-8 space-y-3 text-left">
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">1 Active Property Listing</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Basic Property Details</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Up to 5 Images</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Standard Visibility</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]">
+                      <span className="text-[var(--color-text-tertiary)] text-lg">✗</span>
+                      <span className="text-sm line-through">Featured Badge</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]">
+                      <span className="text-[var(--color-text-tertiary)] text-lg">✗</span>
+                      <span className="text-sm line-through">Priority Support</span>
+                    </li>
+                  </ul>
+
+                  <Link
+                    to="/register"
+                    className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                  >
+                    Get Started Free
+                  </Link>
+                </CardContent>
+              </Card>
             </motion.div>
 
             {/* Premium Plan */}
@@ -493,32 +693,72 @@ const Home: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-[#D4AF37] relative transform scale-105"
             >
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-[#D4AF37] text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg shadow-[#D4AF37]/25">MOST POPULAR</span>
-              </div>
-              <div className="text-center mt-2">
-                <span className="text-4xl mb-3 block">👑</span>
-                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Premium</h3>
-                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">For serious sellers & agents</p>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-[#2D5A27]">Rs 999</span>
-                  <span className="text-[var(--color-text-tertiary)]"> / month</span>
+              <Card
+                variant="elevated"
+                padding="lg"
+                className="border-2 border-[#D4AF37] relative transform scale-105 h-full"
+              >
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-[#D4AF37] text-white text-xs font-bold px-6 py-1.5 rounded-full shadow-lg shadow-[#D4AF37]/25">
+                    MOST POPULAR
+                  </span>
                 </div>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Billed monthly • Cancel anytime</p>
-              </div>
-              <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Unlimited Property Listings</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Premium Property Details</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Premium Visibility & Boost</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">⭐ Featured Badge</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">24/7 Priority Support</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">AI-Powered Recommendations</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#D4AF37] text-lg">✓</span><span className="text-sm font-medium">Advanced Analytics Dashboard</span></li>
-              </ul>
-              <Link to="/premium" className="block w-full mt-8 px-6 py-3 text-center text-white font-semibold bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg">Upgrade to Premium</Link>
+                <CardContent className="mt-2">
+                  <span className="text-4xl mb-3 block">👑</span>
+                  <CardTitle>Premium</CardTitle>
+                  <CardDescription>For serious sellers & agents</CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-[#2D5A27]">Rs 999</span>
+                    <span className="text-[var(--color-text-tertiary)]"> / month</span>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                    Billed monthly • Cancel anytime
+                  </p>
+
+                  <ul className="mt-8 space-y-3 text-left">
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">Unlimited Property Listings</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">Premium Property Details</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">Premium Visibility & Boost</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">⭐ Featured Badge</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">24/7 Priority Support</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">AI-Powered Recommendations</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#D4AF37] text-lg">✓</span>
+                      <span className="text-sm font-medium">Advanced Analytics Dashboard</span>
+                    </li>
+                  </ul>
+
+                  <Link
+                    to="/premium"
+                    className="block w-full mt-8 px-6 py-3 text-center text-white font-semibold bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Upgrade to Premium
+                  </Link>
+                </CardContent>
+              </Card>
             </motion.div>
 
             {/* Enterprise Plan */}
@@ -527,28 +767,61 @@ const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[var(--color-primary-border)]"
             >
-              <div className="text-center">
-                <span className="text-4xl mb-3 block">🏢</span>
-                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Enterprise</h3>
-                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">For agencies & developers</p>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-[var(--color-text-primary)]">Custom</span>
-                  <span className="text-[var(--color-text-tertiary)]"> / month</span>
-                </div>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Contact us for pricing</p>
-              </div>
-              <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Everything in Premium</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Unlimited Properties & Agents</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Dedicated Account Manager</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Custom Integrations</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">White-label Options</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">API Access</span></li>
-                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]"><span className="text-[#2D5A27] text-lg">✓</span><span className="text-sm">Custom Development</span></li>
-              </ul>
-              <Link to="/contact" className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200">Contact Sales</Link>
+              <Card variant="elevated" padding="lg" className="border-2 border-[var(--color-primary-border)] text-center h-full">
+                <CardContent>
+                  <span className="text-4xl mb-3 block">🏢</span>
+                  <CardTitle>Enterprise</CardTitle>
+                  <CardDescription>For agencies & developers</CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-[var(--color-text-primary)]">
+                      Custom
+                    </span>
+                    <span className="text-[var(--color-text-tertiary)]"> / month</span>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                    Contact us for pricing
+                  </p>
+
+                  <ul className="mt-8 space-y-3 text-left">
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Everything in Premium</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Unlimited Properties & Agents</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Dedicated Account Manager</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Custom Integrations</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">White-label Options</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">API Access</span>
+                    </li>
+                    <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
+                      <span className="text-[#2D5A27] text-lg">✓</span>
+                      <span className="text-sm">Custom Development</span>
+                    </li>
+                  </ul>
+
+                  <Link
+                    to="/contact"
+                    className="block w-full mt-8 px-6 py-3 text-center text-[#2D5A27] font-semibold border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                  >
+                    Contact Sales
+                  </Link>
+                </CardContent>
+              </Card>
             </motion.div>
           </div>
 
@@ -563,62 +836,70 @@ const Home: React.FC = () => {
           </motion.p>
         </div>
       </section>
-{/* ============================================
-CTA SECTION - Height Kam + Margin Sahit
-============================================ */}
-<section className="py-8 md:py-12 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl">
-  <div className="max-w-5xl mx-auto px-8">
-    <div className="relative z-10 max-w-4xl mx-auto text-center py-4 md:py-6">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* Icon - Sano */}
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
-          className="text-3xl md:text-4xl mb-2 block"
-        >
-          🏡
-        </motion.div>
 
-        {/* Heading - Sano */}
-        <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2">
-          Ready to find your dream home?
-        </h2>
-
-        {/* Description - Sano */}
-        <p className="text-white/80 max-w-2xl mx-auto mb-4 text-sm md:text-base leading-relaxed">
-          Start exploring hand-picked homes, or talk with an expert agent — either way, we're here to help.
-        </p>
-
-        {/* Buttons - Sano */}
-        <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link
-              to="/properties"
-              className="inline-flex items-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-white text-[#2D5A27] font-semibold rounded-xl hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl text-sm"
+      {/* ============================================
+      CTA SECTION - Height Kam + Margin Sahit
+      ============================================ */}
+      <section className="py-8 md:py-12 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl">
+        <div className="max-w-5xl mx-auto px-8">
+          <div className="relative z-10 max-w-4xl mx-auto text-center py-4 md:py-6">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
             >
-              Explore Properties
-            </Link>
-          </motion.div>
+              {/* Icon - Sano */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
+                className="text-3xl md:text-4xl mb-2 block"
+              >
+                🏡
+              </motion.div>
 
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-transparent border-2 border-white/50 text-white font-semibold rounded-xl hover:bg-white hover:text-[#2D5A27] transition-all duration-200 text-sm"
-            >
-              Contact Us
-            </Link>
-          </motion.div>
+              {/* Heading - Sano */}
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2">
+                Ready to find your dream home?
+              </h2>
+
+              {/* Description - Sano */}
+              <p className="text-white/80 max-w-2xl mx-auto mb-4 text-sm md:text-base leading-relaxed">
+                Start exploring hand-picked homes, or talk with an expert agent — either
+                way, we're here to help.
+              </p>
+
+              {/* Buttons - Using Button Component */}
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Link to="/properties">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="px-5 py-2.5 md:px-6 md:py-3 text-sm bg-white text-[#2D5A27] hover:bg-gray-100"
+                    >
+                      Explore Properties
+                    </Button>
+                  </Link>
+                </motion.div>
+
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Link to="/contact">
+                    <Button
+                      variant="outline"
+                      size="md"
+                      className="px-5 py-2.5 md:px-6 md:py-3 text-sm border-white/50 text-white hover:bg-white hover:text-[#2D5A27]"
+                    >
+                      Contact Us
+                    </Button>
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
         </div>
-      </motion.div>
-    </div>
-  </div>
-</section>
+      </section>
     </div>
   );
 };
