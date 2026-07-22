@@ -1,10 +1,10 @@
 /* src/index.css */
 
-/* ✅ 1. SABAI BHANDA PAHILA: Tailwind import - MUST BE FIRST! */
 @import "tailwindcss";
-
 @import "./styles/globals.css";
+
+/* Ensure root has Soft Cream background */
 html, body, #root {
-  background-color: #FFF8F0;
+  background-color: #FFFCFA;
   min-height: 100vh;
 }

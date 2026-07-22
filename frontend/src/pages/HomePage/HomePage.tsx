@@ -106,10 +106,10 @@ const Home: React.FC = () => {
   // ============================================
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: 'easeOut' as const }
+      transition: { duration: 0.6, ease: 'easeOut' as const },
     },
   };
 
@@ -125,9 +125,9 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="pt-16 md:pt-20 bg-white">
+    <div className="pt-16 md:pt-20 bg-[var(--color-primary)]">
       {/* ============================================
-      HERO SECTION
+      HERO SECTION - Full width with margin
       ============================================ */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {/* Background Image */}
@@ -139,8 +139,8 @@ const Home: React.FC = () => {
                 'url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920)',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)]/95 via-[var(--color-primary)]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-primary)] via-transparent to-transparent" />
         </div>
 
         {/* Hero Content */}
@@ -160,16 +160,20 @@ const Home: React.FC = () => {
             >
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2D5A27] text-white text-xs font-semibold rounded-full">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 Verified Listing
               </span>
-              <span className="text-sm text-[#475569] font-medium">Legal title checked</span>
+              <span className="text-sm text-[var(--color-text-secondary)] font-medium">Legal title checked</span>
             </motion.div>
 
             {/* Main Heading */}
             <motion.h1
-              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-[#0F172A] leading-tight"
+              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--color-text-primary)] leading-tight"
               variants={fadeInUp}
             >
               Find Your
@@ -178,32 +182,35 @@ const Home: React.FC = () => {
 
             {/* Description */}
             <motion.p
-              className="mt-4 text-base sm:text-lg text-[#475569] max-w-xl leading-relaxed"
+              className="mt-4 text-base sm:text-lg text-[var(--color-text-secondary)] max-w-xl leading-relaxed"
               variants={fadeInUp}
             >
-              Discover your perfect home with our premium real estate platform—curated listings, honest agents, and neighborhoods you'll love coming home to.
+              Discover your perfect home with our premium real estate platform—curated
+              listings, honest agents, and neighborhoods you'll love coming home to.
             </motion.p>
 
             {/* Search Bar */}
             <motion.div
-              className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl p-3 shadow-xl border border-[#E2E8F0]"
+              className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl p-3 shadow-xl border border-[var(--color-primary-border)]"
               variants={fadeInUp}
             >
               <div className="flex flex-col md:flex-row gap-2">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#94A3B8] text-lg">📍</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
+                    📍
+                  </span>
                   <input
                     type="text"
                     placeholder="Location, e.g. Lalitpur"
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                    className="w-full pl-11 pr-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
                   />
                 </div>
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
-                  className="px-4 py-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all min-w-[140px]"
+                  className="px-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all min-w-[140px]"
                 >
                   <option value="">Any type</option>
                   <option value="house">House</option>
@@ -213,18 +220,25 @@ const Home: React.FC = () => {
                   <option value="commercial">Commercial</option>
                 </select>
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#94A3B8] text-lg">💰</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
+                    💰
+                  </span>
                   <input
                     type="text"
                     placeholder="Price"
                     value={priceRange}
                     onChange={(e) => setPriceRange(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-[#F8FAFC] rounded-xl text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                    className="w-full pl-11 pr-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
                   />
                 </div>
                 <button className="px-6 py-3 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[120px]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                   Search
                 </button>
@@ -233,14 +247,14 @@ const Home: React.FC = () => {
 
             {/* Premium Tag */}
             <motion.div
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#E8F0E4] rounded-xl border border-[#2D5A27]/10"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-surface)] rounded-xl border border-[#2D5A27]/10"
               variants={fadeInUp}
             >
               <span className="text-lg">🏅</span>
               <span className="text-sm font-semibold text-[#2D5A27]">Premium</span>
               <span className="w-px h-5 bg-[#2D5A27]/30" />
-              <span className="text-sm text-[#475569] font-medium">Bhaisepati</span>
-              <span className="text-xs text-[#94A3B8] ml-1">• Up to Rs 5 Cr</span>
+              <span className="text-sm text-[var(--color-text-secondary)] font-medium">Bhaisepati</span>
+              <span className="text-xs text-[var(--color-text-tertiary)] ml-1">• Up to Rs 5 Cr</span>
             </motion.div>
 
             {/* Stats */}
@@ -254,12 +268,12 @@ const Home: React.FC = () => {
                     <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">
                       {stat.value}
                     </div>
-                    <div className="text-[10px] font-semibold text-[#94A3B8] tracking-wider">
+                    <div className="text-[10px] font-semibold text-[var(--color-text-tertiary)] tracking-wider">
                       {stat.label}
                     </div>
                   </div>
                   {index < stats.length - 1 && (
-                    <div className="w-px h-10 bg-[#E2E8F0]" />
+                    <div className="w-px h-10 bg-[var(--color-primary-border)]" />
                   )}
                 </div>
               ))}
@@ -274,8 +288,10 @@ const Home: React.FC = () => {
           transition={{ repeat: Infinity, duration: 2 }}
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[#94A3B8] text-[10px] tracking-widest uppercase">Scroll</span>
-            <div className="w-6 h-10 rounded-full border-2 border-[#94A3B8]/30 flex items-start justify-center p-1">
+            <span className="text-[var(--color-text-tertiary)] text-[10px] tracking-widest uppercase">
+              Scroll
+            </span>
+            <div className="w-6 h-10 rounded-full border-2 border-[var(--color-text-tertiary)]/30 flex items-start justify-center p-1">
               <motion.div
                 className="w-1.5 h-1.5 rounded-full bg-[#2D5A27]"
                 animate={{ y: [0, 12, 0] }}
@@ -287,9 +303,9 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      BROWSE BY CATEGORY
+      BROWSE BY CATEGORY - With Navbar margin
       ============================================ */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-[var(--color-primary)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -301,10 +317,10 @@ const Home: React.FC = () => {
             <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
               Browse By Category
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mt-2">
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
               Explore our property types
             </h2>
-            <p className="mt-3 text-[#475569] max-w-2xl mx-auto">
+            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
               From city apartments to hillside villas — find a home shaped around how you actually live.
             </p>
           </motion.div>
@@ -321,17 +337,19 @@ const Home: React.FC = () => {
                 key={index}
                 variants={fadeInUp}
                 whileHover={{ scale: 1.05, y: -5 }}
-                className="group relative bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-[#E2E8F0]"
+                className="group relative bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-[var(--color-primary-border)]"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2D5A27] to-[#4A7D42] opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                 <div className="relative z-10">
                   <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
                     {category.icon}
                   </div>
-                  <div className="font-semibold text-[#0F172A] group-hover:text-[#2D5A27] transition-colors">
+                  <div className="font-semibold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
                     {category.label}
                   </div>
-                  <div className="text-sm text-[#94A3B8] mt-1">{category.count} listings</div>
+                  <div className="text-sm text-[var(--color-text-tertiary)] mt-1">
+                    {category.count} listings
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -340,9 +358,9 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES
+      FEATURED PROPERTIES - Row 1
       ============================================ */}
-      <section className="py-20 bg-[#F8FAFC] border-t border-[#E2E8F0]">
+      <section className="py-20 bg-[var(--color-primary-surface)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -355,7 +373,7 @@ const Home: React.FC = () => {
               <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
                 Featured Properties
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mt-1">
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-1">
                 A curated selection of the season's most-loved listings.
               </h2>
             </div>
@@ -370,7 +388,12 @@ const Home: React.FC = () => {
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </motion.div>
@@ -387,7 +410,7 @@ const Home: React.FC = () => {
                 key={property.id}
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[#E2E8F0]"
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
               >
                 <div className="relative overflow-hidden">
                   <img
@@ -396,15 +419,17 @@ const Home: React.FC = () => {
                     className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      property.type === 'VILLA' 
-                        ? 'bg-[#D4AF37] text-white' 
-                        : property.type === 'HOUSE'
-                        ? 'bg-[#2D5A27] text-white'
-                        : property.type === 'APARTMENT'
-                        ? 'bg-[#4A7D42] text-white'
-                        : 'bg-[#6B9D63] text-white'
-                    }`}>
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        property.type === 'VILLA'
+                          ? 'bg-[#D4AF37] text-white'
+                          : property.type === 'HOUSE'
+                          ? 'bg-[#2D5A27] text-white'
+                          : property.type === 'APARTMENT'
+                          ? 'bg-[#4A7D42] text-white'
+                          : 'bg-[#6B9D63] text-white'
+                      }`}
+                    >
                       {property.type}
                     </span>
                     {property.featured && (
@@ -414,25 +439,35 @@ const Home: React.FC = () => {
                     )}
                   </div>
                   <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                    <svg className="w-5 h-5 text-[#94A3B8] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    <svg
+                      className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
                     </svg>
                   </button>
                 </div>
 
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-[#0F172A] group-hover:text-[#2D5A27] transition-colors">
+                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
                     {property.title}
                   </h3>
-                  <p className="text-[#94A3B8] text-sm flex items-center gap-1 mt-1">
+                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1">
                     <span>📍</span> {property.location}
                   </p>
-                  <div className="flex items-center gap-3 text-sm text-[#475569] mt-3">
+                  <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
                     <span>🛏️ {property.beds} Beds</span>
                     <span>🛁 {property.baths} Baths</span>
                     <span>📐 {property.sqft} sqft</span>
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E2E8F0]">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
                     <span className="text-2xl font-bold text-[#2D5A27]">
                       {property.price}
                     </span>
@@ -451,9 +486,9 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      SECOND ROW - FEATURED PROPERTIES
+      FEATURED PROPERTIES - Row 2
       ============================================ */}
-      <section className="py-12 bg-[#F8FAFC]">
+      <section className="py-12 bg-[var(--color-primary-surface)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -467,7 +502,7 @@ const Home: React.FC = () => {
                 key={property.id}
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[#E2E8F0]"
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
               >
                 <div className="relative overflow-hidden">
                   <img
@@ -476,17 +511,19 @@ const Home: React.FC = () => {
                     className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      property.type === 'VILLA' 
-                        ? 'bg-[#D4AF37] text-white' 
-                        : property.type === 'HOUSE'
-                        ? 'bg-[#2D5A27] text-white'
-                        : property.type === 'APARTMENT'
-                        ? 'bg-[#4A7D42] text-white'
-                        : property.type === 'BUNGALOW'
-                        ? 'bg-[#6B9D63] text-white'
-                        : 'bg-[#94A3B8] text-white'
-                    }`}>
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        property.type === 'VILLA'
+                          ? 'bg-[#D4AF37] text-white'
+                          : property.type === 'HOUSE'
+                          ? 'bg-[#2D5A27] text-white'
+                          : property.type === 'APARTMENT'
+                          ? 'bg-[#4A7D42] text-white'
+                          : property.type === 'BUNGALOW'
+                          ? 'bg-[#6B9D63] text-white'
+                          : 'bg-[#94A3B8] text-white'
+                      }`}
+                    >
                       {property.type}
                     </span>
                     {property.featured && (
@@ -496,25 +533,35 @@ const Home: React.FC = () => {
                     )}
                   </div>
                   <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                    <svg className="w-5 h-5 text-[#94A3B8] hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    <svg
+                      className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
                     </svg>
                   </button>
                 </div>
 
                 <div className="p-6">
-                  <h3 className="text-lg font-bold text-[#0F172A] group-hover:text-[#2D5A27] transition-colors">
+                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
                     {property.title}
                   </h3>
-                  <p className="text-[#94A3B8] text-sm flex items-center gap-1 mt-1">
+                  <p className="text-[var(--color-text-tertiary)] text-sm flex items-center gap-1 mt-1">
                     <span>📍</span> {property.location}
                   </p>
-                  <div className="flex items-center gap-3 text-sm text-[#475569] mt-3">
+                  <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
                     <span>🛏️ {property.beds} Beds</span>
                     <span>🛁 {property.baths} Baths</span>
                     <span>📐 {property.sqft} sqft</span>
                   </div>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E2E8F0]">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
                     <span className="text-2xl font-bold text-[#2D5A27]">
                       {property.price}
                     </span>
@@ -533,9 +580,9 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FREE & PREMIUM SECTION
+      FREE & PREMIUM SECTION - With Navbar margin
       ============================================ */}
-      <section className="py-20 bg-white border-t border-[#E2E8F0]">
+      <section className="py-20 bg-[var(--color-primary)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -547,10 +594,10 @@ const Home: React.FC = () => {
             <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
               Choose Your Plan
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mt-2">
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
               Free vs <span className="text-[#2D5A27]">Premium</span>
             </h2>
-            <p className="mt-3 text-[#475569] max-w-2xl mx-auto">
+            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
               Get more visibility and faster sales with our premium features
             </p>
           </motion.div>
@@ -562,41 +609,43 @@ const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[#E2E8F0]"
+              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[var(--color-primary-border)]"
             >
               <div className="text-center">
                 <span className="text-4xl mb-3 block">🆓</span>
-                <h3 className="text-2xl font-bold text-[#0F172A]">Free</h3>
-                <p className="text-[#94A3B8] mt-2 text-sm">Perfect for getting started</p>
+                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Free</h3>
+                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">
+                  Perfect for getting started
+                </p>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-[#0F172A]">Rs 0</span>
-                  <span className="text-[#94A3B8]"> / month</span>
+                  <span className="text-4xl font-bold text-[var(--color-text-primary)]">Rs 0</span>
+                  <span className="text-[var(--color-text-tertiary)]"> / month</span>
                 </div>
               </div>
 
               <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">1 Active Property Listing</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Basic Property Details</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Up to 5 Images</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Standard Visibility</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#94A3B8]">
-                  <span className="text-[#94A3B8] text-lg">✗</span>
+                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]">
+                  <span className="text-[var(--color-text-tertiary)] text-lg">✗</span>
                   <span className="text-sm line-through">Featured Badge</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#94A3B8]">
-                  <span className="text-[#94A3B8] text-lg">✗</span>
+                <li className="flex items-center gap-3 text-[var(--color-text-tertiary)]">
+                  <span className="text-[var(--color-text-tertiary)] text-lg">✗</span>
                   <span className="text-sm line-through">Priority Support</span>
                 </li>
               </ul>
@@ -625,45 +674,49 @@ const Home: React.FC = () => {
 
               <div className="text-center mt-2">
                 <span className="text-4xl mb-3 block">👑</span>
-                <h3 className="text-2xl font-bold text-[#0F172A]">Premium</h3>
-                <p className="text-[#94A3B8] mt-2 text-sm">For serious sellers & agents</p>
+                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Premium</h3>
+                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">
+                  For serious sellers & agents
+                </p>
                 <div className="mt-4">
                   <span className="text-4xl font-bold text-[#2D5A27]">Rs 999</span>
-                  <span className="text-[#94A3B8]"> / month</span>
+                  <span className="text-[var(--color-text-tertiary)]"> / month</span>
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1">Billed monthly • Cancel anytime</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                  Billed monthly • Cancel anytime
+                </p>
               </div>
 
               <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">Unlimited Property Listings</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">Premium Property Details</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">Premium Visibility & Boost</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">⭐ Featured Badge</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">24/7 Priority Support</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">AI-Powered Recommendations</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#D4AF37] text-lg">✓</span>
                   <span className="text-sm font-medium">Advanced Analytics Dashboard</span>
                 </li>
@@ -683,45 +736,47 @@ const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[#E2E8F0]"
+              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-[var(--color-primary-border)]"
             >
               <div className="text-center">
                 <span className="text-4xl mb-3 block">🏢</span>
-                <h3 className="text-2xl font-bold text-[#0F172A]">Enterprise</h3>
-                <p className="text-[#94A3B8] mt-2 text-sm">For agencies & developers</p>
+                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">Enterprise</h3>
+                <p className="text-[var(--color-text-tertiary)] mt-2 text-sm">
+                  For agencies & developers
+                </p>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-[#0F172A]">Custom</span>
-                  <span className="text-[#94A3B8]"> / month</span>
+                  <span className="text-4xl font-bold text-[var(--color-text-primary)]">Custom</span>
+                  <span className="text-[var(--color-text-tertiary)]"> / month</span>
                 </div>
-                <p className="text-xs text-[#94A3B8] mt-1">Contact us for pricing</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Contact us for pricing</p>
               </div>
 
               <ul className="mt-8 space-y-3">
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Everything in Premium</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Unlimited Properties & Agents</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Dedicated Account Manager</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Custom Integrations</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">White-label Options</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">API Access</span>
                 </li>
-                <li className="flex items-center gap-3 text-[#475569]">
+                <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                   <span className="text-[#2D5A27] text-lg">✓</span>
                   <span className="text-sm">Custom Development</span>
                 </li>
@@ -741,7 +796,7 @@ const Home: React.FC = () => {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-center text-[#94A3B8] text-sm mt-8"
+            className="text-center text-[var(--color-text-tertiary)] text-sm mt-8"
           >
             * All prices are in Nepali Rupees (NPR). Cancel anytime. No hidden fees.
           </motion.p>
@@ -749,42 +804,69 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      CTA SECTION
+      CTA SECTION - With Navbar margin (100% width)
       ============================================ */}
-      <section className="py-16 md:py-20 bg-[#0F172A] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4yIj48cGF0aCBkPSJNMzYgMzR2LTRoNHY0aC00em0tNCAwaC00di00aDR2NHoiLz48L2c+PC9nPjwvc3ZnPg==')] bg-repeat" />
-        </div>
-
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="text-5xl mb-4 block">🏡</span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Ready to find your dream home?
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto mb-8 text-lg">
-              Start exploring hand-picked homes, or talk with an expert agent — either way, we're here to help.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/properties"
-                className="px-8 py-4 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                Explore Properties
-              </Link>
-              <Link
-                to="/contact"
-                className="px-8 py-4 bg-transparent border-2 border-gray-600 text-white font-semibold rounded-xl hover:bg-white hover:text-[#0F172A] hover:border-white transition-all duration-200"
-              >
-                Contact Us
-              </Link>
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-16 md:py-20 bg-[#2D5A27] relative overflow-hidden">
+        {/* Inner Container with Max Width */}
+        <div className="max-w-7xl mx-auto">
+          {/* Card with Border Radius */}
+          <div className="w-full rounded-2xl md:rounded-3xl bg-[#2D5A27] relative overflow-hidden px-6 sm:px-8 md:px-12 py-12 md:py-16">
+            {/* Subtle Pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4yIj48cGF0aCBkPSJNMzYgMzR2LTRoNHY0aC00em0tNCAwaC00di00aDR2NHoiLz48L2c+PC9nPjwvc3ZnPg==')] bg-repeat" />
             </div>
-          </motion.div>
+
+            <div className="relative z-10 max-w-4xl mx-auto text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+              >
+                {/* Icon */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
+                  className="text-5xl mb-4 block"
+                >
+                  🏡
+                </motion.div>
+
+                {/* Heading */}
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                  Ready to find your dream home?
+                </h2>
+
+                {/* Description */}
+                <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg leading-relaxed">
+                  Start exploring hand-picked homes, or talk with an expert agent — either way, we're here to
+                  help.
+                </p>
+
+                {/* Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link
+                      to="/properties"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#2D5A27] font-semibold rounded-xl hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Explore Properties
+                    </Link>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link
+                      to="/contact"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-white/50 text-white font-semibold rounded-xl hover:bg-white hover:text-[#2D5A27] transition-all duration-200"
+                    >
+                      Contact Us
+                    </Link>
+                  </motion.div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
