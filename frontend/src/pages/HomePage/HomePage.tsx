@@ -6,14 +6,13 @@ import { motion } from 'framer-motion';
 import { Button } from '../../components/common/Button/Button';
 import {
   Card,
-  CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
   CardFooter,
 } from '../../components/common/Card/Card';
 
-const Home: React.FC = () => {
+const HomePage: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [priceRange, setPriceRange] = useState('');
@@ -129,9 +128,9 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="pt-16 md:pt-20 bg-[var(--color-primary)]">
+    <div className="bg-[var(--color-primary)]">
       {/* ============================================
-      HERO SECTION - px-8 (32px) padding
+      HERO SECTION
       ============================================ */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -315,7 +314,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      BROWSE BY CATEGORY - Using Card Component
+      BROWSE BY CATEGORY
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -376,7 +375,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES ROW 1 - Using Card Component
+      FEATURED PROPERTIES ROW 1
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary-surface)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -429,8 +428,11 @@ const Home: React.FC = () => {
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
               >
-                <Card variant="hover" padding="none" className="overflow-hidden border border-[var(--color-primary-border)]">
-                  {/* Image Section */}
+                <Card
+                  variant="hover"
+                  padding="none"
+                  className="overflow-hidden border border-[var(--color-primary-border)]"
+                >
                   <div className="relative overflow-hidden">
                     <img
                       src={property.image}
@@ -474,7 +476,6 @@ const Home: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Content */}
                   <CardContent className="p-6">
                     <CardTitle className="text-lg group-hover:text-[#2D5A27] transition-colors">
                       {property.title}
@@ -509,7 +510,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FEATURED PROPERTIES ROW 2 - Using Card Component
+      FEATURED PROPERTIES ROW 2
       ============================================ */}
       <section className="py-12 bg-[var(--color-primary-surface)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -526,8 +527,11 @@ const Home: React.FC = () => {
                 variants={fadeInUp}
                 whileHover={{ y: -8 }}
               >
-                <Card variant="hover" padding="none" className="overflow-hidden border border-[var(--color-primary-border)]">
-                  {/* Image Section */}
+                <Card
+                  variant="hover"
+                  padding="none"
+                  className="overflow-hidden border border-[var(--color-primary-border)]"
+                >
                   <div className="relative overflow-hidden">
                     <img
                       src={property.image}
@@ -573,7 +577,6 @@ const Home: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Content */}
                   <CardContent className="p-6">
                     <CardTitle className="text-lg group-hover:text-[#2D5A27] transition-colors">
                       {property.title}
@@ -608,7 +611,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      FREE & PREMIUM - Using Card Component
+      FREE & PREMIUM
       ============================================ */}
       <section className="py-20 bg-[var(--color-primary)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-8">
@@ -638,7 +641,11 @@ const Home: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <Card variant="elevated" padding="lg" className="border-2 border-[var(--color-primary-border)] text-center h-full">
+              <Card
+                variant="elevated"
+                padding="lg"
+                className="border-2 border-[var(--color-primary-border)] text-center h-full"
+              >
                 <CardContent>
                   <span className="text-4xl mb-3 block">🆓</span>
                   <CardTitle>Free</CardTitle>
@@ -719,7 +726,9 @@ const Home: React.FC = () => {
                   <ul className="mt-8 space-y-3 text-left">
                     <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                       <span className="text-[#D4AF37] text-lg">✓</span>
-                      <span className="text-sm font-medium">Unlimited Property Listings</span>
+                      <span className="text-sm font-medium">
+                        Unlimited Property Listings
+                      </span>
                     </li>
                     <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                       <span className="text-[#D4AF37] text-lg">✓</span>
@@ -727,7 +736,9 @@ const Home: React.FC = () => {
                     </li>
                     <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                       <span className="text-[#D4AF37] text-lg">✓</span>
-                      <span className="text-sm font-medium">Up to 20 Images + Virtual Tour</span>
+                      <span className="text-sm font-medium">
+                        Up to 20 Images + Virtual Tour
+                      </span>
                     </li>
                     <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                       <span className="text-[#D4AF37] text-lg">✓</span>
@@ -743,11 +754,15 @@ const Home: React.FC = () => {
                     </li>
                     <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                       <span className="text-[#D4AF37] text-lg">✓</span>
-                      <span className="text-sm font-medium">AI-Powered Recommendations</span>
+                      <span className="text-sm font-medium">
+                        AI-Powered Recommendations
+                      </span>
                     </li>
                     <li className="flex items-center gap-3 text-[var(--color-text-secondary)]">
                       <span className="text-[#D4AF37] text-lg">✓</span>
-                      <span className="text-sm font-medium">Advanced Analytics Dashboard</span>
+                      <span className="text-sm font-medium">
+                        Advanced Analytics Dashboard
+                      </span>
                     </li>
                   </ul>
 
@@ -768,7 +783,11 @@ const Home: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <Card variant="elevated" padding="lg" className="border-2 border-[var(--color-primary-border)] text-center h-full">
+              <Card
+                variant="elevated"
+                padding="lg"
+                className="border-2 border-[var(--color-primary-border)] text-center h-full"
+              >
                 <CardContent>
                   <span className="text-4xl mb-3 block">🏢</span>
                   <CardTitle>Enterprise</CardTitle>
@@ -838,9 +857,9 @@ const Home: React.FC = () => {
       </section>
 
       {/* ============================================
-      CTA SECTION - Height Kam + Margin Sahit
+      CTA SECTION
       ============================================ */}
-      <section className="py-8 md:py-12 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl">
+      <section className="py-8 md:py-12 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl mx-8">
         <div className="max-w-5xl mx-auto px-8">
           <div className="relative z-10 max-w-4xl mx-auto text-center py-4 md:py-6">
             <motion.div
@@ -849,7 +868,6 @@ const Home: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              {/* Icon - Sano */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -859,18 +877,15 @@ const Home: React.FC = () => {
                 🏡
               </motion.div>
 
-              {/* Heading - Sano */}
               <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2">
                 Ready to find your dream home?
               </h2>
 
-              {/* Description - Sano */}
               <p className="text-white/80 max-w-2xl mx-auto mb-4 text-sm md:text-base leading-relaxed">
                 Start exploring hand-picked homes, or talk with an expert agent — either
                 way, we're here to help.
               </p>
 
-              {/* Buttons - Using Button Component */}
               <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Link to="/properties">
@@ -904,4 +919,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default HomePage;

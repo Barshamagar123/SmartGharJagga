@@ -4,7 +4,7 @@ import React from 'react';
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'gold';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   fullWidth?: boolean;
   isLoading?: boolean;
@@ -29,6 +29,10 @@ const variantClasses = {
   // Outline - Uses: --color-primary-border, --color-primary-hover, --color-text-primary
   outline:
     'border-2 border-[var(--color-primary-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-primary-hover)] hover:border-[var(--color-secondary)]',
+
+  // Gold - Uses: Hardcoded gold (not in your variables)
+  gold:
+    'bg-[#D4AF37] text-white hover:bg-[#B8961F] shadow-md hover:shadow-lg',
 };
 
 const sizeClasses = {

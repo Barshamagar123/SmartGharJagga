@@ -1,15 +1,15 @@
 // src/App.tsx
 
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from './components/common/Navbar/Navbar';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './components/context/AuthContext';
 import { LanguageProvider } from './components/context/LanguageContext';
-import HomePage from './pages/HomePage/HomePage';
-import Footer from './components/common/Footer/Footer';
 import Properties from './pages/Properties/Properties';
 import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
+import HomePage from './pages/HomePage/HomePage';
+import LayoutOf from './components/common/Layout/Layout';
+import AIMatching from './pages/AIMatching/AIMatching';
 
 const About = () => (
   <div className="container-custom py-12">
@@ -29,71 +29,25 @@ const Dashboard = () => (
   </div>
 );
 
-// ✅ Layout component that conditionally renders Navbar & Footer
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation();
-  
-  // Pages where Navbar & Footer should be hidden
-  const hideNavbarFooter = ['/login', '/register'].includes(location.pathname);
-  
-  return (
-    <div className="min-h-screen bg-[var(--color-primary)]">
-      {!hideNavbarFooter && <Navbar />}
-      <main className={hideNavbarFooter ? '' : 'pt-16 md:pt-20'}>
-        {children}
-      </main>
-      {!hideNavbarFooter && <Footer />}
-    </div>
-  );
-};
-
 function App() {
   return (
     <Router>
       <AuthProvider>
         <LanguageProvider>
           <Routes>
-            <Route path="/" element={
-              <AppLayout>
-                <HomePage />
-              </AppLayout>
-            } />
-            <Route path="/properties" element={
-              <AppLayout>
-                <Properties />
-              </AppLayout>
-            } />
-            <Route path="/property/:slug" element={
-              <AppLayout>
-                <PropertyDetail />
-              </AppLayout>
-            } />
-            <Route path="/about" element={
-              <AppLayout>
-                <About />
-              </AppLayout>
-            } />
-            <Route path="/contact" element={
-              <AppLayout>
-                <Contact />
-              </AppLayout>
-            } />
-            <Route path="/dashboard" element={
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
-            } />
-            {/* ✅ Login & Register - Without Navbar & Footer */}
-            <Route path="/login" element={
-              <AppLayout>
-                <Login />
-              </AppLayout>
-            } />
-            <Route path="/register" element={
-              <AppLayout>
-                <Register />
-              </AppLayout>
-            } />
+            {/* ✅ All routes wrapped in Layout */}
+            <Route element={<LayoutOf />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/properties" element={<Properties />} />
+              <Route path="/property/:slug" element={<PropertyDetail />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+                        <Route path="/ai-matching" element={<AIMatching />} />  {/* ✅ Add this route */}
+
+            </Route>
           </Routes>
         </LanguageProvider>
       </AuthProvider>
