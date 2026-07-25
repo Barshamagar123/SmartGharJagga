@@ -1,8 +1,8 @@
-// backend/src/modules/payment/payment.service.ts
+// src/modules/payment/payment.service.ts
 
 import axios from 'axios';
-import { PaymentMethod, PaymentStatus, InitiatePaymentDto } from './payment.types';
 import { ApiError } from '../../utils/apiError';
+import { PaymentMethod } from '@prisma/client';
 
 export class PaymentService {
   // ============================================
@@ -16,7 +16,30 @@ export class PaymentService {
   }
 
   // ============================================
-  // 2. INITIATE KHALTI PAYMENT
+  // 2. GENERATE PAYMENT URL
+  // ============================================
+  static generatePaymentUrl(
+    amount: number,
+    transactionId: string,
+    paymentMethod: PaymentMethod,
+    user: any
+  ): string {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    switch (paymentMethod) {
+      case 'KHALTI':
+        return `https://khalti.com/pay?amount=${amount}&txn=${transactionId}&return_url=${frontendUrl}/subscription/callback`;
+      case 'ESEWA':
+        return `https://rc.esewa.com.np/epay/main?amt=${amount}&txnId=${transactionId}&pid=SmartGharJagga`;
+      case 'STRIPE':
+        return `${frontendUrl}/checkout?session_id=${transactionId}`;
+      default:
+        return '';
+    }
+  }
+
+  // ============================================
+  // 3. INITIATE KHALTI PAYMENT
   // ============================================
   static async initiateKhaltiPayment(
     amount: number,
@@ -46,8 +69,6 @@ export class PaymentService {
         website_url: 'https://smartgharjagga.com',
       };
 
-      console.log('📤 Initiating Khalti payment:', { amount, transactionId });
-
       const response = await axios.post(KHALTI_API_URL, payload, {
         headers: {
           'Authorization': `Key ${KHALTI_SECRET_KEY}`,
@@ -55,10 +76,8 @@ export class PaymentService {
         },
       });
 
-      console.log('✅ Khalti response:', response.data);
-
-      if (response.data.status === 'success') {
-        return response.data.redirect_url;
+      if (response.data.status === 'success' || response.data.payment_url) {
+        return response.data.payment_url || response.data.redirect_url;
       } else {
         throw new Error(response.data.message || 'Khalti payment initiation failed');
       }
@@ -69,7 +88,7 @@ export class PaymentService {
   }
 
   // ============================================
-  // 3. INITIATE ESEWA PAYMENT
+  // 4. INITIATE ESEWA PAYMENT
   // ============================================
   static async initiateEsewaPayment(
     amount: number,
@@ -87,8 +106,6 @@ export class PaymentService {
 
       const paymentUrl = `${ESEWA_URL}?amt=${amount}&txnId=${transactionId}&pid=SmartGharJagga&scd=${ESEWA_MERCHANT_ID}&su=${encodeURIComponent(successUrl)}&fu=${encodeURIComponent(failureUrl)}`;
 
-      console.log('📤 eSewa payment URL:', paymentUrl);
-
       return paymentUrl;
     } catch (error: any) {
       console.error('❌ eSewa Payment Error:', error.message);
@@ -97,7 +114,7 @@ export class PaymentService {
   }
 
   // ============================================
-  // 4. INITIATE STRIPE PAYMENT
+  // 5. INITIATE STRIPE PAYMENT
   // ============================================
   static async initiateStripePayment(
     amount: number,
@@ -117,7 +134,7 @@ export class PaymentService {
                 name: 'Smart GharJagga Premium Subscription',
                 description: 'Get premium features for your real estate needs',
               },
-              unit_amount: amount * 100, // Stripe uses smallest currency unit
+              unit_amount: amount * 100,
             },
             quantity: 1,
           },
@@ -140,7 +157,7 @@ export class PaymentService {
   }
 
   // ============================================
-  // 5. VERIFY KHALTI PAYMENT
+  // 6. VERIFY KHALTI PAYMENT
   // ============================================
   static async verifyKhaltiPayment(transactionId: string): Promise<{ success: boolean; data?: any }> {
     try {
@@ -158,11 +175,10 @@ export class PaymentService {
         }
       );
 
-      if (response.data.status === 'completed') {
+      if (response.data.status === 'completed' || response.data.status === 'success') {
         return { success: true, data: response.data };
-      } else {
-        return { success: false };
       }
+      return { success: false };
     } catch (error: any) {
       console.error('❌ Khalti Verification Error:', error.message);
       return { success: false };
@@ -170,19 +186,17 @@ export class PaymentService {
   }
 
   // ============================================
-  // 6. VERIFY ESEWA PAYMENT
+  // 7. VERIFY ESEWA PAYMENT
   // ============================================
   static async verifyEsewaPayment(transactionId: string): Promise<{ success: boolean; data?: any }> {
     try {
       const ESEWA_VERIFY_URL = process.env.ESEWA_VERIFY_URL || 'https://rc.esewa.com.np/api/epay/transaction/status/';
-
       const response = await axios.get(`${ESEWA_VERIFY_URL}?txnId=${transactionId}`);
 
-      if (response.data.status === 'success') {
+      if (response.data.status === 'success' || response.data.status === 'Completed') {
         return { success: true, data: response.data };
-      } else {
-        return { success: false };
       }
+      return { success: false };
     } catch (error: any) {
       console.error('❌ eSewa Verification Error:', error.message);
       return { success: false };
@@ -190,13 +204,11 @@ export class PaymentService {
   }
 
   // ============================================
-  // 7. VERIFY STRIPE PAYMENT
+  // 8. VERIFY STRIPE PAYMENT
   // ============================================
   static async verifyStripePayment(transactionId: string): Promise<{ success: boolean; data?: any }> {
     try {
       const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-      // Search for the session with the transaction ID
       const sessions = await stripe.checkout.sessions.list({
         limit: 10,
         expand: ['data.payment_intent'],
@@ -208,9 +220,8 @@ export class PaymentService {
 
       if (session && session.payment_status === 'paid') {
         return { success: true, data: session };
-      } else {
-        return { success: false };
       }
+      return { success: false };
     } catch (error: any) {
       console.error('❌ Stripe Verification Error:', error.message);
       return { success: false };

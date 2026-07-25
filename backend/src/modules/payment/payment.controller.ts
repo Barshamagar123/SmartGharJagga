@@ -3,29 +3,36 @@
 import { Request, Response } from 'express';
 import { PaymentService } from './payment.service';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { ApiResponse } from '../../utils/apiResponse';
-import { ApiError } from '../../utils/apiError';
-import { PaymentMethod } from './payment.types';
+
+interface AuthRequest extends Request {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    phone?: string;
+  };
+}
 
 export class PaymentController {
   // ============================================
   // 1. INITIATE PAYMENT
   // ============================================
-  static async initiatePayment(req: Request, res: Response) {
+  static async initiatePayment(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.id;
       const { plan, paymentMethod } = req.body;
 
-      // Validate plan
       const planDetails = SubscriptionService.getPlanDetails(plan);
       if (!planDetails) {
-        throw new ApiError(400, 'Invalid plan selected');
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid plan selected',
+        });
       }
 
-      // Generate transaction ID
       const transactionId = PaymentService.generateTransactionId();
 
-      // Create pending subscription
       await SubscriptionService.createPendingSubscription({
         userId,
         plan,
@@ -34,7 +41,6 @@ export class PaymentController {
         paymentMethod,
       });
 
-      // Initiate payment based on method
       let paymentUrl = '';
       const user = req.user;
 
@@ -45,7 +51,7 @@ export class PaymentController {
             transactionId,
             user.name,
             user.email,
-            user.phone
+            user.phone || '9800000000'
           );
           break;
 
@@ -55,7 +61,7 @@ export class PaymentController {
             transactionId,
             user.name,
             user.email,
-            user.phone
+            user.phone || '9800000000'
           );
           break;
 
@@ -68,30 +74,46 @@ export class PaymentController {
           break;
 
         default:
-          throw new ApiError(400, 'Invalid payment method');
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid payment method',
+          });
       }
 
-      return ApiResponse.success(res, {
-        transactionId,
-        paymentUrl,
-        amount: planDetails.price,
-        plan: planDetails,
+      return res.status(200).json({
+        success: true,
+        data: {
+          transactionId,
+          paymentUrl,
+          amount: planDetails.price,
+          plan: planDetails,
+        },
         message: 'Payment initiated successfully',
       });
 
     } catch (error: any) {
-      return ApiResponse.error(res, error.message || 'Payment initiation failed', 400);
+      console.error('❌ Payment initiation error:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Payment initiation failed',
+      });
     }
   }
 
   // ============================================
   // 2. VERIFY PAYMENT
   // ============================================
-  static async verifyPayment(req: Request, res: Response) {
+  static async verifyPayment(req: AuthRequest, res: Response) {
     try {
       const { transactionId, paymentMethod } = req.body;
 
-      // Verify payment with respective gateway
+      if (!transactionId || !paymentMethod) {
+        return res.status(400).json({
+          success: false,
+          message: 'Transaction ID and payment method are required',
+        });
+      }
+
       let verificationResult;
       switch (paymentMethod) {
         case 'KHALTI':
@@ -104,27 +126,33 @@ export class PaymentController {
           verificationResult = await PaymentService.verifyStripePayment(transactionId);
           break;
         default:
-          throw new ApiError(400, 'Invalid payment method');
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid payment method',
+          });
       }
 
       if (!verificationResult.success) {
-        throw new ApiError(400, 'Payment verification failed');
+        return res.status(400).json({
+          success: false,
+          message: 'Payment verification failed',
+        });
       }
 
-      // Activate subscription
-      const subscription = await SubscriptionService.activateSubscription({
-        userId: req.user.id,
-        transactionId,
-        paymentMethod,
-      });
+      // ✅ Now this works - confirmPayment exists!
+      await SubscriptionService.confirmPayment(transactionId);
 
-      return ApiResponse.success(res, {
-        subscription,
+      return res.status(200).json({
+        success: true,
         message: 'Payment verified and subscription activated',
       });
 
     } catch (error: any) {
-      return ApiResponse.error(res, error.message || 'Payment verification failed', 400);
+      console.error('❌ Payment verification error:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Payment verification failed',
+      });
     }
   }
 
@@ -133,23 +161,27 @@ export class PaymentController {
   // ============================================
   static async paymentCallback(req: Request, res: Response) {
     try {
-      const { transactionId, status, paymentMethod } = req.query;
+      const { transactionId, status } = req.query;
 
       if (!transactionId || !status) {
-        throw new ApiError(400, 'Missing transaction details');
+        return res.status(400).json({
+          success: false,
+          message: 'Missing transaction details',
+        });
       }
 
-      // Update subscription status
       if (status === 'success' || status === 'Completed') {
+        // ✅ Now this works - confirmPayment exists!
         await SubscriptionService.confirmPayment(transactionId as string);
         return res.redirect(`${process.env.FRONTEND_URL}/subscription/success?txn=${transactionId}`);
       } else {
+        // ✅ Now this works - failPayment exists!
         await SubscriptionService.failPayment(transactionId as string);
         return res.redirect(`${process.env.FRONTEND_URL}/subscription/failed?txn=${transactionId}`);
       }
 
     } catch (error: any) {
-      console.error('Payment callback error:', error);
+      console.error('❌ Payment callback error:', error);
       return res.redirect(`${process.env.FRONTEND_URL}/subscription/failed`);
     }
   }
@@ -157,38 +189,58 @@ export class PaymentController {
   // ============================================
   // 4. GET PAYMENT STATUS
   // ============================================
-  static async getPaymentStatus(req: Request, res: Response) {
+  static async getPaymentStatus(req: AuthRequest, res: Response) {
     try {
       const { transactionId } = req.params;
       const userId = req.user.id;
 
       const status = await SubscriptionService.getPaymentStatus(transactionId, userId);
 
-      return ApiResponse.success(res, status);
+      if (!status) {
+        return res.status(404).json({
+          success: false,
+          message: 'Payment not found',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: status,
+      });
 
     } catch (error: any) {
-      return ApiResponse.error(res, error.message || 'Failed to get payment status', 400);
+      console.error('❌ Get payment status error:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to get payment status',
+      });
     }
   }
 
   // ============================================
   // 5. GET PAYMENT HISTORY
   // ============================================
-  static async getPaymentHistory(req: Request, res: Response) {
+  static async getPaymentHistory(req: AuthRequest, res: Response) {
     try {
       const userId = req.user.id;
-      const { page = 1, limit = 10 } = req.query;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
 
-      const history = await SubscriptionService.getPaymentHistory(
-        userId,
-        Number(page),
-        Number(limit)
-      );
+      const history = await SubscriptionService.getPaymentHistory(userId, page, limit);
 
-      return ApiResponse.success(res, history);
+      return res.status(200).json({
+        success: true,
+        data: history,
+      });
 
     } catch (error: any) {
-      return ApiResponse.error(res, error.message || 'Failed to get payment history', 400);
+      console.error('❌ Get payment history error:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to get payment history',
+      });
     }
   }
 }
+
+export default PaymentController;

@@ -1,123 +1,59 @@
 // src/modules/subscription/subscription.routes.ts
 
-import { Router } from 'express';
+import express, { Request, Response } from 'express';
 import { SubscriptionController } from './subscription.controller';
-import { SubscriptionService } from './subscription.service';
-import { PrismaClient } from '@prisma/client';
 import { authMiddleware } from '@/middleware/auth.middleware';
-import { requireRole } from '@/middleware/role.middleware';
-import { validate } from '@/middleware/validation.middleware';
-import { initiateSubscriptionSchema } from './subscription.validation';
 
-const prisma = new PrismaClient();
-const subscriptionService = new SubscriptionService(prisma);
-const subscriptionController = new SubscriptionController(subscriptionService);
-
-const router = Router();
+const router = express.Router();
 
 // ============================================
-// PUBLIC ROUTES
+// 📌 PUBLIC ROUTES
 // ============================================
 
 /**
- * @route GET /api/v1/subscriptions/plans
- * @desc Get all subscription plans
- * @access Public
+ * @route   GET /api/v1/subscriptions/plans
+ * @desc    Get all subscription plans
+ * @access  Public
  */
-router.get('/plans', subscriptionController.getPlans);
-
-/**
- * @route GET /api/v1/subscriptions/payment/callback
- * @desc Payment callback from Khalti/eSewa
- * @access Public
- */
-router.get('/payment/callback', subscriptionController.paymentCallback);
+router.get('/plans', SubscriptionController.getPlans);
 
 // ============================================
-// PROTECTED ROUTES
+// 📌 PROTECTED ROUTES
 // ============================================
 
 /**
- * @route POST /api/v1/subscriptions/initiate
- * @desc Initiate subscription with payment
- * @access Private
+ * @route   POST /api/v1/subscriptions/initiate
+ * @desc    Initiate subscription
+ * @access  Private
  */
-router.post(
-  '/initiate',
-  authMiddleware,
-  validate(initiateSubscriptionSchema),
-  subscriptionController.initiateSubscription
-);
+router.post('/initiate', authMiddleware, SubscriptionController.initiateSubscription);
 
 /**
- * @route GET /api/v1/subscriptions/me
- * @desc Get user's current subscription
- * @access Private
+ * @route   GET /api/v1/subscriptions/me
+ * @desc    Get current user's subscription
+ * @access  Private
  */
-router.get(
-  '/me',
-  authMiddleware,
-  subscriptionController.getUserSubscription
-);
+router.get('/me', authMiddleware, SubscriptionController.getMySubscription);
 
 /**
- * @route GET /api/v1/subscriptions/payments
- * @desc Get payment history
- * @access Private
+ * @route   POST /api/v1/subscriptions/cancel
+ * @desc    Cancel subscription
+ * @access  Private
  */
-router.get(
-  '/payments',
-  authMiddleware,
-  subscriptionController.getPaymentHistory
-);
+router.post('/cancel', authMiddleware, SubscriptionController.cancelSubscription);
 
 /**
- * @route GET /api/v1/subscriptions/payments/:paymentId
- * @desc Get payment by ID
- * @access Private
+ * @route   GET /api/v1/subscriptions/history
+ * @desc    Get payment history
+ * @access  Private
  */
-router.get(
-  '/payments/:paymentId',
-  authMiddleware,
-  subscriptionController.getPaymentById
-);
+router.get('/history', authMiddleware, SubscriptionController.getPaymentHistory);
 
 /**
- * @route POST /api/v1/subscriptions/cancel
- * @desc Cancel subscription
- * @access Private
+ * @route   GET /api/v1/subscriptions/status
+ * @desc    Check if user has active subscription
+ * @access  Private
  */
-router.post(
-  '/cancel',
-  authMiddleware,
-  subscriptionController.cancelSubscription
-);
-
-/**
- * @route GET /api/v1/subscriptions/premium-check
- * @desc Check if user has premium access
- * @access Private
- */
-router.get(
-  '/premium-check',
-  authMiddleware,
-  subscriptionController.checkPremiumAccess
-);
-
-// ============================================
-// ADMIN ROUTES
-// ============================================
-
-/**
- * @route GET /api/v1/subscriptions/analytics
- * @desc Get subscription analytics
- * @access Admin only
- */
-router.get(
-  '/analytics',
-  authMiddleware,
-  requireRole('ADMIN'),
-  subscriptionController.getSubscriptionAnalytics
-);
+router.get('/status', authMiddleware, SubscriptionController.checkSubscriptionStatus);
 
 export default router;

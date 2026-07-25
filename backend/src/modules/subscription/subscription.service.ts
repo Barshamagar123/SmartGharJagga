@@ -1,34 +1,30 @@
 // src/modules/subscription/subscription.service.ts
 
-import { PrismaClient, SubscriptionPlan, SubscriptionStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
-import { ApiError } from '@/utils/apiError';
-import { PaymentService } from './payment.service';
-import { InitiateSubscriptionRequest, InitiatePaymentResponse } from './subscription.types';
+import { PrismaClient, SubscriptionPlan, SubscriptionStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
+import { ApiError } from '../../utils/apiError';
+import { PaymentService } from '../payment/payment.service';
+
+// ✅ Create Prisma instance directly
+const prisma = new PrismaClient();
 
 export class SubscriptionService {
-  private paymentService: PaymentService;
-
-  constructor(private prisma: PrismaClient) {
-    this.paymentService = new PaymentService();
-  }
-
   // ============================================
   // 1. GET PLANS
   // ============================================
   getPlans() {
     return {
       free: {
-        id: 'free',
+        id: 'FREE',
         name: 'Free',
         price: 0,
         currency: 'NPR',
         duration: 0,
         features: ['3 photos per listing', 'Basic listing', 'Manual search'],
       },
-      premium: {
-        id: 'premium',
-        name: 'Premium',
-        price: 4000,
+      sellerPremium: {
+        id: 'SELLER_PREMIUM',
+        name: 'Seller Premium',
+        price: 7000,
         currency: 'NPR',
         duration: 30,
         features: [
@@ -41,19 +37,98 @@ export class SubscriptionService {
           'Priority support',
         ],
       },
+      buyerPremium: {
+        id: 'BUYER_PREMIUM',
+        name: 'Buyer Premium',
+        price: 999,
+        currency: 'NPR',
+        duration: 30,
+        features: [
+          'Unlimited AI matches',
+          'Match scores',
+          'Property alerts',
+          'Unlimited favorites',
+          'Market insights',
+          'WhatsApp notifications',
+          'Priority support',
+        ],
+      },
     };
   }
 
   // ============================================
-  // 2. INITIATE SUBSCRIPTION
+  // 2. GET PLAN DETAILS
+  // ============================================
+  getPlanDetails(planType: string) {
+    const plans: Record<string, any> = {
+      SELLER_PREMIUM: {
+        id: 'SELLER_PREMIUM',
+        name: 'Seller Premium',
+        price: 7000,
+        duration: 30,
+        features: {
+          aiMatching: true,
+          aiMatchesLimit: -1,
+          propertyListings: -1,
+          photos: 20,
+          videoTour: true,
+          favorites: 0,
+          marketInsights: true,
+          whatsAppNotifications: true,
+          prioritySupport: true,
+          featuredListing: true,
+        },
+      },
+      BUYER_PREMIUM: {
+        id: 'BUYER_PREMIUM',
+        name: 'Buyer Premium',
+        price: 999,
+        duration: 30,
+        features: {
+          aiMatching: true,
+          aiMatchesLimit: -1,
+          propertyListings: 0,
+          photos: 0,
+          videoTour: false,
+          favorites: -1,
+          marketInsights: true,
+          whatsAppNotifications: true,
+          prioritySupport: true,
+          featuredListing: false,
+        },
+      },
+      FREE: {
+        id: 'FREE',
+        name: 'Free',
+        price: 0,
+        duration: 0,
+        features: {
+          aiMatching: false,
+          aiMatchesLimit: 0,
+          propertyListings: 1,
+          photos: 3,
+          videoTour: false,
+          favorites: 5,
+          marketInsights: false,
+          whatsAppNotifications: false,
+          prioritySupport: false,
+          featuredListing: false,
+        },
+      },
+    };
+    return plans[planType] || null;
+  }
+
+  // ============================================
+  // 3. INITIATE SUBSCRIPTION
   // ============================================
   async initiateSubscription(
     userId: string,
-    data: InitiateSubscriptionRequest
-  ): Promise<InitiatePaymentResponse> {
+    data: { planType: SubscriptionPlan; paymentMethod: PaymentMethod }
+  ) {
     const { planType, paymentMethod } = data;
 
-    const user = await this.prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
     });
 
@@ -61,7 +136,7 @@ export class SubscriptionService {
       throw new ApiError(404, 'User not found');
     }
 
-    const existing = await this.prisma.subscription.findFirst({
+    const existing = await prisma.subscription.findFirst({
       where: {
         userId,
         isActive: true,
@@ -78,33 +153,32 @@ export class SubscriptionService {
       throw new ApiError(400, 'Invalid plan');
     }
 
-    const transactionId = this.paymentService.generateTransactionId();
+    const transactionId = PaymentService.generateTransactionId();
 
     // Create subscription
-    const subscription = await this.prisma.subscription.create({
+    const subscription = await prisma.subscription.create({
       data: {
         userId,
-        planType,
-        status: 'EXPIRED',
+        planType: planType,
+        status: 'PENDING' as SubscriptionStatus,
         isActive: false,
         startDate: new Date(),
         endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
         price: plan.price,
         features: plan.features,
-        // ✅ Store transactionId
         paymentId: transactionId,
       },
     });
 
-    // Create payment record (PENDING)
-    const payment = await this.prisma.payment.create({
+    // Create payment record
+    const payment = await prisma.payment.create({
       data: {
         subscriptionId: subscription.id,
         userId,
         amount: plan.price,
         paymentMethod: paymentMethod,
         transactionId: transactionId,
-        paymentStatus: 'PENDING',
+        paymentStatus: 'PENDING' as PaymentStatus,
         paymentData: {
           initiatedAt: new Date().toISOString(),
           planType: planType,
@@ -114,12 +188,36 @@ export class SubscriptionService {
       },
     });
 
-    const paymentUrl = this.paymentService.generatePaymentUrl(
-      plan.price,
-      transactionId,
-      paymentMethod,
-      user
-    );
+    let paymentUrl = '';
+    switch (paymentMethod) {
+      case 'KHALTI':
+        paymentUrl = await PaymentService.initiateKhaltiPayment(
+          plan.price,
+          transactionId,
+          user.name,
+          user.email,
+          user.phone || '9800000000'
+        );
+        break;
+      case 'ESEWA':
+        paymentUrl = await PaymentService.initiateEsewaPayment(
+          plan.price,
+          transactionId,
+          user.name,
+          user.email,
+          user.phone || '9800000000'
+        );
+        break;
+      case 'STRIPE':
+        paymentUrl = await PaymentService.initiateStripePayment(
+          plan.price,
+          transactionId,
+          user.email
+        );
+        break;
+      default:
+        throw new ApiError(400, 'Invalid payment method');
+    }
 
     return {
       subscriptionId: subscription.id,
@@ -132,13 +230,12 @@ export class SubscriptionService {
   }
 
   // ============================================
-  // 3. ACTIVATE SUBSCRIPTION (After Payment)
+  // 4. ACTIVATE SUBSCRIPTION
   // ============================================
   async activateSubscription(transactionId: string, paymentData: any) {
-    // ✅ FIX: Use paymentId instead of transactionId
-    const subscription = await this.prisma.subscription.findFirst({
+    const subscription = await prisma.subscription.findFirst({
       where: {
-        paymentId: transactionId,  // ✅ Use paymentId field
+        paymentId: transactionId,
         isActive: false,
       },
     });
@@ -147,10 +244,10 @@ export class SubscriptionService {
       throw new ApiError(404, 'Subscription not found');
     }
 
-    const payment = await this.prisma.payment.findFirst({
+    const payment = await prisma.payment.findFirst({
       where: {
         transactionId: transactionId,
-        paymentStatus: 'PENDING',
+        paymentStatus: 'PENDING' as PaymentStatus,
       },
     });
 
@@ -158,10 +255,10 @@ export class SubscriptionService {
       throw new ApiError(404, 'Payment not found');
     }
 
-    const updatedPayment = await this.prisma.payment.update({
+    await prisma.payment.update({
       where: { id: payment.id },
       data: {
-        paymentStatus: 'SUCCESS',
+        paymentStatus: 'SUCCESS' as PaymentStatus,
         paidAt: new Date(),
         paymentData: {
           ...(payment.paymentData as any),
@@ -172,38 +269,82 @@ export class SubscriptionService {
       },
     });
 
-    const activatedSubscription = await this.prisma.subscription.update({
+    const activatedSubscription = await prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         isActive: true,
-        status: 'ACTIVE',
+        status: 'ACTIVE' as SubscriptionStatus,
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        paymentId: payment.id,
       },
     });
 
-    await this.prisma.user.update({
-      where: { id: subscription.userId },
-      data: { role: 'SELLER' },
-    });
+    if (subscription.planType === 'PREMIUM') {
+      await prisma.user.update({
+        where: { id: subscription.userId },
+        data: { role: 'SELLER' as Role },
+      });
+    }
 
     return {
       success: true,
       message: 'Payment successful! Subscription activated.',
       subscription: activatedSubscription,
-      payment: updatedPayment,
+      payment,
     };
   }
 
   // ============================================
-  // 4. HANDLE PAYMENT FAILURE
+  // 5. CONFIRM PAYMENT (Callback)
+  // ============================================
+  async confirmPayment(transactionId: string) {
+    const subscription = await prisma.subscription.findFirst({
+      where: { paymentId: transactionId },
+    });
+
+    if (!subscription) {
+      throw new ApiError(404, 'Subscription not found for transaction: ' + transactionId);
+    }
+
+    return prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: 'ACTIVE' as SubscriptionStatus,
+        isActive: true,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+
+  // ============================================
+  // 6. FAIL PAYMENT (Callback)
+  // ============================================
+  async failPayment(transactionId: string) {
+    const subscription = await prisma.subscription.findFirst({
+      where: { paymentId: transactionId },
+    });
+
+    if (!subscription) {
+      throw new ApiError(404, 'Subscription not found for transaction: ' + transactionId);
+    }
+
+    return prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: 'CANCELLED' as SubscriptionStatus,
+        isActive: false,
+      },
+    });
+  }
+
+  // ============================================
+  // 7. HANDLE PAYMENT FAILURE
   // ============================================
   async handlePaymentFailure(transactionId: string, failureReason: string) {
-    // ✅ FIX: Use paymentId instead of transactionId
-    const subscription = await this.prisma.subscription.findFirst({
+    const subscription = await prisma.subscription.findFirst({
       where: {
-        paymentId: transactionId,  // ✅ Use paymentId field
+        paymentId: transactionId,
         isActive: false,
       },
     });
@@ -212,10 +353,10 @@ export class SubscriptionService {
       throw new ApiError(404, 'Subscription not found');
     }
 
-    const payment = await this.prisma.payment.findFirst({
+    const payment = await prisma.payment.findFirst({
       where: {
         transactionId: transactionId,
-        paymentStatus: 'PENDING',
+        paymentStatus: 'PENDING' as PaymentStatus,
       },
     });
 
@@ -223,10 +364,10 @@ export class SubscriptionService {
       throw new ApiError(404, 'Payment not found');
     }
 
-    const updatedPayment = await this.prisma.payment.update({
+    await prisma.payment.update({
       where: { id: payment.id },
       data: {
-        paymentStatus: 'FAILED',
+        paymentStatus: 'FAILED' as PaymentStatus,
         failureReason: failureReason,
         paymentData: {
           ...(payment.paymentData as any),
@@ -237,10 +378,10 @@ export class SubscriptionService {
       },
     });
 
-    const cancelledSubscription = await this.prisma.subscription.update({
+    const cancelledSubscription = await prisma.subscription.update({
       where: { id: subscription.id },
       data: {
-        status: 'CANCELLED',
+        status: 'CANCELLED' as SubscriptionStatus,
       },
     });
 
@@ -248,15 +389,15 @@ export class SubscriptionService {
       success: false,
       message: 'Payment failed',
       subscription: cancelledSubscription,
-      payment: updatedPayment,
+      payment,
     };
   }
 
   // ============================================
-  // 5. GET USER SUBSCRIPTION
+  // 8. GET USER SUBSCRIPTION
   // ============================================
   async getUserSubscription(userId: string) {
-    const subscription = await this.prisma.subscription.findFirst({
+    const subscription = await prisma.subscription.findFirst({
       where: {
         userId,
         isActive: true,
@@ -289,7 +430,7 @@ export class SubscriptionService {
       features: subscription.features,
       startDate: subscription.startDate,
       endDate: subscription.endDate,
-      payments: subscription.payments.map((p) => ({
+      payments: subscription.payments.map((p: any) => ({
         id: p.id,
         amount: Number(p.amount),
         status: p.paymentStatus,
@@ -301,65 +442,70 @@ export class SubscriptionService {
   }
 
   // ============================================
-  // 6. GET PAYMENT HISTORY
+  // 9. GET PAYMENT STATUS
   // ============================================
-  async getPaymentHistory(userId: string) {
-    const payments = await this.prisma.payment.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        subscription: {
-          select: {
-            id: true,
-            planType: true,
-            isActive: true,
-          },
-        },
-      },
-    });
-
-    return payments.map((p) => ({
-      id: p.id,
-      amount: Number(p.amount),
-      method: p.paymentMethod,
-      status: p.paymentStatus,
-      transactionId: p.transactionId,
-      paidAt: p.paidAt,
-      createdAt: p.createdAt,
-      subscription: {
-        id: p.subscriptionId,
-        planType: p.subscription.planType,
-        isActive: p.subscription.isActive,
-      },
-    }));
-  }
-
-  // ============================================
-  // 7. GET PAYMENT BY ID
-  // ============================================
-  async getPaymentById(paymentId: string, userId: string) {
-    const payment = await this.prisma.payment.findFirst({
+  async getPaymentStatus(transactionId: string, userId: string) {
+    return prisma.subscription.findFirst({
       where: {
-        id: paymentId,
         userId,
+        paymentId: transactionId,
       },
-      include: {
-        subscription: true,
+      select: {
+        id: true,
+        planType: true,
+        price: true,
+        status: true,
+        isActive: true,
+        startDate: true,
+        endDate: true,
+        createdAt: true,
       },
     });
-
-    if (!payment) {
-      throw new ApiError(404, 'Payment not found');
-    }
-
-    return payment;
   }
 
   // ============================================
-  // 8. CANCEL SUBSCRIPTION
+  // 10. GET PAYMENT HISTORY
+  // ============================================
+  async getPaymentHistory(userId: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+
+    const [subscriptions, total] = await Promise.all([
+      prisma.subscription.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          planType: true,
+          price: true,
+          status: true,
+          isActive: true,
+          startDate: true,
+          endDate: true,
+          createdAt: true,
+          paymentId: true,
+        },
+      }),
+      prisma.subscription.count({ where: { userId } }),
+    ]);
+
+    return {
+      transactions: subscriptions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // ============================================
+  // 11. CANCEL SUBSCRIPTION
   // ============================================
   async cancelSubscription(userId: string) {
-    const subscription = await this.prisma.subscription.findFirst({
+    const subscription = await prisma.subscription.findFirst({
       where: {
         userId,
         isActive: true,
@@ -371,11 +517,11 @@ export class SubscriptionService {
       throw new ApiError(404, 'No active subscription found');
     }
 
-    await this.prisma.subscription.update({
+    await prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         isActive: false,
-        status: 'CANCELLED',
+        status: 'CANCELLED' as SubscriptionStatus,
       },
     });
 
@@ -383,10 +529,10 @@ export class SubscriptionService {
   }
 
   // ============================================
-  // 9. CHECK ACTIVE SUBSCRIPTION
+  // 12. HAS ACTIVE SUBSCRIPTION
   // ============================================
   async hasActiveSubscription(userId: string) {
-    const subscription = await this.prisma.subscription.findFirst({
+    const subscription = await prisma.subscription.findFirst({
       where: {
         userId,
         isActive: true,
@@ -404,36 +550,36 @@ export class SubscriptionService {
   }
 
   // ============================================
-  // 10. GET SUBSCRIPTION ANALYTICS (Admin)
+  // 13. GET SUBSCRIPTION ANALYTICS (Admin)
   // ============================================
   async getSubscriptionAnalytics() {
-    const totalSubscriptions = await this.prisma.subscription.count();
-    const activeSubscriptions = await this.prisma.subscription.count({
+    const totalSubscriptions = await prisma.subscription.count();
+    const activeSubscriptions = await prisma.subscription.count({
       where: { isActive: true },
     });
-    const expiredSubscriptions = await this.prisma.subscription.count({
-      where: { status: 'EXPIRED' },
+    const expiredSubscriptions = await prisma.subscription.count({
+      where: { status: 'EXPIRED' as SubscriptionStatus },
     });
-    const cancelledSubscriptions = await this.prisma.subscription.count({
-      where: { status: 'CANCELLED' },
+    const cancelledSubscriptions = await prisma.subscription.count({
+      where: { status: 'CANCELLED' as SubscriptionStatus },
     });
 
-    const totalRevenue = await this.prisma.payment.aggregate({
-      where: { paymentStatus: 'SUCCESS' },
+    const totalRevenue = await prisma.payment.aggregate({
+      where: { paymentStatus: 'SUCCESS' as PaymentStatus },
       _sum: { amount: true },
     });
 
-    const successfulPayments = await this.prisma.payment.count({
-      where: { paymentStatus: 'SUCCESS' },
+    const successfulPayments = await prisma.payment.count({
+      where: { paymentStatus: 'SUCCESS' as PaymentStatus },
     });
-    const failedPayments = await this.prisma.payment.count({
-      where: { paymentStatus: 'FAILED' },
+    const failedPayments = await prisma.payment.count({
+      where: { paymentStatus: 'FAILED' as PaymentStatus },
     });
-    const pendingPayments = await this.prisma.payment.count({
-      where: { paymentStatus: 'PENDING' },
+    const pendingPayments = await prisma.payment.count({
+      where: { paymentStatus: 'PENDING' as PaymentStatus },
     });
 
-    const byPlan = await this.prisma.subscription.groupBy({
+    const byPlan = await prisma.subscription.groupBy({
       by: ['planType'],
       where: { isActive: true },
       _count: true,
@@ -457,34 +603,5 @@ export class SubscriptionService {
         pending: pendingPayments,
       },
     };
-  }
-
-  // ============================================
-  // 11. PRIVATE HELPERS
-  // ============================================
-  private getPlanDetails(planType: SubscriptionPlan) {
-    const plans = {
-      PREMIUM: {
-        name: 'Premium',
-        price: 4000,
-        duration: 30,
-        features: [
-          '20 photos per listing',
-          'Featured badge',
-          'TOP position in search',
-          'AI buyer matching',
-          'Buyer insights',
-          'Advanced analytics',
-          'Priority support',
-        ],
-      },
-      FREE: {
-        name: 'Free',
-        price: 0,
-        duration: 0,
-        features: ['3 photos per listing', 'Basic listing', 'Manual search'],
-      },
-    };
-    return plans[planType] || null;
   }
 }
