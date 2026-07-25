@@ -237,15 +237,18 @@ model Payment {
   paymentData    Json? // ✅ Store full payment response
   failureReason  String? // ✅ Why payment failed
 
+  gatewayReference String?     // Reference from gateway
+  
+  
+ 
+
   // ✅ Additional tracking fields
   paidAt       DateTime? // ✅ When payment was completed
   refundedAt   DateTime? // ✅ If refunded
   refundReason String? // ✅ Why refunded
 
-  // Relations
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -253,6 +256,8 @@ model Payment {
   @@index([userId])
   @@index([transactionId])
   @@index([paymentStatus])
+    @@index([createdAt])
+
   @@map("payments")
 }
 
