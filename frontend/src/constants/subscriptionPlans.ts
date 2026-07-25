@@ -1,70 +1,43 @@
-// src/constants/subscriptionPlans.ts
+// src/constants/subscription.ts
 
-export const SELLER_PLANS = [
-  {
-    id: 'seller_free',
+export const SUBSCRIPTION_PLANS = {
+  FREE: {
+    id: 'FREE',
     name: 'Free',
-    price: '₹0',
-    period: '/mo',
-    role: 'SELLER',
-    badge: null,
+    price: 0,
+    currency: 'NPR',
     features: [
+      '3 photos per listing',
       'Basic listing',
-      '3 photos',
-      'Standard visibility',
-      'No AI matching',
-      'Basic support',
-    ],
-    isPopular: false,
-    isCurrent: false,
-  },
-  {
-    id: 'seller_premium',
-    name: 'Premium',
-    price: '₹7,000',
-    period: '/mo',
-    role: 'SELLER',
-    badge: 'MOST POPULAR',
-    features: [
-      'Everything in Free',
-      'Video tour',
-      '✅ Cosine Similarity AI',
-      'FULL AI POWER!',
-      '20+ photos',
-      'Featured listing',
-      'Priority support',
-      'Advanced analytics',
-    ],
-    isPopular: true,
-    isCurrent: false,
-  },
-];
-
-export const BUYER_PLANS = [
-  {
-    id: 'buyer_free',
-    name: 'Free',
-    price: '₹0',
-    period: '/mo',
-    role: 'BUYER',
-    badge: null,
-    features: [
-      'Basic search',
-      'View properties',
-      'Contact sellers',
+      'Manual search',
       '5 favorites',
       '3 AI matches',
     ],
-    isPopular: false,
-    isCurrent: false,
+    color: 'gray',
   },
-  {
-    id: 'buyer_premium',
-    name: 'Premium',
-    price: '₹999',
-    period: '/mo',
-    role: 'BUYER',
-    badge: 'BEST VALUE',
+  SELLER_PREMIUM: {
+    id: 'SELLER_PREMIUM',
+    name: 'Seller Premium',
+    price: 7000,
+    currency: 'NPR',
+    features: [
+      '20 photos per listing',
+      'Featured badge',
+      'TOP position in search',
+      'AI buyer matching',
+      'Buyer insights',
+      'Advanced analytics',
+      'Priority support',
+      'Video tour',
+    ],
+    color: 'gold',
+    popular: true,
+  },
+  BUYER_PREMIUM: {
+    id: 'BUYER_PREMIUM',
+    name: 'Buyer Premium',
+    price: 999,
+    currency: 'NPR',
     features: [
       'Unlimited AI matches',
       'Match scores',
@@ -74,28 +47,13 @@ export const BUYER_PLANS = [
       'WhatsApp notifications',
       'Priority support',
     ],
-    isPopular: true,
-    isCurrent: false,
+    color: 'green',
+    popular: true,
   },
-];
-
-export const FEATURE_COMPARISON = {
-  seller: [
-    { feature: 'Property Listings', free: '1', premium: 'Unlimited' },
-    { feature: 'Photos', free: '3', premium: '20+' },
-    { feature: 'Video Tour', free: '❌', premium: '✅' },
-    { feature: 'AI Matching', free: '❌', premium: '✅ Full AI Power' },
-    { feature: 'Featured Listing', free: '❌', premium: '✅' },
-    { feature: 'Priority Support', free: '❌', premium: '✅' },
-    { feature: 'Analytics', free: 'Basic', premium: 'Advanced' },
-  ],
-  buyer: [
-    { feature: 'Property Search', free: 'Basic', premium: 'Advanced' },
-    { feature: 'AI Matches', free: '3', premium: 'Unlimited' },
-    { feature: 'Match Scores', free: '❌', premium: '✅' },
-    { feature: 'Favorites', free: '5', premium: 'Unlimited' },
-    { feature: 'Property Alerts', free: '❌', premium: '✅' },
-    { feature: 'Market Insights', free: '❌', premium: '✅' },
-    { feature: 'WhatsApp Notifications', free: '❌', premium: '✅' },
-  ],
 };
+
+export const PAYMENT_METHODS = [
+  { id: 'KHALTI', name: 'Khalti', icon: '💳' },
+  { id: 'ESEWA', name: 'eSewa', icon: '🏦' },
+  { id: 'STRIPE', name: 'Stripe', icon: '💳' },
+];

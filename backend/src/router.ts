@@ -9,8 +9,9 @@ import qrRoutes from '@/modules/qr/qr.routes';
 import languageRoutes from '@/modules/language/language.routes';  
 import subscriptionRoutes from '@/modules/subscription/subscription.routes'; 
 import messageRoutes from '@/modules/message/message.routes'; 
-import reviewRoutes from '@/modules/review/review.routes'; 
-import { paymentRoutes } from '@/modules/payment/payment.routes';
+import reviewRoutes from '@/modules/review/review.routes';
+// ✅ ADD THIS IMPORT
+import paymentRoutes from '@/modules/payment/payment.routes'; 
 
 const router = Router();
 
@@ -30,9 +31,9 @@ router.use('/map', mapRoutes);
 router.use('/qr', qrRoutes);  
 router.use('/language', languageRoutes);  
 router.use('/subscriptions', subscriptionRoutes); 
-router.use('/messages', messageRoutes); // ✅ ADD THIS
-router.use('/reviews', reviewRoutes); // ✅ ADD THIS
-router.use('/api/v1/payments', paymentRoutes);
+router.use('/messages', messageRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/payments', paymentRoutes); // ✅ Now works
 
 router.get('/health', (_req, res) => {
   res.status(200).json({

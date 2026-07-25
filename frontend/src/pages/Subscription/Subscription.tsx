@@ -2,43 +2,49 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSubscription } from '../../hooks/useSubscription';
 import { Badge } from '../../components/common/Badge/Badge';
 import { Button } from '../../components/common/Button/Button';
 import { Card, CardContent } from '../../components/common/Card/Card';
-import { useAuth } from '../../hooks/useAuth';
-import { useSubscription } from '../../hooks/useSubscription';
-import { SELLER_PLANS, BUYER_PLANS, FEATURE_COMPARISON } from '../../constants/subscriptionPlans';
+import PlanCard from './components/PlanCard';
 import PaymentModal from './components/PaymentModal';
-import FeatureComparison from './components/FeatureComparison';
+import { SUBSCRIPTION_PLANS, PAYMENT_METHODS } from '../../constants/subscription';
 
 const Subscription: React.FC = () => {
-  const { user } = useAuth();
-  const { isPremium, isPremiumSeller, isPremiumBuyer, upgradeToPremium } = useSubscription();
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const {
+    plans,
+    currentSubscription,
+    isPremium,
+    isLoading,
+    initiateSubscription,
+    refreshSubscription,
+  } = useSubscription();
+
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
-
-  // Update plans with current status
-  const sellerPlans = SELLER_PLANS.map(plan => ({
-    ...plan,
-    isCurrent: plan.id === 'seller_premium' ? isPremiumSeller : !isPremiumSeller && !isPremiumBuyer,
-  }));
-
-  const buyerPlans = BUYER_PLANS.map(plan => ({
-    ...plan,
-    isCurrent: plan.id === 'buyer_premium' ? isPremiumBuyer : !isPremiumBuyer && !isPremiumSeller,
-  }));
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState('KHALTI');
 
   const handleUpgrade = (plan: any) => {
     setSelectedPlan(plan);
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = async () => {
-    if (selectedPlan) {
-      const planType = selectedPlan.id === 'seller_premium' ? 'SELLER_PREMIUM' : 'BUYER_PREMIUM';
-      await upgradeToPremium(planType);
-      setShowPaymentModal(false);
-      setSelectedPlan(null);
+  const handlePayment = async () => {
+    if (!selectedPlan) return;
+
+    const result = await initiateSubscription(selectedPlan.id, selectedMethod as any);
+    
+    if (result.success) {
+      // ✅ Redirect handled in hook
+    } else {
+      alert(result.message || 'Payment initiation failed');
+    }
+  };
+
+  const handleCancel = async () => {
+    if (window.confirm('Are you sure you want to cancel your subscription?')) {
+      await cancelSubscription();
+      refreshSubscription();
     }
   };
 
@@ -80,108 +86,80 @@ const Subscription: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Seller Plans */}
-        <div className="mb-16">
-          <div className="text-center mb-8">
-            <Badge variant="primary" size="lg">📊 SELLER PLANS</Badge>
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mt-3">
-              Sell Your Property Faster
-            </h2>
-          </div>
-
+        {/* Current Subscription Status */}
+        {currentSubscription && currentSubscription.hasActiveSubscription && (
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            variants={fadeInUp}
+            className="mb-8 max-w-4xl mx-auto"
           >
-            {sellerPlans.map((plan) => (
-              <motion.div key={plan.id} variants={fadeInUp}>
-                <PlanCard
-                  plan={plan}
-                  onUpgrade={() => handleUpgrade(plan)}
-                />
-              </motion.div>
-            ))}
+            <Card variant="elevated" padding="md" className="border border-[#2D5A27]">
+              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">✅</span>
+                  <div>
+                    <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
+                      Current Plan: {currentSubscription.planType}
+                    </h3>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
+                      {currentSubscription.daysRemaining} days remaining
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Badge variant="gold" size="lg">ACTIVE</Badge>
+                  <Button variant="outline" size="sm" onClick={handleCancel}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
-        </div>
+        )}
 
-        {/* Buyer Plans */}
-        <div>
-          <div className="text-center mb-8">
-            <Badge variant="secondary" size="lg">🛒 BUYER PLANS</Badge>
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mt-3">
-              Find Your Dream Home with AI
-            </h2>
-          </div>
-
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {buyerPlans.map((plan) => (
-              <motion.div key={plan.id} variants={fadeInUp}>
-                <PlanCard
-                  plan={plan}
-                  onUpgrade={() => handleUpgrade(plan)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-
-        {/* Feature Comparison */}
+        {/* Plans Grid */}
         <motion.div
-          variants={fadeInUp}
-          className="mt-16"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
         >
-          <FeatureComparison />
+          {/* Free Plan */}
+          <PlanCard
+            plan={SUBSCRIPTION_PLANS.FREE}
+            isCurrent={!isPremium}
+            onUpgrade={() => handleUpgrade(SUBSCRIPTION_PLANS.FREE)}
+          />
+
+          {/* Seller Premium */}
+          <PlanCard
+            plan={SUBSCRIPTION_PLANS.SELLER_PREMIUM}
+            isCurrent={currentSubscription?.planType === 'SELLER_PREMIUM'}
+            onUpgrade={() => handleUpgrade(SUBSCRIPTION_PLANS.SELLER_PREMIUM)}
+          />
+
+          {/* Buyer Premium */}
+          <PlanCard
+            plan={SUBSCRIPTION_PLANS.BUYER_PREMIUM}
+            isCurrent={currentSubscription?.planType === 'BUYER_PREMIUM'}
+            onUpgrade={() => handleUpgrade(SUBSCRIPTION_PLANS.BUYER_PREMIUM)}
+          />
         </motion.div>
 
-        {/* AI Matching Info */}
-        <motion.div
-          variants={fadeInUp}
-          className="mt-12 bg-gradient-to-r from-[#E8F0E4] to-[#2D5A27]/10 rounded-2xl p-8 border border-[#2D5A27]/20 max-w-4xl mx-auto"
-        >
-          <div className="flex items-start gap-4">
-            <span className="text-4xl">🤖</span>
-            <div>
-              <h3 className="text-xl font-bold text-[var(--color-text-primary)]">
-                Cosine Similarity AI Matching
-              </h3>
-              <p className="text-[var(--color-text-secondary)] mt-1">
-                Our AI uses advanced cosine similarity algorithms to find the perfect property match for you.
-                {isPremium ? (
-                  <span className="text-[#2D5A27] font-semibold"> 🚀 Unlimited matches!</span>
-                ) : (
-                  <span className="text-[#D4AF37] font-semibold"> Upgrade to Premium for unlimited matches!</span>
-                )}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <Badge variant="primary">🎯 95% Accuracy</Badge>
-                <Badge variant="secondary">⚡ Real-time Matching</Badge>
-                <Badge variant="gold">🏆 AI-Powered</Badge>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <PaymentModal
+            plan={selectedPlan}
+            onClose={() => {
+              setShowPaymentModal(false);
+              setSelectedPlan(null);
+            }}
+            onPayment={handlePayment}
+            selectedMethod={selectedMethod}
+            setSelectedMethod={setSelectedMethod}
+          />
+        )}
       </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <PaymentModal
-          plan={selectedPlan}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedPlan(null);
-          }}
-          onSuccess={handlePaymentSuccess}
-        />
-      )}
     </div>
   );
 };

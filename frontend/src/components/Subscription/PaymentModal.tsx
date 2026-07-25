@@ -1,42 +1,35 @@
 // src/pages/Subscription/components/PaymentModal.tsx
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import { Modal } from '../../../components/common/Modal/Modal';
 import { Button } from '../../../components/common/Button/Button';
 import { Badge } from '../../../components/common/Badge/Badge';
+import { PAYMENT_METHODS } from '../../../constants/subscription';
 
 interface PaymentModalProps {
   plan: any;
   onClose: () => void;
-  onSuccess: () => void;
+  onPayment: () => void;
+  selectedMethod: string;
+  setSelectedMethod: (method: string) => void;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ plan, onClose, onSuccess }) => {
-  const [selectedMethod, setSelectedMethod] = useState<'khalti' | 'esewa' | 'stripe' | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+const PaymentModal: React.FC<PaymentModalProps> = ({
+  plan,
+  onClose,
+  onPayment,
+  selectedMethod,
+  setSelectedMethod,
+}) => {
+  const isFree = plan?.price === 0;
 
-  const paymentMethods = [
-    { id: 'khalti', name: 'Khalti', icon: '💳', color: 'bg-purple-500' },
-    { id: 'esewa', name: 'eSewa', icon: '🏦', color: 'bg-blue-500' },
-    { id: 'stripe', name: 'Stripe', icon: '💳', color: 'bg-indigo-500' },
-  ];
-
-  const handlePayment = async () => {
-    if (!selectedMethod) return;
-    
-    setIsProcessing(true);
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    onSuccess();
-  };
+  if (!plan) return null;
 
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="💳 Complete Payment"
+      title={isFree ? 'Get Started Free' : '💳 Complete Payment'}
       size="md"
     >
       <div className="space-y-6">
@@ -45,42 +38,46 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ plan, onClose, onSuccess })
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-[var(--color-text-secondary)]">Plan</p>
-              <p className="font-bold text-[var(--color-text-primary)]">{plan?.name} Plan</p>
+              <p className="font-bold text-[var(--color-text-primary)]">{plan.name}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-[var(--color-text-secondary)]">Amount</p>
-              <p className="text-2xl font-bold text-[#2D5A27]">{plan?.price}</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Price</p>
+              <p className="text-2xl font-bold text-[#2D5A27]">
+                {plan.price === 0 ? 'Free' : `Rs ${plan.price.toLocaleString()}`}
+              </p>
             </div>
           </div>
-          {plan?.badge && (
+          {plan.popular && (
             <Badge variant="gold" size="sm" className="mt-2">
-              {plan.badge}
+              Most Popular
             </Badge>
           )}
         </div>
 
-        {/* Payment Methods */}
-        <div>
-          <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
-            Select Payment Method
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            {paymentMethods.map((method) => (
-              <button
-                key={method.id}
-                onClick={() => setSelectedMethod(method.id as any)}
-                className={`p-4 rounded-xl border-2 transition-all duration-200 text-center ${
-                  selectedMethod === method.id
-                    ? 'border-[#2D5A27] bg-[#E8F0E4]'
-                    : 'border-[var(--color-primary-border)] hover:border-[#2D5A27]'
-                }`}
-              >
-                <span className="text-2xl block">{method.icon}</span>
-                <span className="text-xs font-medium mt-1 block">{method.name}</span>
-              </button>
-            ))}
+        {/* Payment Methods (Only for paid plans) */}
+        {!isFree && (
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
+              Select Payment Method
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {PAYMENT_METHODS.map((method) => (
+                <button
+                  key={method.id}
+                  onClick={() => setSelectedMethod(method.id)}
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-center ${
+                    selectedMethod === method.id
+                      ? 'border-[#2D5A27] bg-[#E8F0E4]'
+                      : 'border-[var(--color-primary-border)] hover:border-[#2D5A27]'
+                  }`}
+                >
+                  <span className="text-2xl block">{method.icon}</span>
+                  <span className="text-xs font-medium mt-1 block">{method.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-4 border-t border-[var(--color-primary-border)]">
@@ -93,21 +90,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ plan, onClose, onSuccess })
             Cancel
           </Button>
           <Button
-            variant="gold"
+            variant={plan.popular ? 'gold' : 'primary'}
             size="md"
             fullWidth
-            disabled={!selectedMethod || isProcessing}
-            isLoading={isProcessing}
-            loadingText="Processing..."
-            onClick={handlePayment}
+            onClick={onPayment}
           >
-            Pay {plan?.price}
+            {isFree ? 'Start Free Plan' : `Pay Rs ${plan.price.toLocaleString()}`}
           </Button>
         </div>
 
-        <p className="text-xs text-center text-[var(--color-text-tertiary)]">
-          🔒 Secure payment powered by {selectedMethod || 'payment gateway'}
-        </p>
+        {!isFree && (
+          <p className="text-xs text-center text-[var(--color-text-tertiary)]">
+            🔒 Secure payment powered by {selectedMethod}
+          </p>
+        )}
       </div>
     </Modal>
   );
