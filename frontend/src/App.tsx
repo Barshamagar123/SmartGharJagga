@@ -10,6 +10,8 @@ import Register from './pages/Register/Register';
 import HomePage from './pages/HomePage/HomePage';
 import LayoutOf from './components/common/Layout/Layout';
 import AIMatching from './pages/AIMatching/AIMatching';
+import MapSearch from './pages/MapSearch/MapSearch'; // ✅ Import MapSearch
+import { SubscriptionProvider } from './context/SubscriptionContext';
 
 const About = () => (
   <div className="container-custom py-12">
@@ -33,23 +35,25 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <LanguageProvider>
-          <Routes>
-            {/* ✅ All routes wrapped in Layout */}
-            <Route element={<LayoutOf />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/properties" element={<Properties />} />
-              <Route path="/property/:slug" element={<PropertyDetail />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-                        <Route path="/ai-matching" element={<AIMatching />} />  {/* ✅ Add this route */}
-
-            </Route>
-          </Routes>
-        </LanguageProvider>
+        <SubscriptionProvider>
+          <LanguageProvider>
+            <Routes>
+              {/* ✅ All routes wrapped in Layout */}
+              <Route element={<LayoutOf />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/properties" element={<Properties />} />
+                <Route path="/property/:slug" element={<PropertyDetail />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/ai-matching" element={<AIMatching />} />
+                <Route path="/map-search" element={<MapSearch />} /> {/* ✅ MapSearch route */}
+              </Route>
+            </Routes>
+          </LanguageProvider>
+        </SubscriptionProvider>
       </AuthProvider>
     </Router>
   );
