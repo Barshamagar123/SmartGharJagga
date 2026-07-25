@@ -1,29 +1,21 @@
-// backend/src/modules/payment/payment.controller.ts
+// src/modules/payment/payment.controller.ts
 
 import { Request, Response } from 'express';
 import { PaymentService } from './payment.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 
-interface AuthRequest extends Request {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    phone?: string;
-  };
-}
+const subscriptionService = new SubscriptionService();
 
 export class PaymentController {
   // ============================================
   // 1. INITIATE PAYMENT
   // ============================================
-  static async initiatePayment(req: AuthRequest, res: Response) {
+  static async initiatePayment(req: Request, res: Response) {
     try {
-      const userId = req.user.id;
+      const userId = (req as any).user.id;
       const { plan, paymentMethod } = req.body;
 
-      const planDetails = SubscriptionService.getPlanDetails(plan);
+      const planDetails = subscriptionService.getPlanDetails(plan);
       if (!planDetails) {
         return res.status(400).json({
           success: false,
@@ -31,63 +23,14 @@ export class PaymentController {
         });
       }
 
-      const transactionId = PaymentService.generateTransactionId();
-
-      await SubscriptionService.createPendingSubscription({
-        userId,
-        plan,
-        transactionId,
-        amount: planDetails.price,
-        paymentMethod,
+      const result = await subscriptionService.initiateSubscription(userId, {
+        planType: plan,
+        paymentMethod: paymentMethod,
       });
-
-      let paymentUrl = '';
-      const user = req.user;
-
-      switch (paymentMethod) {
-        case 'KHALTI':
-          paymentUrl = await PaymentService.initiateKhaltiPayment(
-            planDetails.price,
-            transactionId,
-            user.name,
-            user.email,
-            user.phone || '9800000000'
-          );
-          break;
-
-        case 'ESEWA':
-          paymentUrl = await PaymentService.initiateEsewaPayment(
-            planDetails.price,
-            transactionId,
-            user.name,
-            user.email,
-            user.phone || '9800000000'
-          );
-          break;
-
-        case 'STRIPE':
-          paymentUrl = await PaymentService.initiateStripePayment(
-            planDetails.price,
-            transactionId,
-            user.email
-          );
-          break;
-
-        default:
-          return res.status(400).json({
-            success: false,
-            message: 'Invalid payment method',
-          });
-      }
 
       return res.status(200).json({
         success: true,
-        data: {
-          transactionId,
-          paymentUrl,
-          amount: planDetails.price,
-          plan: planDetails,
-        },
+        data: result,
         message: 'Payment initiated successfully',
       });
 
@@ -103,7 +46,7 @@ export class PaymentController {
   // ============================================
   // 2. VERIFY PAYMENT
   // ============================================
-  static async verifyPayment(req: AuthRequest, res: Response) {
+  static async verifyPayment(req: Request, res: Response) {
     try {
       const { transactionId, paymentMethod } = req.body;
 
@@ -139,11 +82,14 @@ export class PaymentController {
         });
       }
 
-      // ✅ Now this works - confirmPayment exists!
-      await SubscriptionService.confirmPayment(transactionId);
+      const result = await subscriptionService.activateSubscription(
+        transactionId,
+        verificationResult.data
+      );
 
       return res.status(200).json({
         success: true,
+        data: result,
         message: 'Payment verified and subscription activated',
       });
 
@@ -157,26 +103,33 @@ export class PaymentController {
   }
 
   // ============================================
-  // 3. PAYMENT CALLBACK
+  // 3. PAYMENT CALLBACK - FIXED
   // ============================================
   static async paymentCallback(req: Request, res: Response) {
     try {
-      const { transactionId, status } = req.query;
+      // ✅ Safe function to extract string
+      const getString = (value: any): string => {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) return value[0] || '';
+        return String(value);
+      };
+
+      const transactionId = getString(req.query.transactionId);
+      const status = getString(req.query.status);
+
+      console.log('📥 Payment callback:', { transactionId, status });
 
       if (!transactionId || !status) {
-        return res.status(400).json({
-          success: false,
-          message: 'Missing transaction details',
-        });
+        console.error('❌ Missing transaction details');
+        return res.redirect(`${process.env.FRONTEND_URL}/subscription/failed`);
       }
 
       if (status === 'success' || status === 'Completed') {
-        // ✅ Now this works - confirmPayment exists!
-        await SubscriptionService.confirmPayment(transactionId as string);
+        await subscriptionService.confirmPayment(transactionId);
         return res.redirect(`${process.env.FRONTEND_URL}/subscription/success?txn=${transactionId}`);
       } else {
-        // ✅ Now this works - failPayment exists!
-        await SubscriptionService.failPayment(transactionId as string);
+        await subscriptionService.failPayment(transactionId);
         return res.redirect(`${process.env.FRONTEND_URL}/subscription/failed?txn=${transactionId}`);
       }
 
@@ -187,14 +140,29 @@ export class PaymentController {
   }
 
   // ============================================
-  // 4. GET PAYMENT STATUS
+  // 4. GET PAYMENT STATUS - ✅ LINE 157 FIXED
   // ============================================
-  static async getPaymentStatus(req: AuthRequest, res: Response) {
+  static async getPaymentStatus(req: Request, res: Response) {
     try {
-      const { transactionId } = req.params;
-      const userId = req.user.id;
+      // ✅ Fix: Safely extract transactionId from params
+      const getString = (value: any): string => {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) return value[0] || '';
+        return String(value);
+      };
 
-      const status = await SubscriptionService.getPaymentStatus(transactionId, userId);
+      const transactionId = getString(req.params.transactionId);
+      const userId = (req as any).user.id;
+
+      if (!transactionId) {
+        return res.status(404).json({
+          success: false,
+          message: 'Payment not found',
+        });
+      }
+
+      const status = await subscriptionService.getPaymentStatus(transactionId, userId);
 
       if (!status) {
         return res.status(404).json({
@@ -220,13 +188,13 @@ export class PaymentController {
   // ============================================
   // 5. GET PAYMENT HISTORY
   // ============================================
-  static async getPaymentHistory(req: AuthRequest, res: Response) {
+  static async getPaymentHistory(req: Request, res: Response) {
     try {
-      const userId = req.user.id;
+      const userId = (req as any).user.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      const history = await SubscriptionService.getPaymentHistory(userId, page, limit);
+      const history = await subscriptionService.getPaymentHistory(userId, page, limit);
 
       return res.status(200).json({
         success: true,
