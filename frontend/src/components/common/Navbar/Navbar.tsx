@@ -1,13 +1,24 @@
-// src/components/layout/Navbar/Navbar.tsx
+// src/components/common/Navbar/Navbar.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Badge } from '../Badge/Badge';
+import { Button } from '../Button/Button';
+import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../../hooks/useSubscription';
+
+// ✅ Import useAuth and useSubscription hooks
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [language, setLanguage] = useState('EN');
+  const navigate = useNavigate();
+
+  // ✅ Get user and subscription status
+  const { user, isAuthenticated } = useAuth();
+  const { subscription, isPremium } = useSubscription();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,13 +32,26 @@ const Navbar: React.FC = () => {
     setLanguage(language === 'EN' ? 'NE' : 'EN');
   };
 
+  // ✅ Nav links with Premium condition
   const navLinks = [
     { label: 'Home', path: '/' },
-    { label: 'Discover', path: '/discover' },
-    { label: 'Buy', path: '/properties' },
-    { label: 'Sell', path: '/sell' },
-    { label: 'About', path: '/about' },
-    { label: 'Contact', path: '/contact' },
+    { label: 'Properties', path: '/properties' },
+    { 
+      label: 'AI Match', 
+      path: '/ai-matching',
+      premium: true,  // ✅ Premium feature
+      badge: isPremium ? 'Unlimited' : '3 Free'
+    },
+    { 
+      label: 'Map Search', 
+      path: '/map-search' 
+    },
+    { 
+      label: 'Featured', 
+      path: '/featured',
+      premium: true,  // ✅ Premium feature
+      showOnlyPremium: true  // ✅ Only show for premium users
+    },
   ];
 
   return (
@@ -42,40 +66,66 @@ const Navbar: React.FC = () => {
             : 'bg-[var(--color-primary)]/90 backdrop-blur-sm'
         }`}
       >
-        {/* 32px Padding (px-8) */}
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
-            {/* Logo */}
+            {/* ============================================
+            LOGO
+            ============================================ */}
             <Link to="/" className="flex items-center gap-2 group">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2D5A27] text-white shadow-lg shadow-[#2D5A27]/20">
                 <span className="text-xl">🏠</span>
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <span className="text-xl font-bold tracking-tight">
                   <span className="text-[#2D5A27]">Smart</span>
                   <span className="text-[var(--color-text-primary)]">GharJagga</span>
                 </span>
-                <p className="text-[10px] font-medium text-[var(--color-text-tertiary)] tracking-wider uppercase">
-                  Real Estate Platform
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] font-medium text-[var(--color-text-tertiary)] tracking-wider uppercase">
+                    Real Estate Platform
+                  </p>
+                  {/* ✅ Premium Badge */}
+                  {isPremium && (
+                    <Badge variant="gold" size="sm">
+                      👑 Premium
+                    </Badge>
+                  )}
+                </div>
               </div>
             </Link>
 
-            {/* Nav Links */}
+            {/* ============================================
+            NAV LINKS
+            ============================================ */}
             <div className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[#2D5A27] rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200 relative group"
-                >
-                  {link.label}
-                  <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#2D5A27] rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                // ✅ Hide premium-only links for free users
+                if (link.showOnlyPremium && !isPremium) return null;
+
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[#2D5A27] rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200 relative group"
+                  >
+                    {link.label}
+                    
+                    {/* ✅ Premium badge on link */}
+                    {link.premium && (
+                      <span className="ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded bg-[#D4AF37] text-white">
+                        {link.badge || 'Pro'}
+                      </span>
+                    )}
+                    
+                    <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#2D5A27] rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* Right Actions */}
+            {/* ============================================
+            RIGHT ACTIONS
+            ============================================ */}
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Language Toggle */}
               <button
@@ -85,24 +135,59 @@ const Navbar: React.FC = () => {
                 {language}
               </button>
 
-              {/* List Property */}
+              {/* ✅ List Property - Enhanced for Premium */}
               <Link
-                to="/add-property"
-                className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg"
+                to="/list-property"
+                className={`hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg ${
+                  isPremium
+                    ? 'bg-[#D4AF37] hover:bg-[#B8961F]'  // Premium gold
+                    : 'bg-[#2D5A27] hover:bg-[#23461E]'   // Regular green
+                }`}
               >
                 <span>+</span>
-                <span>List Property</span>
+                <span>{isPremium ? 'List Premium' : 'List Property'}</span>
               </Link>
 
-              {/* Sign In */}
-              <Link
-                to="/login"
-                className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-              >
-                Sign In
-              </Link>
+              {/* ✅ Subscription / Upgrade Button */}
+              {isAuthenticated ? (
+                <>
+                  {!isPremium && (
+                    <Link
+                      to="/subscription"
+                      className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200"
+                    >
+                      <span>🚀</span>
+                      <span>Upgrade</span>
+                    </Link>
+                  )}
+                  
+                  {/* User Avatar */}
+                  <div className="relative group">
+                    <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200">
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-[#2D5A27] flex items-center justify-center text-white font-bold text-sm">
+                          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                        {/* ✅ Premium badge on avatar */}
+                        {isPremium && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D4AF37] rounded-full border-2 border-white flex items-center justify-center text-[6px] text-white">
+                            👑
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                >
+                  Sign In
+                </Link>
+              )}
 
-              {/* Mobile Menu */}
+              {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="lg:hidden p-2 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200"
@@ -118,7 +203,9 @@ const Navbar: React.FC = () => {
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
+      {/* ============================================
+      MOBILE MENU
+      ============================================ */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
@@ -131,29 +218,54 @@ const Navbar: React.FC = () => {
                 </svg>
               </button>
             </div>
+            
             <div className="space-y-2">
-              {navLinks.map((link) => (
+              {navLinks.map((link) => {
+                if (link.showOnlyPremium && !isPremium) return null;
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-4 py-3 text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)] rounded-lg transition-all duration-200"
+                  >
+                    <span>{link.label}</span>
+                    {link.premium && (
+                      <Badge variant="gold" size="sm">
+                        {link.badge || 'Pro'}
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+              
+              <div className="pt-4 border-t border-[var(--color-primary-border)] space-y-2">
                 <Link
-                  key={link.path}
-                  to={link.path}
+                  to="/list-property"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-4 py-3 text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)] rounded-lg transition-all duration-200"
+                  className={`block w-full px-4 py-3 text-center text-white rounded-xl transition-all duration-200 ${
+                    isPremium
+                      ? 'bg-[#D4AF37] hover:bg-[#B8961F]'
+                      : 'bg-[#2D5A27] hover:bg-[#23461E]'
+                  }`}
                 >
-                  {link.label}
+                  + {isPremium ? 'List Premium' : 'List Property'}
                 </Link>
-              ))}
-              <div className="pt-4 border-t border-[var(--color-primary-border)]">
-                <Link
-                  to="/add-property"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
-                >
-                  + List Property
-                </Link>
+                
+                {!isPremium && (
+                  <Link
+                    to="/subscription"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block w-full px-4 py-3 text-center text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200"
+                  >
+                    🚀 Upgrade to Premium
+                  </Link>
+                )}
+                
                 <Link
                   to="/login"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block w-full px-4 py-3 mt-2 text-center text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                  className="block w-full px-4 py-3 text-center text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                 >
                   Sign In
                 </Link>
