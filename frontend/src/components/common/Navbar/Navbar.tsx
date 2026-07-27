@@ -2,21 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { Badge } from '../Badge/Badge';
 import { Button } from '../Button/Button';
 import { Avatar } from '../Avatar/Avatar';
-import { Modal } from '../Modal/Modal';
-import { useSubscription } from '../../../hooks/useSubscription';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../../hooks/useSubscription';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [language, setLanguage] = useState('EN');
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [lockedFeature, setLockedFeature] = useState('');
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState('');
   const navigate = useNavigate();
 
   const { user, isAuthenticated, logout } = useAuth();
@@ -41,23 +41,36 @@ const Navbar: React.FC = () => {
 
   // ✅ Check if feature is locked
   const isFeatureLocked = (feature: string) => {
-    if (isAuthenticated && isPremium) return false; // Premium: everything unlocked
-    if (isAuthenticated && !isPremium) return true; // Free: premium features locked
-    return true; // Public: premium features locked
+    // ✅ ONLY these features are locked
+    const lockedFeatures = ['AI Match', 'Map Search', 'List Property'];
+    return lockedFeatures.includes(feature);
   };
 
-  // ✅ Handle feature click - Show modal for locked features
+  // ✅ Handle feature click
   const handleFeatureClick = (feature: string, path: string) => {
+    // ✅ If feature is locked
     if (isFeatureLocked(feature)) {
-      setLockedFeature(feature);
-      setShowUpgradeModal(true);
-      return;
+      // ✅ If not authenticated → show login popup
+      if (!isAuthenticated) {
+        setSelectedFeature(feature);
+        setShowLoginPopup(true);
+        return;
+      }
+      
+      // ✅ If authenticated but not premium → show upgrade popup
+      if (isAuthenticated && !isPremium) {
+        setSelectedFeature(feature);
+        setShowUpgradePopup(true);
+        return;
+      }
     }
+    
+    // ✅ If feature is not locked or user is premium → navigate
     navigate(path);
   };
 
-  // ✅ PUBLIC NAV LINKS
-  const publicLinks = [
+  // ✅ NAV LINKS
+  const navLinks = [
     { label: 'Home', path: '/', icon: '🏠', locked: false },
     { label: 'Properties', path: '/properties', icon: '📋', locked: false },
     { 
@@ -73,37 +86,31 @@ const Navbar: React.FC = () => {
       icon: '🗺️', 
       locked: true,
       badge: isPremium ? '🌍 Unlocked' : '🔒 Premium',
+    },
+    { 
+      label: 'List Property', 
+      path: '/list-property', 
+      icon: '➕', 
+      locked: true,
+      badge: isPremium ? '✨ Premium' : '🔒 Premium',
     },
   ];
 
-  // ✅ LINKS FOR ALL AUTHENTICATED USERS (Free & Premium)
-  const authLinks = [
-    { label: 'Home', path: '/', icon: '🏠', locked: false },
-    { label: 'Properties', path: '/properties', icon: '📋', locked: false },
-    { 
-      label: 'AI Match', 
-      path: '/ai-matching', 
-      icon: '🤖', 
-      locked: true,
-      badge: isPremium ? '🚀 Unlocked' : '🔒 Premium',
-    },
-    { 
-      label: 'Map Search', 
-      path: '/map-search', 
-      icon: '🗺️', 
-      locked: true,
-      badge: isPremium ? '🌍 Unlocked' : '🔒 Premium',
-    },
-    { label: 'Dashboard', path: '/dashboard', icon: '📊', locked: false },
-  ];
+  // ✅ Dashboard link (only for authenticated users)
+  const dashboardLink = { label: 'Dashboard', path: '/dashboard', icon: '📊', locked: false };
 
   // ✅ Get nav links based on auth status
   const getNavLinks = () => {
-    if (!isAuthenticated) return publicLinks;
-    return authLinks;
+    if (isAuthenticated) {
+      // Add Dashboard for authenticated users
+      const links = [...navLinks];
+      links.push(dashboardLink);
+      return links;
+    }
+    return navLinks;
   };
 
-  const navLinks = getNavLinks();
+  const finalNavLinks = getNavLinks();
 
   return (
     <>
@@ -151,12 +158,14 @@ const Navbar: React.FC = () => {
             NAV LINKS
             ============================================ */}
             <div className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {finalNavLinks.map((link) => (
                 <button
                   key={link.path}
                   onClick={() => handleFeatureClick(link.label, link.path)}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative group flex items-center gap-1.5 ${
-                    link.locked && !isPremium
+                    link.locked && !isPremium && isAuthenticated
+                      ? 'text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)]'
+                      : link.locked && !isAuthenticated
                       ? 'text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)]'
                       : 'text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)]'
                   }`}
@@ -164,7 +173,7 @@ const Navbar: React.FC = () => {
                   <span>{link.icon}</span>
                   {link.label}
                   
-                  {/* ✅ Lock/Unlock Badge */}
+                  {/* ✅ Lock badge for AI Match, Map Search & List Property */}
                   {link.locked && (
                     <span className={`ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded ${
                       isPremium ? 'bg-green-500 text-white' : 'bg-[#D4AF37] text-white'
@@ -182,7 +191,7 @@ const Navbar: React.FC = () => {
             RIGHT ACTIONS
             ============================================ */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* ✅ Language Toggle */}
+              {/* Language Toggle */}
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[#2D5A27] rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200"
@@ -190,16 +199,7 @@ const Navbar: React.FC = () => {
                 {language === 'EN' ? '🇳🇵' : '🇬🇧'}
               </button>
 
-              {/* ✅ List Property Button (Visible to All) */}
-              <Link
-                to="/list-property"
-                className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <span>+</span>
-                <span>List Property</span>
-              </Link>
-
-              {/* ✅ PUBLIC: Show Sign In */}
+              {/* PUBLIC: Sign In */}
               {!isAuthenticated ? (
                 <Link
                   to="/login"
@@ -209,7 +209,7 @@ const Navbar: React.FC = () => {
                 </Link>
               ) : (
                 <>
-                  {/* ✅ FREE USER: Show Upgrade */}
+                  {/* FREE: Upgrade */}
                   {!isPremium && (
                     <Link
                       to="/subscription"
@@ -219,141 +219,69 @@ const Navbar: React.FC = () => {
                     </Link>
                   )}
 
-                  {/* ✅ PREMIUM USER: Show Premium Badge */}
+                  {/* PREMIUM: Badge */}
                   {isPremium && (
                     <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4AF37] rounded-full shadow-lg shadow-[#D4AF37]/30">
-                      <span>👑</span>
-                      Premium
+                      <span>👑</span> Premium
                     </span>
                   )}
 
-                  {/* ✅ Avatar Dropdown */}
+                  {/* Avatar */}
                   <div className="relative group">
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200">
                       <div className="relative">
-                        <Avatar
-                          name={user?.name || 'User'}
-                          size="sm"
-                          variant="primary"
-                          src={user?.avatarUrl}
-                        />
+                        <Avatar name={user?.name || 'User'} size="sm" variant="primary" src={user?.avatarUrl} />
                         {isPremium && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D4AF37] rounded-full border-2 border-white flex items-center justify-center text-[6px] text-white">
                             👑
                           </div>
                         )}
                       </div>
-                      <svg
-                        className="w-3 h-3 text-[var(--color-text-tertiary)]"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
+                      <svg className="w-3 h-3 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
 
-                    {/* ============================================
-                    AVATAR DROPDOWN MENU
-                    ============================================ */}
+                    {/* Dropdown */}
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[var(--color-primary-border)] py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      {/* User Info */}
                       <div className="px-4 py-2 border-b border-[var(--color-primary-border)]">
                         <p className="text-sm font-semibold text-[var(--color-text-primary)]">{user?.name}</p>
                         <p className="text-xs text-[var(--color-text-tertiary)]">{user?.email}</p>
-                        {isPremium && (
-                          <Badge variant="gold" size="sm" className="mt-1">👑 Premium</Badge>
-                        )}
+                        {isPremium && <Badge variant="gold" size="sm" className="mt-1">👑 Premium</Badge>}
                       </div>
                       
-                      {/* Dashboard */}
-                      <Link
-                        to="/dashboard"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
+                      <Link to="/dashboard" className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors">
                         📊 Dashboard
                       </Link>
-
-                      {/* Favorites */}
-                      <Link
-                        to="/favorites"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
+                      <Link to="/favorites" className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors">
                         ❤️ Favorites
                       </Link>
-
-                      {/* Messages */}
-                      <Link
-                        to="/messages"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
+                      <Link to="/messages" className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors">
                         💬 Messages
                       </Link>
 
-                      {/* Neighborhood Score */}
-                      <Link
-                        to="/neighborhood-score"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
-                        🏆 Neighborhood Score
-                      </Link>
-
-                      {/* AI Valuation */}
-                      <Link
-                        to="/ai-valuation"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
-                        💰 AI Valuation
-                      </Link>
-
-                      {/* Admin Panel (Admin Only) */}
                       {user?.role === 'ADMIN' && (
                         <>
                           <div className="h-px bg-[var(--color-primary-border)] my-1" />
-                          <Link
-                            to="/admin"
-                            className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                          >
+                          <Link to="/admin" className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors">
                             ⚙️ Admin Panel
                           </Link>
                         </>
                       )}
-
+                      
                       <div className="h-px bg-[var(--color-primary-border)] my-1" />
-
-                      {/* Profile Settings */}
-                      <Link
-                        to="/profile"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
+                      <Link to="/profile" className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors">
                         👤 Profile Settings
                       </Link>
-
-                      {/* Refer & Earn */}
-                      <Link
-                        to="/refer"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                      >
+                      <Link to="/refer" className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors">
                         🔗 Refer & Earn
                       </Link>
-
-                      {/* Upgrade to Premium (Free Users Only) */}
                       {!isPremium && (
-                        <Link
-                          to="/subscription"
-                          className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                        >
+                        <Link to="/subscription" className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors">
                           🚀 Upgrade to Premium
                         </Link>
                       )}
-
-                      <div className="h-px bg-[var(--color-primary-border)] my-1" />
-
-                      {/* Logout */}
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left flex items-center px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                      >
+                      <button onClick={handleLogout} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
                         🚪 Logout
                       </button>
                     </div>
@@ -361,7 +289,7 @@ const Navbar: React.FC = () => {
                 </>
               )}
 
-              {/* Mobile Menu Toggle */}
+              {/* Mobile Menu */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="lg:hidden p-2 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200"
@@ -394,15 +322,23 @@ const Navbar: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              {navLinks.map((link) => (
+              {finalNavLinks.map((link) => (
                 <button
                   key={link.path}
                   onClick={() => {
                     if (isFeatureLocked(link.label)) {
-                      setLockedFeature(link.label);
-                      setShowUpgradeModal(true);
-                      setIsMobileMenuOpen(false);
-                      return;
+                      if (!isAuthenticated) {
+                        setSelectedFeature(link.label);
+                        setShowLoginPopup(true);
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
+                      if (isAuthenticated && !isPremium) {
+                        setSelectedFeature(link.label);
+                        setShowUpgradePopup(true);
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
                     }
                     navigate(link.path);
                     setIsMobileMenuOpen(false);
@@ -418,24 +354,11 @@ const Navbar: React.FC = () => {
                 </button>
               ))}
 
-              {/* List Property in Mobile */}
-              <Link
-                to="/list-property"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center w-full px-4 py-3 text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
-              >
-                + List Property
-              </Link>
-
               <div className="pt-4 border-t border-[var(--color-primary-border)] space-y-2">
                 {isAuthenticated ? (
                   <>
                     {!isPremium && (
-                      <Link
-                        to="/subscription"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block w-full px-4 py-3 text-center text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200"
-                      >
+                      <Link to="/subscription" onClick={() => setIsMobileMenuOpen(false)} className="block w-full px-4 py-3 text-center text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200">
                         🚀 Upgrade to Premium
                       </Link>
                     )}
@@ -444,30 +367,16 @@ const Navbar: React.FC = () => {
                         👑 Premium Member
                       </div>
                     )}
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className="block w-full px-4 py-3 text-center text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-200"
-                    >
+                    <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="block w-full px-4 py-3 text-center text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-200">
                       Logout
                     </button>
                   </>
                 ) : (
                   <>
-                    <Link
-                      to="/login"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block w-full px-4 py-3 text-center text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-                    >
+                    <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block w-full px-4 py-3 text-center text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200">
                       Sign In
                     </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
-                    >
+                    <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200">
                       Sign Up
                     </Link>
                   </>
@@ -479,59 +388,131 @@ const Navbar: React.FC = () => {
       )}
 
       {/* ============================================
-      UPGRADE MODAL
+      LOGIN REQUIRED POPUP
       ============================================ */}
-      <Modal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        title="🔒 Premium Feature Locked"
-        size="md"
-      >
-        <div className="text-center py-4">
-          <div className="text-6xl mb-4">🚀</div>
-          <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">
-            {lockedFeature} is a Premium Feature
-          </h3>
-          <p className="text-[var(--color-text-secondary)] mb-6">
-            Upgrade to Premium to unlock {lockedFeature} and all other premium features!
-          </p>
-
-          <div className="bg-[var(--color-primary-surface)] rounded-xl p-4 mb-6 border border-[#D4AF37]/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-text-primary)]">Premium Plan</p>
-                <p className="text-xs text-[var(--color-text-tertiary)]">All features unlocked</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-[#D4AF37]">₹999</p>
-                <p className="text-xs text-[var(--color-text-tertiary)]">/ month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              size="md"
-              fullWidth
-              onClick={() => setShowUpgradeModal(false)}
+      <AnimatePresence>
+        {showLoginPopup && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{duration:0.3}}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
+              onClick={() => setShowLoginPopup(false)}
+            />
+            
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
             >
-              Later
-            </Button>
-            <Button
-              variant="gold"
-              size="md"
-              fullWidth
-              onClick={() => {
-                setShowUpgradeModal(false);
-                navigate('/subscription');
-              }}
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[var(--color-primary-border)]">
+                <div className="relative bg-gradient-to-r from-[#2D5A27] to-[#4A7D42] px-6 py-8 text-center">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+                  <div className="relative z-10">
+                    <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🔒</div>
+                    <h3 className="text-2xl font-bold text-white mt-4">Login Required</h3>
+                    <p className="text-white/80 text-sm mt-1">
+                      You need to sign in to access <span className="font-semibold text-white">{selectedFeature}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="bg-[var(--color-primary-surface)] rounded-xl p-4 mb-6 border border-[var(--color-primary-border)]">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">✨</span>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Why sign in?</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">Save favorites, get AI matches, and more!</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Button variant="primary" size="lg" fullWidth onClick={() => { setShowLoginPopup(false); navigate('/login'); }} className="font-semibold">
+                      Sign In Now 🔑
+                    </Button>
+                    <div className="relative flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[var(--color-primary-border)]" /></div>
+                      <span className="relative px-4 text-xs text-[var(--color-text-tertiary)] bg-white">or</span>
+                    </div>
+                    <Button variant="outline" size="lg" fullWidth onClick={() => { setShowLoginPopup(false); navigate('/register'); }}>
+                      Create New Account 🚀
+                    </Button>
+                    <button onClick={() => setShowLoginPopup(false)} className="text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors text-center py-2">
+                      Maybe later
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================
+      UPGRADE REQUIRED POPUP
+      ============================================ */}
+      <AnimatePresence>
+        {showUpgradePopup && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
+              onClick={() => setShowUpgradePopup(false)}
+            />
+            
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
             >
-              Upgrade Now 🚀
-            </Button>
-          </div>
-        </div>
-      </Modal>
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#D4AF37]/30">
+                <div className="relative bg-gradient-to-r from-[#D4AF37] to-[#B8961F] px-6 py-8 text-center">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+                  <div className="relative z-10">
+                    <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🚀</div>
+                    <h3 className="text-2xl font-bold text-white mt-4">Premium Feature</h3>
+                    <p className="text-white/80 text-sm mt-1">
+                      Upgrade to access <span className="font-semibold text-white">{selectedFeature}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="bg-[#FFFBEB] rounded-xl p-4 mb-6 border border-[#D4AF37]/20">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Premium Plan</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">All features unlocked</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-[#D4AF37]">₹999</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">/ month</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Button variant="gold" size="lg" fullWidth onClick={() => { setShowUpgradePopup(false); navigate('/subscription'); }} className="font-semibold">
+                      Upgrade Now 🚀
+                    </Button>
+                    <Button variant="outline" size="lg" fullWidth onClick={() => setShowUpgradePopup(false)}>
+                      Maybe Later
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };
