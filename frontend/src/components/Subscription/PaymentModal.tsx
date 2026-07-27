@@ -1,10 +1,11 @@
 // src/pages/Subscription/components/PaymentModal.tsx
 
 import React from 'react';
-import { Modal } from '../../../components/common/Modal/Modal';
-import { Button } from '../../../components/common/Button/Button';
-import { Badge } from '../../../components/common/Badge/Badge';
-import { PAYMENT_METHODS } from '../../../constants/subscription';
+import Modal from '../common/Modal/Modal';
+import Badge from '../common/Badge/Badge';
+import { PAYMENT_METHODS } from '../../constants/subscriptionPlans';
+import Button from '../common/Button/Button';
+
 
 interface PaymentModalProps {
   plan: any;

@@ -6,9 +6,10 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { Badge } from '../../components/common/Badge/Badge';
 import { Button } from '../../components/common/Button/Button';
 import { Card, CardContent } from '../../components/common/Card/Card';
-import PlanCard from './components/PlanCard';
-import PaymentModal from './components/PaymentModal';
-import { SUBSCRIPTION_PLANS, PAYMENT_METHODS } from '../../constants/subscription';
+import PaymentModal from '../../components/Subscription/PaymentModal';
+import PlanCard from '../../components/Subscription/PlanCard';
+import { SUBSCRIPTION_PLANS } from '../../constants/subscriptionPlans';
+
 
 const Subscription: React.FC = () => {
   const {

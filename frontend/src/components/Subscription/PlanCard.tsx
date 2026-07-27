@@ -1,10 +1,9 @@
 // src/pages/Subscription/components/PlanCard.tsx
 
 import React from 'react';
-import { Card, CardContent } from '../../../components/common/Card/Card';
-import { Badge } from '../../../components/common/Badge/Badge';
-import { Button } from '../../../components/common/Button/Button';
-
+import Card, { CardContent } from '../common/Card/Card';
+import Button from '../common/Button/Button';
+import Badge from '../common/Badge/Badge';
 interface PlanCardProps {
   plan: {
     id: string;

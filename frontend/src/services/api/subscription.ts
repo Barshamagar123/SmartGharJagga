@@ -1,6 +1,29 @@
 // src/services/api/subscription.ts
 
-import apiClient from './client';
+import axios from 'axios';
+
+// ✅ Get API base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+
+// ✅ Create axios instance
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// ✅ Add auth token interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export interface InitiateSubscriptionRequest {
   planType: 'SELLER_PREMIUM' | 'BUYER_PREMIUM';
@@ -57,3 +80,5 @@ export const subscriptionApi = {
     return response.data;
   },
 };
+
+export default subscriptionApi;

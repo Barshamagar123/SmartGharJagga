@@ -2,14 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent } from '../../../components/common/Card/Card';
-import { Badge } from '../../../components/common/Badge/Badge';
-import { FEATURE_COMPARISON } from '../../../constants/subscriptionPlans';
+import Card, { CardContent } from '../common/Card/Card';
+
 
 const FeatureComparison: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'seller' | 'buyer'>('seller');
 
-  const comparisonData = FEATURE_COMPARISON[activeTab];
+  const comparisonData = FeatureComparison[activeTab];
 
   return (
     <Card variant="elevated" padding="lg" className="border border-[var(--color-primary-border)] max-w-5xl mx-auto">

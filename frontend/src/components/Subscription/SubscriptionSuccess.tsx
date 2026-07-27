@@ -2,8 +2,9 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '../../../components/common/Button/Button';
-import { Card, CardContent } from '../../../components/common/Card/Card';
+import Card, { CardContent } from '../common/Card/Card';
+import Button from '../common/Button/Button';
+
 
 const SubscriptionSuccess: React.FC = () => {
   const navigate = useNavigate();

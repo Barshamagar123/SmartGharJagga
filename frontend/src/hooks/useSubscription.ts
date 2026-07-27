@@ -1,8 +1,5 @@
-// src/hooks/useSubscription.ts
-
 import { useState, useEffect } from 'react';
 import { subscriptionApi } from '../services/api/subscription';
-import { SUBSCRIPTION_PLANS } from '../constants/subscription';
 
 export const useSubscription = () => {
   const [plans, setPlans] = useState<any[]>([]);
