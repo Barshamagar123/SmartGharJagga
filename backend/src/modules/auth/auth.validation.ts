@@ -13,7 +13,7 @@ export const registerSchema = z.object({
       .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     name: z.string().min(2, 'Name must be at least 2 characters'),
     phone: z.string().optional(),
-    role: z.enum(['BUYER', 'SELLER', 'AGENT', 'ADMIN']).default('BUYER'),
+    role: z.enum(['BUYER', 'SELLER', 'ADMIN']).default('BUYER'),  // ✅ Removed AGENT
   }),
 });
 

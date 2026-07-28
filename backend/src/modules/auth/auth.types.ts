@@ -7,7 +7,7 @@ export interface RegisterRequest {
   password: string;
   name: string;
   phone?: string;
-  role?: Role;
+  role?: Role;  // ✅ BUYER, SELLER, ADMIN only
 }
 
 export interface LoginRequest {

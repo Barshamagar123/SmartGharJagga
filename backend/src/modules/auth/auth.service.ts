@@ -28,7 +28,6 @@ export class AuthService {
   // 1. REGISTER
   // ============================================
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -37,11 +36,9 @@ export class AuthService {
       throw new ApiError(409, 'Email already registered');
     }
 
-    // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
-    // Create user
     const user = await this.prisma.user.create({
       data: {
         email: data.email,
@@ -52,7 +49,6 @@ export class AuthService {
       },
     });
 
-    // Generate tokens
     const accessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
@@ -65,16 +61,13 @@ export class AuthService {
       role: user.role,
     });
 
-    // Store refresh token in Redis
     await this.cacheService.set(
       `refresh_token:${user.id}`,
       refreshToken,
-      7 * 24 * 60 * 60 // 7 days
+      7 * 24 * 60 * 60
     );
 
-    // Send verification email (async, don't await)
     this.sendVerificationEmail(user.id, user.email).catch(() => {
-      // Log error but don't fail registration
       console.log('Failed to send verification email');
     });
 
@@ -96,7 +89,6 @@ export class AuthService {
   // 2. LOGIN
   // ============================================
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    // Find user
     const user = await this.prisma.user.findUnique({
       where: { email: credentials.email },
     });
@@ -109,7 +101,6 @@ export class AuthService {
       throw new ApiError(403, 'Account is deactivated. Please contact support.');
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(
       credentials.password,
       user.passwordHash
@@ -119,13 +110,11 @@ export class AuthService {
       throw new ApiError(401, 'Invalid email or password');
     }
 
-    // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() },
     });
 
-    // Generate tokens
     const accessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
@@ -138,11 +127,10 @@ export class AuthService {
       role: user.role,
     });
 
-    // Store refresh token in Redis
     await this.cacheService.set(
       `refresh_token:${user.id}`,
       refreshToken,
-      7 * 24 * 60 * 60 // 7 days
+      7 * 24 * 60 * 60
     );
 
     return {
@@ -163,7 +151,6 @@ export class AuthService {
   // 3. LOGOUT
   // ============================================
   async logout(userId: string, accessToken: string): Promise<void> {
-    // Blacklist access token
     const decoded = jwt.decode(accessToken) as { exp: number };
     if (decoded && decoded.exp) {
       const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
@@ -176,7 +163,6 @@ export class AuthService {
       }
     }
 
-    // Remove refresh token
     await this.cacheService.delete(`refresh_token:${userId}`);
   }
 
@@ -194,7 +180,6 @@ export class AuthService {
       throw new ApiError(401, 'Invalid or expired refresh token');
     }
 
-    // Check if refresh token exists in Redis
     const storedToken = await this.cacheService.get(
       `refresh_token:${decoded.userId}`
     );
@@ -203,7 +188,6 @@ export class AuthService {
       throw new ApiError(401, 'Invalid refresh token');
     }
 
-    // Get user to ensure they still exist and are active
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.userId },
     });
@@ -212,7 +196,6 @@ export class AuthService {
       throw new ApiError(401, 'User not found or inactive');
     }
 
-    // Generate new access token
     const newAccessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
@@ -231,21 +214,17 @@ export class AuthService {
     });
 
     if (!user) {
-      // Don't reveal if user exists for security
       return;
     }
 
-    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
 
-    // Store reset token in Redis
     await this.cacheService.set(
       `reset_token:${resetToken}`,
       user.id,
-      60 * 60 // 1 hour
+      60 * 60
     );
 
-    // Send reset email
     await this.emailService.sendPasswordResetEmail(email, resetToken);
   }
 
@@ -253,23 +232,19 @@ export class AuthService {
   // 6. RESET PASSWORD
   // ============================================
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    // Get user ID from token
     const userId = await this.cacheService.get(`reset_token:${token}`);
 
     if (!userId) {
       throw new ApiError(400, 'Invalid or expired reset token');
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user password
     await this.prisma.user.update({
       where: { id: userId },
       data: { passwordHash: hashedPassword },
     });
 
-    // Delete reset token
     await this.cacheService.delete(`reset_token:${token}`);
   }
 
@@ -277,20 +252,17 @@ export class AuthService {
   // 7. VERIFY EMAIL
   // ============================================
   async verifyEmail(token: string): Promise<void> {
-    // Get user ID from token
     const userId = await this.cacheService.get(`verify_token:${token}`);
 
     if (!userId) {
       throw new ApiError(400, 'Invalid or expired verification token');
     }
 
-    // Update user
     await this.prisma.user.update({
       where: { id: userId },
       data: { isEmailVerified: true },
     });
 
-    // Delete verification token
     await this.cacheService.delete(`verify_token:${token}`);
   }
 
@@ -329,7 +301,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // Verify current password
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
       user.passwordHash
@@ -339,10 +310,8 @@ export class AuthService {
       throw new ApiError(401, 'Current password is incorrect');
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
     await this.prisma.user.update({
       where: { id: userId },
       data: { passwordHash: hashedPassword },
@@ -356,24 +325,6 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        agent: {
-          include: {
-            reviews: {
-              select: {
-                rating: true,
-                comment: true,
-                createdAt: true,
-                reviewer: {
-                  select: {
-                    id: true,
-                    name: true,
-                    avatarUrl: true,
-                  },
-                },
-              },
-            },
-          },
-        },
         properties: {
           take: 10,
           orderBy: { createdAt: 'desc' },
@@ -393,7 +344,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // Don't return password hash
     const { passwordHash, ...userWithoutPassword } = user;
 
     return userWithoutPassword;
@@ -440,7 +390,6 @@ export class AuthService {
       },
     });
 
-    // Delete refresh tokens
     await this.cacheService.delete(`refresh_token:${userId}`);
   }
 
@@ -496,11 +445,10 @@ export class AuthService {
   private async sendVerificationEmail(userId: string, email: string): Promise<void> {
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
-    // Store verification token in Redis
     await this.cacheService.set(
       `verify_token:${verificationToken}`,
       userId,
-      7 * 24 * 60 * 60 // 7 days
+      7 * 24 * 60 * 60
     );
 
     await this.emailService.sendVerificationEmail(email, verificationToken);
