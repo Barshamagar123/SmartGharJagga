@@ -1,15 +1,15 @@
 // src/server.ts
 
 import app from './app.js';
-import { config } from './config/index.js';
 
-const port = config.PORT;
+const port = process.env.PORT || 5001;
 
 const server = app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
-  console.log(`📚 Environment: ${config.NODE_ENV}`);
+  console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📍 URL: http://localhost:${port}`);
   console.log(`🏠 Smart GharJagga API`);
+  console.log(`✅ CORS enabled for frontend origins`);
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {
