@@ -1,4 +1,4 @@
-// frontend/src/services/api/auth.ts
+// src/services/api/auth.ts
 
 import apiClient from './client';
 
@@ -33,74 +33,78 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  // ✅ REGISTER
+  // ✅ Register - MUST return full response
   register: async (data: RegisterData): Promise<AuthResponse> => {
-    console.log('📤 Register API called with:', data);
-    const response = await apiClient.post('/auth/register', data);
-    console.log('📥 Register API response:', response.data);
-    return response.data;
+    console.log('📤 authApi.register called with:', data);
+    try {
+      const response = await apiClient.post('/auth/register', data);
+      console.log('📥 authApi.register response:', response);
+      console.log('📥 authApi.register data:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ authApi.register error:', error);
+      throw error;
+    }
   },
 
-  // ✅ LOGIN
+  // ✅ Login
   login: async (data: LoginData): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/login', data);
     return response.data;
   },
 
-  // ✅ LOGOUT
+  // ✅ Logout
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
   },
 
-  // ✅ GET PROFILE
+  // ✅ Get Profile
   getProfile: async () => {
     const response = await apiClient.get('/auth/profile');
     return response.data.data;
   },
 
-  // ✅ REFRESH TOKEN
+  // ✅ Refresh Token
   refreshToken: async (refreshToken: string) => {
     const response = await apiClient.post('/auth/refresh-token', { refreshToken });
     return response.data.data;
   },
 
-  // ✅ UPDATE PROFILE
+  // ✅ Update Profile
   updateProfile: async (data: any) => {
     const response = await apiClient.put('/auth/profile', data);
     return response.data.data;
   },
 
-  // ✅ CHANGE PASSWORD
+  // ✅ Change Password
   changePassword: async (data: { currentPassword: string; newPassword: string }) => {
     await apiClient.post('/auth/change-password', data);
   },
 
-  // ✅ FORGOT PASSWORD
+  // ✅ Forgot Password
   forgotPassword: async (email: string) => {
     await apiClient.post('/auth/forgot-password', { email });
   },
 
-  // ✅ RESET PASSWORD
+  // ✅ Reset Password
   resetPassword: async (data: { token: string; newPassword: string }) => {
     await apiClient.post('/auth/reset-password', data);
   },
 
-  // ✅ VERIFY EMAIL
+  // ✅ Verify Email
   verifyEmail: async (token: string) => {
     await apiClient.get(`/auth/verify-email?token=${token}`);
   },
 
-  // ✅ RESEND VERIFICATION
+  // ✅ Resend Verification
   resendVerification: async (email: string) => {
     await apiClient.post('/auth/resend-verification', { email });
   },
 
-  // ✅ DELETE ACCOUNT
+  // ✅ Delete Account
   deleteAccount: async () => {
     await apiClient.delete('/auth/account');
   },
 };
-
-export default authApi;

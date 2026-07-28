@@ -3,26 +3,25 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './components/context/LanguageContext';
-
+import Layout from './components/common/Layout/Layout.tsx';
+import Home from './pages/HomePage/HomePage.tsx';
 import Properties from './pages/Properties/Properties';
 import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import AIMatching from './pages/AIMatching/AIMatching';
 import MapSearch from './pages/MapSearch/MapSearch';
-import Layout from './components/common/Layout/Layout';
-import HomePage from './pages/HomePage/HomePage';
-
 
 function App() {
   return (
     <Router>
-      {/* ✅ AuthProvider MUST wrap ALL routes */}
+      {/* ✅ CRITICAL: AuthProvider MUST wrap EVERYTHING */}
       <AuthProvider>
         <LanguageProvider>
           <Routes>
+            {/* ✅ Layout is INSIDE AuthProvider */}
             <Route element={<Layout />}>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<Home />} />
               <Route path="/properties" element={<Properties />} />
               <Route path="/property/:slug" element={<PropertyDetail />} />
               <Route path="/login" element={<Login />} />

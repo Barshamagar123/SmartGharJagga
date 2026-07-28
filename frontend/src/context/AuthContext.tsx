@@ -1,18 +1,18 @@
 // src/context/AuthContext.tsx
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { authApi,type AuthResponse } from '../services/api/auth';
+import { authApi } from '../services/api/auth';
 
 interface AuthContextType {
   user: any;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthResponse>;
-  register: (data: any) => Promise<AuthResponse>;
+  login: (email: string, password: string) => Promise<any>;
+  register: (data: any) => Promise<any>;
   logout: () => void;
 }
 
-// ✅ Create context with proper default
+// ✅ Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,72 +36,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, []);
 
-  // ✅ FIXED: register function
-  const register = async (data: any): Promise<AuthResponse> => {
-    console.log('🔥 Register called with:', data);
-    
-    try {
-      const response = await authApi.register(data);
-      console.log('🔥 API response:', response);
-      
-      // ✅ Check if response exists
-      if (!response) {
-        throw new Error('No response from server');
-      }
-      
-      // ✅ Save tokens
-      if (response.success && response.data) {
-        const { accessToken, refreshToken, user: userData } = response.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        
-        setUser({
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          role: userData.role,
-          isVerified: userData.isVerified,
-          isEmailVerified: false,
-          isActive: true,
-          avatarUrl: userData.avatarUrl || '',
-          languagePref: 'ENGLISH',
-          phone: data.phone || '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-        
-        console.log('✅ User set in context');
-        return response;
-      }
-      
-      return response;
-    } catch (error: any) {
-      console.error('❌ Register error:', error);
-      throw error;
+  const login = async (email: string, password: string) => {
+    const response = await authApi.login({ email, password });
+    if (response && response.data) {
+      const { accessToken, refreshToken, user: userData } = response.data;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      setUser(userData);
     }
+    return response;
   };
 
-  // ✅ FIXED: login function
-  const login = async (email: string, password: string): Promise<AuthResponse> => {
-    console.log('🔐 Login called');
-    
-    try {
-      const response = await authApi.login({ email, password });
-      console.log('🔐 API response:', response);
-      
-      if (response.success && response.data) {
-        const { accessToken, refreshToken, user: userData } = response.data;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        setUser(userData);
-        return response;
-      }
-      
-      return response;
-    } catch (error: any) {
-      console.error('❌ Login error:', error);
-      throw error;
+  const register = async (data: any) => {
+    const response = await authApi.register(data);
+    if (response && response.data) {
+      const { accessToken, refreshToken, user: userData } = response.data;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      setUser(userData);
     }
+    return response;
   };
 
   const logout = () => {
@@ -126,11 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// ✅ FIXED: useAuth hook
+// ✅ useAuth hook - CORRECT
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };

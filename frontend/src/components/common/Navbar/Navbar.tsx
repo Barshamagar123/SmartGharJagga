@@ -6,18 +6,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '../Badge/Badge';
 import { Button } from '../Button/Button';
 import { Avatar } from '../Avatar/Avatar';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [language, setLanguage] = useState('EN');
   const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState('');
   const navigate = useNavigate();
 
-  // ✅ Get auth state only
+  // ✅ Get auth state
   const { user, isAuthenticated, logout } = useAuth();
+
+  // ✅ Set isPremium to false (no subscription for now)
+  const isPremium = false;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,57 +40,61 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Check if feature needs login (no subscription)
+  // ✅ Check if feature is locked
   const isFeatureLocked = (feature: string) => {
     const lockedFeatures = ['AI Match', 'Map Search', 'List Property'];
     return lockedFeatures.includes(feature);
   };
 
-  // ✅ Handle feature click - only login check, no premium
+  // ✅ Handle feature click
   const handleFeatureClick = (feature: string, path: string) => {
     if (isFeatureLocked(feature)) {
-      // ✅ Only check authentication, no premium check
       if (!isAuthenticated) {
         setSelectedFeature(feature);
         setShowLoginPopup(true);
+        return;
+      }
+      if (isAuthenticated && !isPremium) {
+        setSelectedFeature(feature);
+        setShowUpgradePopup(true);
         return;
       }
     }
     navigate(path);
   };
 
-  // ✅ NAV LINKS - All features visible but some require login
+  // ✅ NAV LINKS
   const navLinks = [
     { label: 'Home', path: '/', icon: '🏠', locked: false },
     { label: 'Properties', path: '/properties', icon: '📋', locked: false },
-    { 
-      label: 'AI Match', 
-      path: '/ai-matching', 
-      icon: '🤖', 
+    {
+      label: 'AI Match',
+      path: '/ai-matching',
+      icon: '🤖',
       locked: true,
-      badge: '🔒 Login Required',
+      badge: isPremium ? '🚀 Unlocked' : '🔒 Premium',
     },
-    { 
-      label: 'Map Search', 
-      path: '/map-search', 
-      icon: '🗺️', 
+    {
+      label: 'Map Search',
+      path: '/map-search',
+      icon: '🗺️',
       locked: true,
-      badge: '🔒 Login Required',
+      badge: isPremium ? '🌍 Unlocked' : '🔒 Premium',
     },
-    { 
-      label: 'List Property', 
-      path: '/list-property', 
-      icon: '➕', 
+    {
+      label: 'List Property',
+      path: '/list-property',
+      icon: '➕',
       locked: true,
-      badge: '🔒 Login Required',
+      badge: isPremium ? '✨ Premium' : '🔒 Premium',
     },
   ];
 
   // ✅ Dashboard link (only for authenticated users)
-  const dashboardLink = { 
-    label: 'Dashboard', 
-    path: '/dashboard', 
-    icon: '📊', 
+  const dashboardLink = {
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: '📊',
     locked: false,
     requiresAuth: true,
   };
@@ -100,6 +108,10 @@ const Navbar: React.FC = () => {
   };
 
   const finalNavLinks = getNavLinks();
+
+  // ✅ Check if user is premium
+  const showPremiumBadge = isAuthenticated && isPremium;
+  const showUpgradeButton = isAuthenticated && !isPremium;
 
   return (
     <>
@@ -119,8 +131,13 @@ const Navbar: React.FC = () => {
             LOGO
             ============================================ */}
             <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2D5A27] text-white shadow-lg shadow-[#2D5A27]/20">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2D5A27] text-white shadow-lg shadow-[#2D5A27]/20 relative">
                 <span className="text-xl">🏠</span>
+                {showPremiumBadge && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#D4AF37] rounded-full border border-white flex items-center justify-center text-[6px] text-white">
+                    AI
+                  </span>
+                )}
               </div>
               <div>
                 <span className="text-xl font-bold tracking-tight">
@@ -131,6 +148,9 @@ const Navbar: React.FC = () => {
                   <p className="text-[10px] font-medium text-[var(--color-text-tertiary)] tracking-wider uppercase">
                     Nepal's AI Real Estate
                   </p>
+                  {showPremiumBadge && (
+                    <Badge variant="gold" size="sm">👑 Premium</Badge>
+                  )}
                 </div>
               </div>
             </Link>
@@ -147,14 +167,16 @@ const Navbar: React.FC = () => {
                 >
                   <span>{link.icon}</span>
                   {link.label}
-                  
-                  {/* ✅ Lock badge for features requiring login */}
+
+                  {/* ✅ Lock badge for locked features */}
                   {link.locked && (
-                    <span className="ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded bg-[#D4AF37] text-white">
-                      🔒
+                    <span className={`ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded ${
+                      isPremium ? 'bg-green-500 text-white' : 'bg-[#D4AF37] text-white'
+                    }`}>
+                      {isPremium ? '✨' : '🔒'}
                     </span>
                   )}
-                  
+
                   <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#2D5A27] rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
                 </button>
               ))}
@@ -182,6 +204,23 @@ const Navbar: React.FC = () => {
                 </Link>
               ) : (
                 <>
+                  {/* ✅ Show Upgrade for free users */}
+                  {showUpgradeButton && (
+                    <Link
+                      to="/subscription"
+                      className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200 animate-pulse"
+                    >
+                      🚀 Upgrade
+                    </Link>
+                  )}
+
+                  {/* ✅ Show Premium Badge for premium users */}
+                  {showPremiumBadge && (
+                    <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4AF37] rounded-full shadow-lg shadow-[#D4AF37]/30">
+                      <span>👑</span> Premium
+                    </span>
+                  )}
+
                   {/* ✅ Avatar with Dropdown */}
                   <div className="relative group">
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200">
@@ -192,6 +231,11 @@ const Navbar: React.FC = () => {
                           variant="primary"
                           src={user?.avatarUrl}
                         />
+                        {showPremiumBadge && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D4AF37] rounded-full border-2 border-white flex items-center justify-center text-[6px] text-white">
+                            👑
+                          </div>
+                        )}
                       </div>
                       <svg className="w-3 h-3 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -204,8 +248,11 @@ const Navbar: React.FC = () => {
                       <div className="px-4 py-2 border-b border-[var(--color-primary-border)]">
                         <p className="text-sm font-semibold text-[var(--color-text-primary)]">{user?.name}</p>
                         <p className="text-xs text-[var(--color-text-tertiary)]">{user?.email}</p>
+                        {showPremiumBadge && (
+                          <Badge variant="gold" size="sm" className="mt-1">👑 Premium</Badge>
+                        )}
                       </div>
-                      
+
                       {/* Dashboard */}
                       <Link
                         to="/dashboard"
@@ -213,7 +260,7 @@ const Navbar: React.FC = () => {
                       >
                         📊 Dashboard
                       </Link>
-                      
+
                       {/* Favorites */}
                       <Link
                         to="/favorites"
@@ -221,7 +268,7 @@ const Navbar: React.FC = () => {
                       >
                         ❤️ Favorites
                       </Link>
-                      
+
                       {/* Messages */}
                       <Link
                         to="/messages"
@@ -242,9 +289,9 @@ const Navbar: React.FC = () => {
                           </Link>
                         </>
                       )}
-                      
+
                       <div className="h-px bg-[var(--color-primary-border)] my-1" />
-                      
+
                       {/* Profile Settings */}
                       <Link
                         to="/profile"
@@ -252,9 +299,27 @@ const Navbar: React.FC = () => {
                       >
                         👤 Profile Settings
                       </Link>
-                      
+
+                      {/* Refer & Earn */}
+                      <Link
+                        to="/refer"
+                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                      >
+                        🔗 Refer & Earn
+                      </Link>
+
+                      {/* ✅ Upgrade to Premium (Free Users Only) */}
+                      {!isPremium && isAuthenticated && (
+                        <Link
+                          to="/subscription"
+                          className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                        >
+                          🚀 Upgrade to Premium
+                        </Link>
+                      )}
+
                       <div className="h-px bg-[var(--color-primary-border)] my-1" />
-                      
+
                       {/* Logout */}
                       <button
                         onClick={handleLogout}
@@ -304,11 +369,19 @@ const Navbar: React.FC = () => {
                 <button
                   key={link.path}
                   onClick={() => {
-                    if (isFeatureLocked(link.label) && !isAuthenticated) {
-                      setSelectedFeature(link.label);
-                      setShowLoginPopup(true);
-                      setIsMobileMenuOpen(false);
-                      return;
+                    if (isFeatureLocked(link.label)) {
+                      if (!isAuthenticated) {
+                        setSelectedFeature(link.label);
+                        setShowLoginPopup(true);
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
+                      if (isAuthenticated && !isPremium) {
+                        setSelectedFeature(link.label);
+                        setShowUpgradePopup(true);
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
                     }
                     navigate(link.path);
                     setIsMobileMenuOpen(false);
@@ -317,22 +390,40 @@ const Navbar: React.FC = () => {
                 >
                   <span>{link.icon} {link.label}</span>
                   {link.locked && (
-                    <Badge variant="gold" size="sm">🔒</Badge>
+                    <Badge variant="gold" size="sm">
+                      {isPremium ? '✨' : '🔒'}
+                    </Badge>
                   )}
                 </button>
               ))}
 
               <div className="pt-4 border-t border-[var(--color-primary-border)] space-y-2">
                 {isAuthenticated ? (
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="block w-full px-4 py-3 text-center text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-200"
-                  >
-                    Logout
-                  </button>
+                  <>
+                    {!isPremium && (
+                      <Link
+                        to="/subscription"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block w-full px-4 py-3 text-center text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200"
+                      >
+                        🚀 Upgrade to Premium
+                      </Link>
+                    )}
+                    {isPremium && (
+                      <div className="block w-full px-4 py-3 text-center text-white bg-[#D4AF37] rounded-xl">
+                        👑 Premium Member
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="block w-full px-4 py-3 text-center text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-200"
+                    >
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link
@@ -371,7 +462,7 @@ const Navbar: React.FC = () => {
               className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
               onClick={() => setShowLoginPopup(false)}
             />
-            
+
             <motion.div
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -437,6 +528,82 @@ const Navbar: React.FC = () => {
                     >
                       Maybe later
                     </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ============================================
+      UPGRADE REQUIRED POPUP
+      ============================================ */}
+      <AnimatePresence>
+        {showUpgradePopup && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
+              onClick={() => setShowUpgradePopup(false)}
+            />
+
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            >
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#D4AF37]/30">
+                <div className="relative bg-gradient-to-r from-[#D4AF37] to-[#B8961F] px-6 py-8 text-center">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+                  <div className="relative z-10">
+                    <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🚀</div>
+                    <h3 className="text-2xl font-bold text-white mt-4">Premium Feature</h3>
+                    <p className="text-white/80 text-sm mt-1">
+                      Upgrade to access <span className="font-semibold text-white">{selectedFeature}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="bg-[#FFFBEB] rounded-xl p-4 mb-6 border border-[#D4AF37]/20">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Premium Plan</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">All features unlocked</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-[#D4AF37]">₹999</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">/ month</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      variant="gold"
+                      size="lg"
+                      fullWidth
+                      onClick={() => {
+                        setShowUpgradePopup(false);
+                        navigate('/subscription');
+                      }}
+                      className="font-semibold"
+                    >
+                      Upgrade Now 🚀
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      fullWidth
+                      onClick={() => setShowUpgradePopup(false)}
+                    >
+                      Maybe Later
+                    </Button>
                   </div>
                 </div>
               </div>

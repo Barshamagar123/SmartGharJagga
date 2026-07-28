@@ -23,22 +23,114 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
 
+  // ============================================
+  // ✅ EXACT BACKEND VALIDATIONS
+  // ============================================
+  
+  // ✅ Password validation - matches backend exactly
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+    
+    // Min 8 characters
+    if (password.length < 8) {
+      errors.push('at least 8 characters');
+    }
+    
+    // At least one uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      errors.push('one uppercase letter');
+    }
+    
+    // At least one lowercase letter
+    if (!/[a-z]/.test(password)) {
+      errors.push('one lowercase letter');
+    }
+    
+    // At least one number
+    if (!/[0-9]/.test(password)) {
+      errors.push('one number');
+    }
+    
+    // At least one special character
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      errors.push('one special character');
+    }
+    
+    return errors;
+  };
+
+  // ✅ Email validation - matches backend
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // ✅ Name validation - matches backend (min 2 characters)
+  const validateName = (name: string): boolean => {
+    return name.length >= 2;
+  };
+
+  // ✅ Role validation - matches backend
+  const validateRole = (role: string): boolean => {
+    return ['BUYER', 'SELLER', 'ADMIN'].includes(role);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setShowSuccess(false);
 
-    // ✅ Validations
+    // ✅ 1. Email validation (backend: email().email())
+    if (!email) {
+      setError('Email is required');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setError('Invalid email format');
+      return;
+    }
+
+    // ✅ 2. Name validation (backend: min(2))
+    if (!fullName) {
+      setError('Name is required');
+      return;
+    }
+    if (!validateName(fullName)) {
+      setError('Name must be at least 2 characters');
+      return;
+    }
+
+    // ✅ 3. Phone validation (optional)
+    if (phone && !/^[0-9]{10}$/.test(phone)) {
+      setError('Phone number must be 10 digits');
+      return;
+    }
+
+    // ✅ 4. Password validation (backend: min(8), uppercase, lowercase, number, special)
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+    
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      setError(`Password must contain: ${passwordErrors.join(', ')}`);
+      return;
+    }
+
+    // ✅ 5. Confirm password match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    // ✅ 6. Role validation (backend: enum)
+    if (!validateRole(userType)) {
+      setError('Invalid user type');
       return;
     }
 
+    // ✅ 7. Terms validation
     if (!agreeTerms) {
       setError('Please agree to the Terms of Service');
       return;
@@ -49,16 +141,16 @@ const Register: React.FC = () => {
     try {
       const userData = {
         name: fullName,
-        email,
-        phone,
-        password,
+        email: email,
+        phone: phone || '9800000000',
+        password: password,
         role: userType,
       };
 
-      console.log('📤 Registering:', userData);
+      console.log('📤 Sending registration data:', userData);
 
       const response = await register(userData);
-
+      
       console.log('✅ Registration response:', response);
 
       if (response && response.success) {
@@ -69,14 +161,29 @@ const Register: React.FC = () => {
       } else {
         setError(response?.message || 'Registration failed');
       }
+
     } catch (err: any) {
       console.error('❌ Registration error:', err);
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      
+      const errorData = err.response?.data;
+      console.log('❌ Error data:', errorData);
+      
+      if (errorData?.errors && errorData.errors.length > 0) {
+        const errorMessages = errorData.errors.map((e: any) => e.message || e).join(', ');
+        setError(errorMessages);
+      } else if (errorData?.message) {
+        setError(errorData.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ============================================
+  // ANIMATIONS
+  // ============================================
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {
@@ -96,6 +203,23 @@ const Register: React.FC = () => {
       },
     },
   };
+
+  // ============================================
+  // PASSWORD STRENGTH INDICATOR
+  // ============================================
+  const getPasswordStrength = (pass: string) => {
+    const errors = validatePassword(pass);
+    const score = 5 - errors.length;
+    
+    if (pass.length === 0) return { label: 'Empty', color: 'bg-gray-200', text: 'text-gray-400' };
+    if (score <= 2) return { label: 'Weak', color: 'bg-red-500', text: 'text-red-500' };
+    if (score <= 3) return { label: 'Fair', color: 'bg-yellow-500', text: 'text-yellow-500' };
+    if (score <= 4) return { label: 'Good', color: 'bg-blue-500', text: 'text-blue-500' };
+    return { label: 'Strong', color: 'bg-green-500', text: 'text-green-500' };
+  };
+
+  const strength = getPasswordStrength(password);
+  const passwordErrors = password ? validatePassword(password) : [];
 
   return (
     <div className="min-h-screen pt-16 md:pt-20 bg-[var(--color-primary)] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
@@ -184,6 +308,9 @@ const Register: React.FC = () => {
                         </svg>
                       }
                     />
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                      Minimum 2 characters
+                    </p>
                   </div>
 
                   {/* Email */}
@@ -201,6 +328,9 @@ const Register: React.FC = () => {
                         </svg>
                       }
                     />
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                      Must be a valid email address
+                    </p>
                   </div>
 
                   {/* Phone */}
@@ -217,6 +347,9 @@ const Register: React.FC = () => {
                         </svg>
                       }
                     />
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                      Optional - 10 digits
+                    </p>
                   </div>
 
                   {/* Password */}
@@ -252,6 +385,35 @@ const Register: React.FC = () => {
                         </button>
                       }
                     />
+                    
+                    {/* Password Strength Indicator */}
+                    {password && (
+                      <div className="mt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-300 ${strength.color}`}
+                              style={{ width: `${(5 - passwordErrors.length) * 20}%` }}
+                            />
+                          </div>
+                          <span className={`text-xs font-medium ${strength.text}`}>
+                            {strength.label}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {passwordErrors.map((err, i) => (
+                            <span key={i} className="text-xs text-red-500">• {err}</span>
+                          ))}
+                          {passwordErrors.length === 0 && password.length > 0 && (
+                            <span className="text-xs text-green-500">✅ All requirements met!</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                      Must have: 8+ chars, uppercase, lowercase, number, special character
+                    </p>
                   </div>
 
                   {/* Confirm Password */}
@@ -303,6 +465,9 @@ const Register: React.FC = () => {
                         📈 Seller
                       </button>
                     </div>
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                      Choose your role (Admin registration is restricted)
+                    </p>
                   </div>
 
                   {/* Terms */}
@@ -333,7 +498,7 @@ const Register: React.FC = () => {
                     fullWidth
                     isLoading={isLoading}
                     loadingText="Creating account..."
-                    disabled={!agreeTerms}
+                    disabled={!agreeTerms || isLoading}
                     className="font-semibold"
                   >
                     Create Account
