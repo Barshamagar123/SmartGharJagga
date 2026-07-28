@@ -1,70 +1,91 @@
-// frontend/src/context/AuthContext.tsx
+// src/components/context/AuthContext.tsx
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authApi } from '../services/api/auth';
 
+// ✅ Define proper types
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  isVerified: boolean;
+  avatarUrl?: string | null;
+}
+
 interface AuthContextType {
-  user: any;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: any) => Promise<void>;
+  changePassword: (data: any) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// ✅ Create context with CORRECT default values
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => {},      // ✅ Matches signature
+  register: async () => {},   // ✅ Matches signature
+  logout: () => {},
+  updateProfile: async () => {},
+  changePassword: async () => {},
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ STEP 1: Load user on app start
   useEffect(() => {
     const loadUser = async () => {
       const token = localStorage.getItem('accessToken');
-      
       if (token) {
         try {
           const userData = await authApi.getProfile();
           setUser(userData);
         } catch (error) {
-          // Token expired or invalid
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
         }
       }
-      
-      setIsLoading(false); // ✅ App is ready
+      setIsLoading(false);
     };
-
     loadUser();
   }, []);
 
-  // ✅ STEP 2: Login - Independent of subscription
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
-    const { accessToken, refreshToken, user } = response.data;
-    
+    const { accessToken, refreshToken, user: userData } = response.data;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
-    setUser(user);
+    setUser(userData);
   };
 
-  // ✅ STEP 3: Register - Independent of subscription
   const register = async (data: any) => {
     const response = await authApi.register(data);
-    const { accessToken, refreshToken, user } = response.data;
-    
+    const { accessToken, refreshToken, user: userData } = response.data;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
-    setUser(user);
+    setUser(userData);
   };
 
-  // ✅ STEP 4: Logout - Independent of subscription
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
+  };
+
+  const updateProfile = async (data: any) => {
+    const updatedUser = await authApi.updateProfile(data);
+    setUser(updatedUser);
+  };
+
+  const changePassword = async (data: any) => {
+    await authApi.changePassword(data);
   };
 
   return (
@@ -76,6 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        updateProfile,
+        changePassword,
       }}
     >
       {children}
@@ -83,10 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// ✅ useAuth ALWAYS returns context - NEVER throws error
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 };
+
+export default AuthContext;

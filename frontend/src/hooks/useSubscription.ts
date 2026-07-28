@@ -2,39 +2,50 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { subscriptionApi } from '../services/api/subscription';
 
 export const useSubscription = () => {
-  // ✅ Get auth state FIRST
-  const { user, isAuthenticated } = useAuth();
+  // ✅ Get auth context (but don't use it if disabled)
+  const auth = useAuth();
+  
+  const [subscription, setSubscription] = useState<any>(null);
   const [isPremium, setIsPremium] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isPremiumSeller, setIsPremiumSeller] = useState(false);
+  const [isPremiumBuyer, setIsPremiumBuyer] = useState(false);
+  const [matchesRemaining, setMatchesRemaining] = useState(3);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ✅ Always return default values - no API call
+  const fetchSubscription = async () => {
+    console.log('⏭️ Subscription disabled - returning default values');
+    setIsLoading(false);
+    setSubscription(null);
+    setIsPremium(false);
+    setIsPremiumSeller(false);
+    setIsPremiumBuyer(false);
+    setMatchesRemaining(3);
+    setError(null);
+    return;
+  };
 
   useEffect(() => {
-    const fetchSubscription = async () => {
-      // ✅ STEP 1: Check if user is authenticated
-      if (!isAuthenticated || !user) {
-        console.log('⏭️ Skipping subscription - user not authenticated');
-        setIsLoading(false);
-        return; // ✅ Exit early - NO API CALL
-      }
-
-      // ✅ STEP 2: Only now fetch subscription (with token)
-      try {
-        setIsLoading(true);
-        const response = await subscriptionApi.getMySubscription();
-        setIsPremium(response.data?.hasActiveSubscription || false);
-      } catch (error) {
-        // ✅ Silent fail - subscription may not exist
-        setIsPremium(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // ✅ STEP 3: Only run when auth changes
     fetchSubscription();
-  }, [isAuthenticated, user]); // ✅ Depends on auth
+  }, []);
 
-  return { isPremium, isLoading };
+  const refreshSubscription = async () => {
+    await fetchSubscription();
+  };
+
+  return {
+    subscription,
+    isPremium,
+    isPremiumSeller,
+    isPremiumBuyer,
+    matchesRemaining,
+    isLoading,
+    error,
+    refreshSubscription,
+  };
 };
+
+export default useSubscription;

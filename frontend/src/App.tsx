@@ -3,6 +3,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './components/context/AuthContext';
 import { LanguageProvider } from './components/context/LanguageContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
+
 import Properties from './pages/Properties/Properties';
 import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
 import Login from './pages/Login/Login';
@@ -10,7 +12,7 @@ import Register from './pages/Register/Register';
 import HomePage from './pages/HomePage/HomePage';
 import LayoutOf from './components/common/Layout/Layout';
 import AIMatching from './pages/AIMatching/AIMatching';
-import MapSearch from './pages/MapSearch/MapSearch'; // ✅ Import MapSearch
+import MapSearch from './pages/MapSearch/MapSearch';
 
 const About = () => (
   <div className="container-custom py-12">
@@ -33,11 +35,12 @@ const Dashboard = () => (
 function App() {
   return (
     <Router>
+      {/* ✅ CRITICAL: AuthProvider must be OUTSIDE everything */}
       <AuthProvider>
-    
+        {/* ✅ SubscriptionProvider INSIDE AuthProvider */}
+        <SubscriptionProvider>
           <LanguageProvider>
             <Routes>
-              {/* ✅ All routes wrapped in Layout */}
               <Route element={<LayoutOf />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/properties" element={<Properties />} />
@@ -48,11 +51,11 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/ai-matching" element={<AIMatching />} />
-                <Route path="/map-search" element={<MapSearch />} /> {/* ✅ MapSearch route */}
+                <Route path="/map-search" element={<MapSearch />} />
               </Route>
             </Routes>
           </LanguageProvider>
-        
+        </SubscriptionProvider>
       </AuthProvider>
     </Router>
   );

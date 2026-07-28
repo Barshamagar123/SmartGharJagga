@@ -1,4 +1,4 @@
-// src/pages/Login/Login.tsx
+
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -25,7 +25,7 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      // ✅ Redirect to home after successful login
+     
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
