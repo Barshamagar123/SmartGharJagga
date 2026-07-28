@@ -1,79 +1,49 @@
-// src/components/context/SubscriptionContext.tsx
+// frontend/src/hooks/useSubscription.ts
 
-import React, { createContext, useState, useEffect } from 'react';
-import { useAuth } from '../components/context/AuthContext';
+import { useState, useEffect } from 'react';
+// ❌ Comment out subscriptionApi import
+// import { subscriptionApi } from '../services/api/subscription';
+import { useAuth } from '../context/AuthContext';
 
-// ✅ Define the context type
-interface SubscriptionContextType {
-  subscription: any;
-  isPremium: boolean;
-  isPremiumSeller: boolean;
-  isPremiumBuyer: boolean;
-  matchesRemaining: number;
-  upgradeToPremium: (plan: string) => Promise<void>;
-  cancelSubscription: () => Promise<void>;
-}
-
-// ✅ Create context with default values
-const SubscriptionContext = createContext<SubscriptionContextType>({
-  subscription: null,
-  isPremium: false,
-  isPremiumSeller: false,
-  isPremiumBuyer: false,
-  matchesRemaining: 3,
-  upgradeToPremium: async () => {},
-  cancelSubscription: async () => {},
-});
-
-export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+export const useSubscription = () => {
   const [subscription, setSubscription] = useState<any>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [isPremiumSeller, setIsPremiumSeller] = useState(false);
   const [isPremiumBuyer, setIsPremiumBuyer] = useState(false);
   const [matchesRemaining, setMatchesRemaining] = useState(3);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSubscription = async () => {
+    // ✅ Always return default values - no API call
+    console.log('⏭️ Subscription disabled - returning default values');
+    setIsLoading(false);
+    setSubscription(null);
+    setIsPremium(false);
+    setIsPremiumSeller(false);
+    setIsPremiumBuyer(false);
+    setMatchesRemaining(3);
+    return;
+  };
 
   useEffect(() => {
-    if (user) {
-      // TODO: Fetch subscription from API
-      const mockSubscription = {
-        plan: 'FREE',
-        isActive: false,
-        matchesRemaining: 3,
-        expiresAt: null,
-      };
-      setSubscription(mockSubscription);
-      setIsPremium(mockSubscription.plan !== 'FREE' && mockSubscription.isActive);
-      setIsPremiumSeller(mockSubscription.plan === 'SELLER_PREMIUM' && mockSubscription.isActive);
-      setIsPremiumBuyer(mockSubscription.plan === 'BUYER_PREMIUM' && mockSubscription.isActive);
-      setMatchesRemaining(mockSubscription.matchesRemaining);
-    }
-  }, [user]);
+    fetchSubscription();
+  }, []);
 
-  const upgradeToPremium = async (plan: string) => {
-    console.log(`Upgrading to ${plan}`);
+  const refreshSubscription = async () => {
+    await fetchSubscription();
   };
 
-  const cancelSubscription = async () => {
-    console.log('Canceling subscription');
-  };
-
-  // ✅ The value object must contain ALL the properties
-  const value = {
+  return {
     subscription,
     isPremium,
     isPremiumSeller,
     isPremiumBuyer,
     matchesRemaining,
-    upgradeToPremium,
-    cancelSubscription,
+    isLoading,
+    error,
+    refreshSubscription,
   };
-
-  return (
-    <SubscriptionContext.Provider value={value}>
-      {children}
-    </SubscriptionContext.Provider>
-  );
 };
 
-export default SubscriptionContext;
+export default useSubscription;

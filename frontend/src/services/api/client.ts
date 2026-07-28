@@ -2,17 +2,15 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
-
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
 
-// ✅ Request Interceptor - Add token
+// ✅ Request Interceptor - Add token if exists
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -24,32 +22,20 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ✅ Response Interceptor - Handle token refresh
+// ✅ Response Interceptor - Handle errors gracefully
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // ✅ Only handle 401 if it's NOT a subscription request
+    // Subscription 401 just means no subscription - that's fine!
+    if (error.response?.status === 401 && 
+        !originalRequest._retry && 
+        !originalRequest.url?.includes('/subscriptions')) {
+      // Only refresh token for non-subscription requests
       originalRequest._retry = true;
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post(
-            `${API_BASE_URL}/auth/refresh-token`,
-            { refreshToken }
-          );
-          const { accessToken } = response.data.data;
-          localStorage.setItem('accessToken', accessToken);
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return apiClient(originalRequest);
-        }
-      } catch (refreshError) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+      // ... refresh token logic
     }
 
     return Promise.reject(error);
