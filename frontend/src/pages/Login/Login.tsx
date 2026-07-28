@@ -1,7 +1,7 @@
 // src/pages/Login/Login.tsx
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../../components/common/Button/Button';
 import { Input } from '../../components/common/Input/Input';
@@ -14,25 +14,32 @@ const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // ✅ Check for success message from register
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Clear the state after showing
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setShowSuccess(false);
+    setSuccessMessage('');
     setIsLoading(true);
 
     try {
       const response = await login(email, password);
       
       if (response && response.success) {
-        setShowSuccess(true);
-        setTimeout(() => {
-          navigate('/');
-        }, 1500);
+        navigate('/');
       } else {
         setError(response?.message || 'Login failed');
       }
@@ -94,6 +101,18 @@ const Login: React.FC = () => {
             </Link>
           </motion.div>
 
+          {/* ✅ Success Message from Register */}
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-4"
+            >
+              <span className="text-xl">✅</span>
+              <span>{successMessage}</span>
+            </motion.div>
+          )}
+
           {/* Login Card */}
           <motion.div variants={fadeInUp}>
             <Card variant="elevated" padding="lg" className="border border-[var(--color-primary-border)]">
@@ -108,14 +127,6 @@ const Login: React.FC = () => {
                       Please enter your details to sign in
                     </p>
                   </div>
-
-                  {/* Success Message */}
-                  {showSuccess && (
-                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                      <span className="text-xl">✅</span>
-                      <span>Login successful! Redirecting...</span>
-                    </div>
-                  )}
 
                   {/* Error Message */}
                   {error && (

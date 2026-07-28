@@ -20,59 +20,23 @@ const Register: React.FC = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  // ============================================
-  // ✅ EXACT BACKEND VALIDATIONS
-  // ============================================
-  
   // ✅ Password validation - matches backend exactly
   const validatePassword = (password: string): string[] => {
     const errors: string[] = [];
-    
-    // Min 8 characters
-    if (password.length < 8) {
-      errors.push('at least 8 characters');
-    }
-    
-    // At least one uppercase letter
-    if (!/[A-Z]/.test(password)) {
-      errors.push('one uppercase letter');
-    }
-    
-    // At least one lowercase letter
-    if (!/[a-z]/.test(password)) {
-      errors.push('one lowercase letter');
-    }
-    
-    // At least one number
-    if (!/[0-9]/.test(password)) {
-      errors.push('one number');
-    }
-    
-    // At least one special character
-    if (!/[^A-Za-z0-9]/.test(password)) {
-      errors.push('one special character');
-    }
-    
+    if (password.length < 8) errors.push('at least 8 characters');
+    if (!/[A-Z]/.test(password)) errors.push('one uppercase letter');
+    if (!/[a-z]/.test(password)) errors.push('one lowercase letter');
+    if (!/[0-9]/.test(password)) errors.push('one number');
+    if (!/[^A-Za-z0-9]/.test(password)) errors.push('one special character');
     return errors;
   };
 
-  // ✅ Email validation - matches backend
   const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // ✅ Name validation - matches backend (min 2 characters)
-  const validateName = (name: string): boolean => {
-    return name.length >= 2;
-  };
-
-  // ✅ Role validation - matches backend
-  const validateRole = (role: string): boolean => {
-    return ['BUYER', 'SELLER', 'ADMIN'].includes(role);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,57 +44,33 @@ const Register: React.FC = () => {
     setError('');
     setShowSuccess(false);
 
-    // ✅ 1. Email validation (backend: email().email())
-    if (!email) {
-      setError('Email is required');
-      return;
-    }
-    if (!validateEmail(email)) {
-      setError('Invalid email format');
+    // ✅ Validations
+    if (!email || !validateEmail(email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
-    // ✅ 2. Name validation (backend: min(2))
-    if (!fullName) {
-      setError('Name is required');
-      return;
-    }
-    if (!validateName(fullName)) {
+    if (!fullName || fullName.length < 2) {
       setError('Name must be at least 2 characters');
       return;
     }
 
-    // ✅ 3. Phone validation (optional)
-    if (phone && !/^[0-9]{10}$/.test(phone)) {
-      setError('Phone number must be 10 digits');
-      return;
-    }
-
-    // ✅ 4. Password validation (backend: min(8), uppercase, lowercase, number, special)
     if (!password) {
       setError('Password is required');
       return;
     }
-    
+
     const passwordErrors = validatePassword(password);
     if (passwordErrors.length > 0) {
       setError(`Password must contain: ${passwordErrors.join(', ')}`);
       return;
     }
 
-    // ✅ 5. Confirm password match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // ✅ 6. Role validation (backend: enum)
-    if (!validateRole(userType)) {
-      setError('Invalid user type');
-      return;
-    }
-
-    // ✅ 7. Terms validation
     if (!agreeTerms) {
       setError('Please agree to the Terms of Service');
       return;
@@ -147,27 +87,32 @@ const Register: React.FC = () => {
         role: userType,
       };
 
-      console.log('📤 Sending registration data:', userData);
+      console.log('📤 Registering:', userData);
 
       const response = await register(userData);
-      
+
       console.log('✅ Registration response:', response);
 
       if (response && response.success) {
+        // ✅ Show success message
+        setSuccessMessage('Account created successfully! Please login to continue.');
         setShowSuccess(true);
+        
+        // ✅ Redirect to login after 3 seconds
         setTimeout(() => {
-          navigate('/');
-        }, 2000);
+          navigate('/login', { 
+            state: { 
+              message: 'Registration successful! Please login with your credentials.' 
+            } 
+          });
+        }, 3000);
       } else {
         setError(response?.message || 'Registration failed');
       }
 
     } catch (err: any) {
       console.error('❌ Registration error:', err);
-      
       const errorData = err.response?.data;
-      console.log('❌ Error data:', errorData);
-      
       if (errorData?.errors && errorData.errors.length > 0) {
         const errorMessages = errorData.errors.map((e: any) => e.message || e).join(', ');
         setError(errorMessages);
@@ -181,9 +126,20 @@ const Register: React.FC = () => {
     }
   };
 
-  // ============================================
-  // ANIMATIONS
-  // ============================================
+  // ✅ Get password strength
+  const getPasswordStrength = (pass: string) => {
+    const errors = validatePassword(pass);
+    const score = 5 - errors.length;
+    if (pass.length === 0) return { label: 'Empty', color: 'bg-gray-200', text: 'text-gray-400' };
+    if (score <= 2) return { label: 'Weak', color: 'bg-red-500', text: 'text-red-500' };
+    if (score <= 3) return { label: 'Fair', color: 'bg-yellow-500', text: 'text-yellow-500' };
+    if (score <= 4) return { label: 'Good', color: 'bg-blue-500', text: 'text-blue-500' };
+    return { label: 'Strong', color: 'bg-green-500', text: 'text-green-500' };
+  };
+
+  const strength = getPasswordStrength(password);
+  const passwordErrors = password ? validatePassword(password) : [];
+
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {
@@ -203,23 +159,6 @@ const Register: React.FC = () => {
       },
     },
   };
-
-  // ============================================
-  // PASSWORD STRENGTH INDICATOR
-  // ============================================
-  const getPasswordStrength = (pass: string) => {
-    const errors = validatePassword(pass);
-    const score = 5 - errors.length;
-    
-    if (pass.length === 0) return { label: 'Empty', color: 'bg-gray-200', text: 'text-gray-400' };
-    if (score <= 2) return { label: 'Weak', color: 'bg-red-500', text: 'text-red-500' };
-    if (score <= 3) return { label: 'Fair', color: 'bg-yellow-500', text: 'text-yellow-500' };
-    if (score <= 4) return { label: 'Good', color: 'bg-blue-500', text: 'text-blue-500' };
-    return { label: 'Strong', color: 'bg-green-500', text: 'text-green-500' };
-  };
-
-  const strength = getPasswordStrength(password);
-  const passwordErrors = password ? validatePassword(password) : [];
 
   return (
     <div className="min-h-screen pt-16 md:pt-20 bg-[var(--color-primary)] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
@@ -267,19 +206,23 @@ const Register: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Success Message */}
+                  {/* ✅ Success Message with Login Redirect */}
                   <AnimatePresence>
                     {showSuccess && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3"
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="bg-green-50 border border-green-200 text-green-700 px-4 py-4 rounded-xl text-sm flex items-start gap-3"
                       >
                         <span className="text-2xl">✅</span>
                         <div>
                           <p className="font-semibold">Registration Successful!</p>
-                          <p className="text-green-600 text-xs">Redirecting to home page...</p>
+                          <p className="text-green-600 text-xs mt-1">{successMessage}</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs text-green-600">Redirecting to login...</span>
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -308,9 +251,6 @@ const Register: React.FC = () => {
                         </svg>
                       }
                     />
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      Minimum 2 characters
-                    </p>
                   </div>
 
                   {/* Email */}
@@ -328,9 +268,6 @@ const Register: React.FC = () => {
                         </svg>
                       }
                     />
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      Must be a valid email address
-                    </p>
                   </div>
 
                   {/* Phone */}
@@ -347,9 +284,6 @@ const Register: React.FC = () => {
                         </svg>
                       }
                     />
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      Optional - 10 digits
-                    </p>
                   </div>
 
                   {/* Password */}
@@ -386,7 +320,7 @@ const Register: React.FC = () => {
                       }
                     />
                     
-                    {/* Password Strength Indicator */}
+                    {/* Password Strength */}
                     {password && (
                       <div className="mt-2">
                         <div className="flex items-center gap-3">
@@ -400,19 +334,10 @@ const Register: React.FC = () => {
                             {strength.label}
                           </span>
                         </div>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {passwordErrors.map((err, i) => (
-                            <span key={i} className="text-xs text-red-500">• {err}</span>
-                          ))}
-                          {passwordErrors.length === 0 && password.length > 0 && (
-                            <span className="text-xs text-green-500">✅ All requirements met!</span>
-                          )}
-                        </div>
                       </div>
                     )}
-                    
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      Must have: 8+ chars, uppercase, lowercase, number, special character
+                      8+ chars, uppercase, lowercase, number, special character
                     </p>
                   </div>
 
@@ -465,9 +390,6 @@ const Register: React.FC = () => {
                         📈 Seller
                       </button>
                     </div>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
-                      Choose your role (Admin registration is restricted)
-                    </p>
                   </div>
 
                   {/* Terms */}
@@ -479,14 +401,7 @@ const Register: React.FC = () => {
                       className="mt-1 w-4 h-4 rounded border-[var(--color-primary-border)] text-[#2D5A27] focus:ring-[#2D5A27] focus:ring-offset-0"
                     />
                     <label className="text-sm text-[var(--color-text-secondary)]">
-                      I agree to the{' '}
-                      <Link to="/terms" className="text-[#2D5A27] hover:text-[#23461E] font-medium">
-                        Terms of Service
-                      </Link>{' '}
-                      and{' '}
-                      <Link to="/privacy" className="text-[#2D5A27] hover:text-[#23461E] font-medium">
-                        Privacy Policy
-                      </Link>
+                      I agree to the Terms of Service and Privacy Policy
                     </label>
                   </div>
 

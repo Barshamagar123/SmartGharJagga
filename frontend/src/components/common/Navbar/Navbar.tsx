@@ -17,10 +17,7 @@ const Navbar: React.FC = () => {
   const [selectedFeature, setSelectedFeature] = useState('');
   const navigate = useNavigate();
 
-  // ✅ Get auth state
   const { user, isAuthenticated, logout } = useAuth();
-
-  // ✅ Set isPremium to false (no subscription for now)
   const isPremium = false;
 
   useEffect(() => {
@@ -40,13 +37,26 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Check if feature is locked
+  // ✅ Feature Lock Logic (Based on Business Model)
   const isFeatureLocked = (feature: string) => {
-    const lockedFeatures = ['AI Match', 'Map Search', 'List Property'];
-    return lockedFeatures.includes(feature);
+    // ✅ List Property - UNLOCKED for everyone (Free users can list)
+    if (feature === 'List Property') {
+      return false; // ✅ Always unlocked
+    }
+    
+    // ✅ AI Match - LOCKED (Premium only)
+    if (feature === 'AI Match') {
+      return true;
+    }
+    
+    // ✅ Map Search - LOCKED (Premium only)
+    if (feature === 'Map Search') {
+      return true;
+    }
+    
+    return false;
   };
 
-  // ✅ Handle feature click
   const handleFeatureClick = (feature: string, path: string) => {
     if (isFeatureLocked(feature)) {
       if (!isAuthenticated) {
@@ -65,51 +75,34 @@ const Navbar: React.FC = () => {
 
   // ✅ NAV LINKS
   const navLinks = [
-    { label: 'Home', path: '/', icon: '🏠', locked: false },
-    { label: 'Properties', path: '/properties', icon: '📋', locked: false },
+    { label: 'Home', path: '/', locked: false },
+    { label: 'Properties', path: '/properties', locked: false },
     {
       label: 'AI Match',
       path: '/ai-matching',
-      icon: '🤖',
       locked: true,
-      badge: isPremium ? '🚀 Unlocked' : '🔒 Premium',
+      badge: '🔒 Premium',
     },
     {
       label: 'Map Search',
       path: '/map-search',
-      icon: '🗺️',
       locked: true,
-      badge: isPremium ? '🌍 Unlocked' : '🔒 Premium',
+      badge: '🔒 Premium',
     },
     {
       label: 'List Property',
       path: '/list-property',
-      icon: '➕',
-      locked: true,
-      badge: isPremium ? '✨ Premium' : '🔒 Premium',
+      locked: false, // ✅ UNLOCKED for everyone
+      badge: '✨ Free',
     },
   ];
 
-  // ✅ Dashboard link (only for authenticated users)
-  const dashboardLink = {
-    label: 'Dashboard',
-    path: '/dashboard',
-    icon: '📊',
-    locked: false,
-    requiresAuth: true,
-  };
-
-  // ✅ Get nav links based on auth status
   const getNavLinks = () => {
-    if (isAuthenticated) {
-      return [...navLinks, dashboardLink];
-    }
     return navLinks;
   };
 
   const finalNavLinks = getNavLinks();
 
-  // ✅ Check if user is premium
   const showPremiumBadge = isAuthenticated && isPremium;
   const showUpgradeButton = isAuthenticated && !isPremium;
 
@@ -121,59 +114,47 @@ const Navbar: React.FC = () => {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'bg-[var(--color-primary)]/95 backdrop-blur-xl shadow-md'
-            : 'bg-[var(--color-primary)]/90 backdrop-blur-sm'
+            ? 'bg-white/95 backdrop-blur-xl shadow-sm border-b border-gray-100/50'
+            : 'bg-white/90 backdrop-blur-sm'
         }`}
       >
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
-            {/* ============================================
-            LOGO
-            ============================================ */}
-            <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2D5A27] text-white shadow-lg shadow-[#2D5A27]/20 relative">
+            {/* LOGO */}
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#2D5A27] text-white shadow-sm">
                 <span className="text-xl">🏠</span>
-                {showPremiumBadge && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#D4AF37] rounded-full border border-white flex items-center justify-center text-[6px] text-white">
-                    AI
-                  </span>
-                )}
               </div>
               <div>
                 <span className="text-xl font-bold tracking-tight">
                   <span className="text-[#2D5A27]">Smart</span>
-                  <span className="text-[var(--color-text-primary)]">GharJagga</span>
+                  <span className="text-gray-800">GharJagga</span>
                 </span>
-                <div className="flex items-center gap-2">
-                  <p className="text-[10px] font-medium text-[var(--color-text-tertiary)] tracking-wider uppercase">
-                    Nepal's AI Real Estate
-                  </p>
-                  {showPremiumBadge && (
-                    <Badge variant="gold" size="sm">👑 Premium</Badge>
-                  )}
-                </div>
+                <p className="text-[10px] font-medium text-gray-400 tracking-wider uppercase">
+                  Real Estate Platform
+                </p>
               </div>
             </Link>
 
-            {/* ============================================
-            NAV LINKS
-            ============================================ */}
-            <div className="hidden lg:flex items-center gap-1">
+            {/* NAV LINKS */}
+            <div className="hidden lg:flex items-center gap-0.5 xl:gap-1">
               {finalNavLinks.map((link) => (
                 <button
                   key={link.path}
                   onClick={() => handleFeatureClick(link.label, link.path)}
-                  className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative group flex items-center gap-1.5 text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)]"
+                  className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-xl hover:bg-[#2D5A27]/5 transition-all duration-200 relative group"
                 >
-                  <span>{link.icon}</span>
                   {link.label}
 
-                  {/* ✅ Lock badge for locked features */}
                   {link.locked && (
-                    <span className={`ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded ${
-                      isPremium ? 'bg-green-500 text-white' : 'bg-[#D4AF37] text-white'
-                    }`}>
-                      {isPremium ? '✨' : '🔒'}
+                    <span className="ml-1.5 px-2 py-0.5 text-[9px] font-semibold uppercase rounded-full bg-yellow-100 text-yellow-700">
+                      Premium
+                    </span>
+                  )}
+
+                  {!link.locked && link.badge === '✨ Free' && (
+                    <span className="ml-1.5 px-2 py-0.5 text-[9px] font-semibold uppercase rounded-full bg-green-100 text-green-700">
+                      Free
                     </span>
                   )}
 
@@ -182,150 +163,146 @@ const Navbar: React.FC = () => {
               ))}
             </div>
 
-            {/* ============================================
-            RIGHT ACTIONS
-            ============================================ */}
+            {/* RIGHT ACTIONS */}
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Language Toggle */}
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[#2D5A27] rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200"
+                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200"
               >
                 {language === 'EN' ? '🇳🇵' : '🇬🇧'}
               </button>
 
-              {/* PUBLIC: Show Sign In */}
               {!isAuthenticated ? (
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
+                  className="px-5 py-2.5 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                 >
                   Sign In
                 </Link>
               ) : (
                 <>
-                  {/* ✅ Show Upgrade for free users */}
+                  {/* Upgrade Button */}
                   {showUpgradeButton && (
                     <Link
                       to="/subscription"
-                      className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200 animate-pulse"
+                      className="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      🚀 Upgrade
+                      <span>Upgrade</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
                     </Link>
                   )}
 
-                  {/* ✅ Show Premium Badge for premium users */}
                   {showPremiumBadge && (
-                    <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4AF37] rounded-full shadow-lg shadow-[#D4AF37]/30">
-                      <span>👑</span> Premium
+                    <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4AF37] rounded-full shadow-sm">
+                      <span>👑</span>
+                      Premium
                     </span>
                   )}
 
-                  {/* ✅ Avatar with Dropdown */}
+                  {/* Avatar with Dropdown */}
                   <div className="relative group">
-                    <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200">
-                      <div className="relative">
-                        <Avatar
-                          name={user?.name || 'User'}
-                          size="sm"
-                          variant="primary"
-                          src={user?.avatarUrl}
-                        />
-                        {showPremiumBadge && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#D4AF37] rounded-full border-2 border-white flex items-center justify-center text-[6px] text-white">
-                            👑
-                          </div>
-                        )}
-                      </div>
-                      <svg className="w-3 h-3 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200">
+                      <Avatar
+                        name={user?.name || 'User'}
+                        size="sm"
+                        variant="primary"
+                        src={user?.avatarUrl}
+                      />
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
 
                     {/* Dropdown Menu */}
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-[var(--color-primary-border)] py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       {/* User Info */}
-                      <div className="px-4 py-2 border-b border-[var(--color-primary-border)]">
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">{user?.name}</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)]">{user?.email}</p>
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+                        <p className="text-xs text-gray-400">{user?.email}</p>
                         {showPremiumBadge && (
                           <Badge variant="gold" size="sm" className="mt-1">👑 Premium</Badge>
                         )}
                       </div>
 
-                      {/* Dashboard */}
                       <Link
                         to="/dashboard"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                        className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
-                        📊 Dashboard
+                        <span className="mr-3 text-lg">📊</span>
+                        Dashboard
                       </Link>
 
-                      {/* Favorites */}
                       <Link
                         to="/favorites"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                        className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
-                        ❤️ Favorites
+                        <span className="mr-3 text-lg">❤️</span>
+                        Favorites
                       </Link>
 
-                      {/* Messages */}
                       <Link
                         to="/messages"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                        className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
-                        💬 Messages
+                        <span className="mr-3 text-lg">💬</span>
+                        Messages
                       </Link>
 
-                      {/* Admin Panel (Admin Only) */}
                       {user?.role === 'ADMIN' && (
                         <>
-                          <div className="h-px bg-[var(--color-primary-border)] my-1" />
+                          <div className="h-px bg-gray-100 my-1" />
                           <Link
                             to="/admin"
-                            className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                            className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors"
                           >
-                            ⚙️ Admin Panel
+                            <span className="mr-3 text-lg">⚙️</span>
+                            Admin Panel
                           </Link>
                         </>
                       )}
 
-                      <div className="h-px bg-[var(--color-primary-border)] my-1" />
+                      <div className="h-px bg-gray-100 my-1" />
 
-                      {/* Profile Settings */}
                       <Link
                         to="/profile"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                        className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
-                        👤 Profile Settings
+                        <span className="mr-3 text-lg">👤</span>
+                        Profile Settings
                       </Link>
 
-                      {/* Refer & Earn */}
                       <Link
                         to="/refer"
-                        className="flex items-center px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-secondary-surface)] transition-colors"
+                        className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
-                        🔗 Refer & Earn
+                        <span className="mr-3 text-lg">🔗</span>
+                        Refer & Earn
                       </Link>
 
-                      {/* ✅ Upgrade to Premium (Free Users Only) */}
                       {!isPremium && isAuthenticated && (
-                        <Link
-                          to="/subscription"
-                          className="flex items-center px-4 py-2 text-sm text-[#D4AF37] hover:bg-[var(--color-secondary-surface)] transition-colors"
-                        >
-                          🚀 Upgrade to Premium
-                        </Link>
+                        <>
+                          <div className="h-px bg-gray-100 my-1" />
+                          <Link
+                            to="/subscription"
+                            className="flex items-center px-4 py-2.5 text-sm text-[#2D5A27] font-semibold hover:bg-[#2D5A27]/10 transition-colors"
+                          >
+                            <span className="mr-3 text-lg">🚀</span>
+                            Upgrade to Premium
+                          </Link>
+                        </>
                       )}
 
-                      <div className="h-px bg-[var(--color-primary-border)] my-1" />
+                      <div className="h-px bg-gray-100 my-1" />
 
-                      {/* Logout */}
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left flex items-center px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                        className="w-full text-left flex items-center px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                       >
-                        🚪 Logout
+                        <span className="mr-3 text-lg">🚪</span>
+                        Logout
                       </button>
                     </div>
                   </div>
@@ -335,12 +312,12 @@ const Navbar: React.FC = () => {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-lg hover:bg-[var(--color-secondary-surface)] transition-all duration-200"
+                className="lg:hidden p-2.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200"
               >
                 <div className="w-5 h-4 flex flex-col justify-between">
-                  <span className={`block w-full h-0.5 bg-[var(--color-text-primary)] rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
-                  <span className={`block w-full h-0.5 bg-[var(--color-text-primary)] rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
-                  <span className={`block w-full h-0.5 bg-[var(--color-text-primary)] rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
+                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
+                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
+                  <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
                 </div>
               </button>
             </div>
@@ -348,23 +325,21 @@ const Navbar: React.FC = () => {
         </div>
       </motion.nav>
 
-      {/* ============================================
-      MOBILE MENU
-      ============================================ */}
+      {/* MOBILE MENU */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="fixed top-0 right-0 h-full w-80 bg-[var(--color-primary)] shadow-2xl p-6 overflow-y-auto">
+          <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl p-6 overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
               <span className="text-xl font-bold text-[#2D5A27]">Menu</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-[var(--color-secondary-surface)]">
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-[#2D5A27]/5">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               {finalNavLinks.map((link) => (
                 <button
                   key={link.path}
@@ -386,25 +361,39 @@ const Navbar: React.FC = () => {
                     navigate(link.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex items-center justify-between w-full px-4 py-3 text-[var(--color-text-secondary)] hover:text-[#2D5A27] hover:bg-[var(--color-secondary-surface)] rounded-lg transition-all duration-200"
+                  className="flex items-center justify-between w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                 >
-                  <span>{link.icon} {link.label}</span>
+                  <span>{link.label}</span>
                   {link.locked && (
-                    <Badge variant="gold" size="sm">
-                      {isPremium ? '✨' : '🔒'}
-                    </Badge>
+                    <Badge variant="gold" size="sm">🔒</Badge>
+                  )}
+                  {!link.locked && link.badge === '✨ Free' && (
+                    <Badge variant="success" size="sm">✅ Free</Badge>
                   )}
                 </button>
               ))}
 
-              <div className="pt-4 border-t border-[var(--color-primary-border)] space-y-2">
+              {isAuthenticated && (
+                <>
+                  <div className="h-px bg-gray-100 my-2" />
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                  >
+                    📊 Dashboard
+                  </Link>
+                </>
+              )}
+
+              <div className="pt-4 border-t border-gray-100 space-y-2">
                 {isAuthenticated ? (
                   <>
                     {!isPremium && (
                       <Link
                         to="/subscription"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block w-full px-4 py-3 text-center text-white bg-gradient-to-r from-[#D4AF37] to-[#B8961F] rounded-xl hover:shadow-lg transition-all duration-200"
+                        className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
                       >
                         🚀 Upgrade to Premium
                       </Link>
@@ -448,9 +437,7 @@ const Navbar: React.FC = () => {
         </div>
       )}
 
-      {/* ============================================
-      LOGIN REQUIRED POPUP
-      ============================================ */}
+      {/* LOGIN POPUP */}
       <AnimatePresence>
         {showLoginPopup && (
           <>
@@ -470,8 +457,8 @@ const Navbar: React.FC = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
             >
-              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[var(--color-primary-border)]">
-                <div className="relative bg-gradient-to-r from-[#2D5A27] to-[#4A7D42] px-6 py-8 text-center">
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+                <div className="relative bg-gradient-to-r from-[#2D5A27] to-[#23461E] px-6 py-8 text-center">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
                   <div className="relative z-10">
@@ -483,12 +470,12 @@ const Navbar: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <div className="bg-[var(--color-primary-surface)] rounded-xl p-4 mb-6 border border-[var(--color-primary-border)]">
+                  <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">✨</span>
                       <div>
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Why sign in?</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)]">Save favorites, get AI matches, and more!</p>
+                        <p className="text-sm font-semibold text-gray-800">Why sign in?</p>
+                        <p className="text-xs text-gray-400">Save favorites, get AI matches, and more!</p>
                       </div>
                     </div>
                   </div>
@@ -503,13 +490,13 @@ const Navbar: React.FC = () => {
                       }}
                       className="font-semibold"
                     >
-                      Sign In Now 🔑
+                      Sign In Now
                     </Button>
                     <div className="relative flex items-center justify-center">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-[var(--color-primary-border)]" />
+                        <div className="w-full border-t border-gray-200" />
                       </div>
-                      <span className="relative px-4 text-xs text-[var(--color-text-tertiary)] bg-white">or</span>
+                      <span className="relative px-4 text-xs text-gray-400 bg-white">or</span>
                     </div>
                     <Button
                       variant="outline"
@@ -520,11 +507,11 @@ const Navbar: React.FC = () => {
                         navigate('/register');
                       }}
                     >
-                      Create New Account 🚀
+                      Create New Account
                     </Button>
                     <button
                       onClick={() => setShowLoginPopup(false)}
-                      className="text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors text-center py-2"
+                      className="text-sm text-gray-400 hover:text-gray-600 transition-colors text-center py-2"
                     >
                       Maybe later
                     </button>
@@ -536,9 +523,7 @@ const Navbar: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ============================================
-      UPGRADE REQUIRED POPUP
-      ============================================ */}
+      {/* UPGRADE POPUP */}
       <AnimatePresence>
         {showUpgradePopup && (
           <>
@@ -558,8 +543,8 @@ const Navbar: React.FC = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
             >
-              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#D4AF37]/30">
-                <div className="relative bg-gradient-to-r from-[#D4AF37] to-[#B8961F] px-6 py-8 text-center">
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#2D5A27]/20">
+                <div className="relative bg-gradient-to-r from-[#2D5A27] to-[#23461E] px-6 py-8 text-center">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
                   <div className="relative z-10">
@@ -571,21 +556,21 @@ const Navbar: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-6">
-                  <div className="bg-[#FFFBEB] rounded-xl p-4 mb-6 border border-[#D4AF37]/20">
+                  <div className="bg-[#E8F0E4] rounded-xl p-4 mb-6 border border-[#2D5A27]/20">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">Premium Plan</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)]">All features unlocked</p>
+                        <p className="text-sm font-semibold text-gray-800">Premium Plan</p>
+                        <p className="text-xs text-gray-400">All features unlocked</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-[#D4AF37]">₹999</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)]">/ month</p>
+                        <p className="text-2xl font-bold text-[#2D5A27]">₹999</p>
+                        <p className="text-xs text-gray-400">/ month</p>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
                     <Button
-                      variant="gold"
+                      variant="primary"
                       size="lg"
                       fullWidth
                       onClick={() => {
