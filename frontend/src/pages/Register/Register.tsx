@@ -6,12 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../components/common/Button/Button';
 import { Input } from '../../components/common/Input/Input';
 import { Card, CardContent } from '../../components/common/Card/Card';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const Register: React.FC = () => {
-  // ============================================
-  // STATE VARIABLES
-  // ============================================
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -23,35 +20,25 @@ const Register: React.FC = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  // ============================================
-  // HANDLE SUBMIT
-  // ============================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setShowSuccess(false);
 
-    // ✅ Log for debugging
-    console.log('📝 Registration form submitted');
-    console.log('📝 Form data:', { fullName, email, phone, userType });
-
-    // ✅ Validate passwords match
+    // ✅ Validations
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // ✅ Validate password strength
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
     }
 
-    // ✅ Validate terms agreement
     if (!agreeTerms) {
       setError('Please agree to the Terms of Service');
       return;
@@ -60,7 +47,6 @@ const Register: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // ✅ Prepare user data
       const userData = {
         name: fullName,
         email,
@@ -69,37 +55,28 @@ const Register: React.FC = () => {
         role: userType,
       };
 
-      console.log('📤 Sending registration data to backend:', userData);
+      console.log('📤 Registering:', userData);
 
-      // ✅ Call register API
       const response = await register(userData);
 
       console.log('✅ Registration response:', response);
 
-      // ✅ Show success message
-      setSuccessMessage('Account created successfully! 🎉');
-      setShowSuccess(true);
-
-      // ✅ Redirect after 2 seconds
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-
+      if (response && response.success) {
+        setShowSuccess(true);
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } else {
+        setError(response?.message || 'Registration failed');
+      }
     } catch (err: any) {
       console.error('❌ Registration error:', err);
-      console.error('❌ Error response:', err.response);
-      console.error('❌ Error data:', err.response?.data);
-
-      // ✅ Show error message
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ============================================
-  // ANIMATIONS
-  // ============================================
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {
@@ -120,9 +97,6 @@ const Register: React.FC = () => {
     },
   };
 
-  // ============================================
-  // UI RENDER
-  // ============================================
   return (
     <div className="min-h-screen pt-16 md:pt-20 bg-[var(--color-primary)] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
       <div className="w-full max-w-lg">
@@ -169,28 +143,27 @@ const Register: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* ✅ Success Message */}
+                  {/* Success Message */}
                   <AnimatePresence>
                     {showSuccess && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3 shadow-sm"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3"
                       >
                         <span className="text-2xl">✅</span>
-                        <div className="flex-1">
+                        <div>
                           <p className="font-semibold">Registration Successful!</p>
-                          <p className="text-green-600 text-xs">{successMessage || 'Redirecting to home page...'}</p>
+                          <p className="text-green-600 text-xs">Redirecting to home page...</p>
                         </div>
-                        <div className="w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* ❌ Error Message */}
+                  {/* Error Message */}
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2 shadow-sm">
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                       <span className="text-xl">❌</span>
                       <span>{error}</span>
                     </div>
@@ -360,7 +333,7 @@ const Register: React.FC = () => {
                     fullWidth
                     isLoading={isLoading}
                     loadingText="Creating account..."
-                    disabled={!agreeTerms || isLoading}
+                    disabled={!agreeTerms}
                     className="font-semibold"
                   >
                     Create Account

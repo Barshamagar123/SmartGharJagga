@@ -1,29 +1,19 @@
 // src/context/AuthContext.tsx
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { authApi } from '../services/api/auth';
+import { authApi,type AuthResponse } from '../services/api/auth';
 
 interface AuthContextType {
   user: any;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<any>;
-  register: (data: any) => Promise<any>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (data: any) => Promise<AuthResponse>;
   logout: () => void;
-  updateProfile: (data: any) => Promise<any>;
-  changePassword: (data: any) => Promise<any>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: () => {},
-  updateProfile: async () => {},
-  changePassword: async () => {},
-});
+// ✅ Create context with proper default
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
@@ -46,28 +36,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, []);
 
-  // ✅ FIX: Register function - MUST return response
-  const register = async (data: any) => {
+  // ✅ FIXED: register function
+  const register = async (data: any): Promise<AuthResponse> => {
+    console.log('🔥 Register called with:', data);
+    
     try {
-      console.log('📝 AuthContext.register called with:', data);
-      
       const response = await authApi.register(data);
-      
-      console.log('📥 AuthContext.register response:', response);
+      console.log('🔥 API response:', response);
       
       // ✅ Check if response exists
       if (!response) {
         throw new Error('No response from server');
       }
       
-      // ✅ Check if response has data
-      if (response.data) {
+      // ✅ Save tokens
+      if (response.success && response.data) {
         const { accessToken, refreshToken, user: userData } = response.data;
-        
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         
-        const fullUser = {
+        setUser({
           id: userData.id,
           email: userData.email,
           name: userData.name,
@@ -80,31 +68,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: data.phone || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        };
+        });
         
-        setUser(fullUser);
-        console.log('✅ User set in context:', fullUser);
+        console.log('✅ User set in context');
+        return response;
       }
       
-      // ✅ MUST return the response
       return response;
-      
     } catch (error: any) {
-      console.error('❌ AuthContext.register error:', error);
-      console.error('❌ Error response:', error.response);
+      console.error('❌ Register error:', error);
       throw error;
     }
   };
 
-  const login = async (email: string, password: string) => {
+  // ✅ FIXED: login function
+  const login = async (email: string, password: string): Promise<AuthResponse> => {
+    console.log('🔐 Login called');
+    
     try {
       const response = await authApi.login({ email, password });
-      const { accessToken, refreshToken, user: userData } = response.data;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      setUser(userData);
+      console.log('🔐 API response:', response);
+      
+      if (response.success && response.data) {
+        const { accessToken, refreshToken, user: userData } = response.data;
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        setUser(userData);
+        return response;
+      }
+      
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Login error:', error);
       throw error;
     }
@@ -116,16 +110,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  const updateProfile = async (data: any) => {
-    const updatedUser = await authApi.updateProfile(data);
-    setUser(updatedUser);
-    return updatedUser;
-  };
-
-  const changePassword = async (data: any) => {
-    await authApi.changePassword(data);
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -135,8 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
-        updateProfile,
-        changePassword,
       }}
     >
       {children}
@@ -144,8 +126,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// ✅ FIXED: useAuth hook
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 export default AuthContext;
