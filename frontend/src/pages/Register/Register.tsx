@@ -1,11 +1,12 @@
 // src/pages/Register/Register.tsx
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../../components/common/Button/Button';
 import { Input } from '../../components/common/Input/Input';
 import { Card, CardContent } from '../../components/common/Card/Card';
+import { useAuth } from '../../context/AuthContext';
 
 const Register: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -17,15 +18,50 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    // ✅ Validate passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // ✅ Validate password strength
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    // ✅ Validate terms agreement
+    if (!agreeTerms) {
+      setError('Please agree to the Terms of Service');
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate registration
-    setTimeout(() => {
+
+    try {
+      await register({
+        name: fullName,
+        email,
+        phone,
+        password,
+        role: userType,
+      });
+      
+      // ✅ Redirect to home page after successful registration
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Redirect logic here
-    }, 1500);
+    }
   };
 
   const fadeInUp = {
@@ -93,6 +129,13 @@ const Register: React.FC = () => {
                       Join thousands of happy homeowners
                     </p>
                   </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+                      {error}
+                    </div>
+                  )}
 
                   {/* Full Name */}
                   <div>

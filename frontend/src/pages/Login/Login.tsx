@@ -1,27 +1,37 @@
 // src/pages/Login/Login.tsx
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '../../components/common/Button/Button';
 import { Input } from '../../components/common/Input/Input';
 import { Card, CardContent } from '../../components/common/Card/Card';
+import { useAuth } from '../../context/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate login
-    setTimeout(() => {
+
+    try {
+      await login(email, password);
+      // ✅ Redirect to home after successful login
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Redirect logic here
-    }, 1500);
+    }
   };
 
   const fadeInUp = {
@@ -89,6 +99,13 @@ const Login: React.FC = () => {
                       Please enter your details to sign in
                     </p>
                   </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+                      {error}
+                    </div>
+                  )}
 
                   {/* Email Input */}
                   <div>

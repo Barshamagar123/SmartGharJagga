@@ -11,7 +11,6 @@ import HomePage from './pages/HomePage/HomePage';
 import LayoutOf from './components/common/Layout/Layout';
 import AIMatching from './pages/AIMatching/AIMatching';
 import MapSearch from './pages/MapSearch/MapSearch'; // ✅ Import MapSearch
-import { SubscriptionProvider } from './context/SubscriptionContext';
 
 const About = () => (
   <div className="container-custom py-12">
@@ -35,7 +34,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <SubscriptionProvider>
+    
           <LanguageProvider>
             <Routes>
               {/* ✅ All routes wrapped in Layout */}
@@ -53,7 +52,7 @@ function App() {
               </Route>
             </Routes>
           </LanguageProvider>
-        </SubscriptionProvider>
+        
       </AuthProvider>
     </Router>
   );
