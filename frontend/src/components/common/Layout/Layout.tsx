@@ -8,7 +8,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../Navbar/Navbar';
 import Footer from '../Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { useSubscription } from '../../../hooks/useSubscription';
+
 const Layout: React.FC = () => {
   const location = useLocation();
   const hideNavbarFooter = ['/login', '/register'].includes(location.pathname);

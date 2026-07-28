@@ -1,43 +1,32 @@
-// src/components/context/AuthContext.tsx
+// src/context/AuthContext.tsx
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authApi } from '../services/api/auth';
 
-// ✅ Define proper types
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  isVerified: boolean;
-  avatarUrl?: string | null;
-}
-
 interface AuthContextType {
-  user: User | null;
+  user: any;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
+  register: (data: any) => Promise<any>;
   logout: () => void;
-  updateProfile: (data: any) => Promise<void>;
-  changePassword: (data: any) => Promise<void>;
+  updateProfile: (data: any) => Promise<any>;
+  changePassword: (data: any) => Promise<any>;
 }
 
-// ✅ Create context with CORRECT default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: async () => {},      // ✅ Matches signature
-  register: async () => {},   // ✅ Matches signature
+  login: async () => {},
+  register: async () => {},
   logout: () => {},
   updateProfile: async () => {},
   changePassword: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,20 +46,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await authApi.login({ email, password });
-    const { accessToken, refreshToken, user: userData } = response.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(userData);
+  // ✅ FIX: Register function - MUST return response
+  const register = async (data: any) => {
+    try {
+      console.log('📝 AuthContext.register called with:', data);
+      
+      const response = await authApi.register(data);
+      
+      console.log('📥 AuthContext.register response:', response);
+      
+      // ✅ Check if response exists
+      if (!response) {
+        throw new Error('No response from server');
+      }
+      
+      // ✅ Check if response has data
+      if (response.data) {
+        const { accessToken, refreshToken, user: userData } = response.data;
+        
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        
+        const fullUser = {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role,
+          isVerified: userData.isVerified,
+          isEmailVerified: false,
+          isActive: true,
+          avatarUrl: userData.avatarUrl || '',
+          languagePref: 'ENGLISH',
+          phone: data.phone || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        setUser(fullUser);
+        console.log('✅ User set in context:', fullUser);
+      }
+      
+      // ✅ MUST return the response
+      return response;
+      
+    } catch (error: any) {
+      console.error('❌ AuthContext.register error:', error);
+      console.error('❌ Error response:', error.response);
+      throw error;
+    }
   };
 
-  const register = async (data: any) => {
-    const response = await authApi.register(data);
-    const { accessToken, refreshToken, user: userData } = response.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(userData);
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await authApi.login({ email, password });
+      const { accessToken, refreshToken, user: userData } = response.data;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      setUser(userData);
+      return response;
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -82,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (data: any) => {
     const updatedUser = await authApi.updateProfile(data);
     setUser(updatedUser);
+    return updatedUser;
   };
 
   const changePassword = async (data: any) => {
@@ -106,7 +144,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// ✅ useAuth ALWAYS returns context - NEVER throws error
 export const useAuth = () => {
   return useContext(AuthContext);
 };

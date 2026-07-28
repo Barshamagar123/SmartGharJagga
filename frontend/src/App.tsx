@@ -3,7 +3,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './components/context/AuthContext';
 import { LanguageProvider } from './components/context/LanguageContext';
-import { SubscriptionProvider } from './context/SubscriptionContext';
 
 import Properties from './pages/Properties/Properties';
 import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
@@ -37,8 +36,7 @@ function App() {
     <Router>
       {/* ✅ CRITICAL: AuthProvider must be OUTSIDE everything */}
       <AuthProvider>
-        {/* ✅ SubscriptionProvider INSIDE AuthProvider */}
-        <SubscriptionProvider>
+        
           <LanguageProvider>
             <Routes>
               <Route element={<LayoutOf />}>
@@ -55,7 +53,7 @@ function App() {
               </Route>
             </Routes>
           </LanguageProvider>
-        </SubscriptionProvider>
+        
       </AuthProvider>
     </Router>
   );
