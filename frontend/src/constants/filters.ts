@@ -2,6 +2,11 @@
 
 export const BEDROOM_OPTIONS = ['Any', '1+', '2+', '3+', '4+', '5+'];
 export const BATHROOM_OPTIONS = ['Any', '1+', '2+', '3+', '4+'];
+export const PURPOSE_OPTIONS = [
+  { value: 'SALE', label: 'For Sale' },
+  { value: 'RENT', label: 'For Rent' },
+  { value: 'LEASE', label: 'For Lease' },
+];
 export const PROPERTY_TYPE_OPTIONS = [
   { value: '', label: 'Any' },
   { value: 'house', label: 'House' },

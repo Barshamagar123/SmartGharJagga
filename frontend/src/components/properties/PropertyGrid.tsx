@@ -3,7 +3,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, BedDouble, Bath, Maximize2 } from 'lucide-react';
+import { MapPin, Bed, Bath, Square, Heart, Eye } from 'lucide-react';
 import {
   Card,
   CardTitle,
@@ -13,8 +13,11 @@ import {
   CardDivider,
 } from '../common/Card/Card';
 import type { Property } from '../../types/property';
+import { formatArea } from '../../utils/areaUtils';
+
 interface PropertyGridProps {
   properties: Property[];
+  onFavoriteToggle?: (id: string) => void;
 }
 
 const fadeInUp = {
@@ -34,7 +37,18 @@ const staggerContainer = {
   },
 };
 
-const PropertyGrid: React.FC<PropertyGridProps> = ({ properties }) => {
+const PropertyGrid: React.FC<PropertyGridProps> = ({ 
+  properties, 
+  onFavoriteToggle 
+}) => {
+  if (!properties || properties.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">No properties found</p>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
@@ -56,38 +70,52 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({ properties }) => {
             className="overflow-hidden h-full flex flex-col"
             interactive
           >
-            {/* Fixed height image container */}
+            {/* Image */}
             <div className="relative h-48 flex-shrink-0 overflow-hidden">
               <img
-                src={property.image}
-                alt={`${property.title} in ${property.location}`}
+                src={property.mainImage || property.images?.[0] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80'}
+                alt={property.title}
                 loading="lazy"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
-              {property.featured && (
+              
+              {/* ✅ Featured Badge */}
+              {property.isFeatured && (
                 <CardBadge
                   variant="success"
                   className="absolute top-3 left-3"
                 >
-                  FEATURED
+                  ⭐ FEATURED
                 </CardBadge>
               )}
+              
+              {/* ✅ Verified Badge */}
+              {property.isVerified && (
+                <CardBadge
+                  variant="default"
+                  className="absolute top-3 left-3 ml-20 bg-[#2D5A27] text-white"
+                >
+                  ✅ VERIFIED
+                </CardBadge>
+              )}
+              
+              {/* ✅ Property Type Badge - Fixed */}
               <CardBadge
                 variant="default"
                 className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm"
               >
-                {property.type}
+                {property.propertyType || 'Property'}
               </CardBadge>
             </div>
 
-            {/* Content with flex-1 to fill remaining space */}
+            {/* Content */}
             <CardContent className="flex-1 flex flex-col p-4">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-base group-hover:text-[#2D5A27] transition-colors line-clamp-1">
                   {property.title}
                 </CardTitle>
                 <span className="font-serif text-base font-bold text-[#2D5A27] whitespace-nowrap">
-                  {property.price}
+                  Rs {property.price.toLocaleString()}
                 </span>
               </div>
 
@@ -98,28 +126,50 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({ properties }) => {
 
               <CardDivider className="my-3" />
 
+              {/* ✅ Fixed - Use bedrooms, bathrooms, area */}
               <div className="flex items-center gap-3 text-xs text-[var(--color-text-secondary)]">
-                {property.beds > 0 && (
+                {property.bedrooms && property.bedrooms > 0 && (
                   <span className="flex items-center gap-1">
-                    <BedDouble size={14} aria-hidden="true" /> {property.beds} Beds
+                    <Bed size={14} aria-hidden="true" /> {property.bedrooms} Beds
                   </span>
                 )}
-                {property.baths > 0 && (
+                {property.bathrooms && property.bathrooms > 0 && (
                   <span className="flex items-center gap-1">
-                    <Bath size={14} aria-hidden="true" /> {property.baths} Baths
+                    <Bath size={14} aria-hidden="true" /> {property.bathrooms} Baths
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <Maximize2 size={12} aria-hidden="true" /> {property.sqft} sqft
-                </span>
+                {property.area && property.areaUnit && (
+                  <span className="flex items-center gap-1">
+                    <Square size={12} aria-hidden="true" /> 
+                    {formatArea(property.area, property.areaUnit)}
+                  </span>
+                )}
+                {!property.area && property.areaUnit && (
+                  <span className="flex items-center gap-1">
+                    <Square size={12} aria-hidden="true" /> 
+                    {property.area || 0} {property.areaUnit}
+                  </span>
+                )}
               </div>
 
-              {/* Spacer to push button to bottom */}
+              {/* ✅ Views */}
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+                <span className="flex items-center gap-1">
+                  <Eye size={12} /> {property.views || 0} views
+                </span>
+                {property.favoritesCount !== undefined && (
+                  <span className="flex items-center gap-1">
+                    <Heart size={12} /> {property.favoritesCount || 0}
+                  </span>
+                )}
+              </div>
+
+              {/* Spacer */}
               <div className="flex-1" />
 
-              {/* Button at bottom */}
+              {/* Button */}
               <Link
-                to={`/property/${property.slug}`}
+                to={`/property/${property.id}`}
                 className="w-full text-center px-4 py-2 text-xs font-semibold text-[#2D5A27] border-2 border-[#2D5A27] rounded-full hover:bg-[#2D5A27] hover:text-white transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2D5A27] focus-visible:ring-offset-2 mt-3"
               >
                 View Details

@@ -1,56 +1,70 @@
 // src/types/property.ts
 
-export type PropertyType = 'VILLA' | 'HOUSE' | 'APARTMENT' | 'BUNGALOW' | 'LAND';
-export type PropertyStatus = 'AVAILABLE' | 'SOLD' | 'UNDER_CONTRACT' | 'RENTED';
+export type AreaUnit = 'DHUR' | 'AANA' | 'ROPANI' | 'BISWA' | 'KATHA' | 'SQFT' | 'SQUARE_FEET' | 'SQUARE_METER' | 'HECTARE';
+
+export type PropertyType = 
+  | 'HOUSE'
+  | 'RESIDENTIAL_LAND'
+  | 'COMMERCIAL_LAND'
+  | 'AGRICULTURAL_LAND'
+  | 'INDUSTRIAL_LAND'
+  | 'SHOP'
+  | 'OFFICE'
+  | 'WAREHOUSE'
+  | 'HOTEL'
+  | 'RESTAURANT'
+  | 'APARTMENT'
+  | 'VILLA'
+  | 'BUNGALOW';
+
+export type PropertyStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SOLD' | 'RENTED' | 'INACTIVE';
+export type PropertyPurpose = 'SALE' | 'RENT' | 'LEASE';
 
 export interface Property {
-  id: number;
-  slug: string;
+  id: string;
+  propertyId: string;
   title: string;
-  price: string;
+  description?: string;
+  price: number;
   location: string;
-  beds: number;
-  baths: number;
-  sqft: string;
-  image: string;
-  type: PropertyType;
-  featured: boolean;
-  status?: PropertyStatus;
-}
-
-export interface Agent {
-  name: string;
-  phone: string;
-  email: string;
-  avatar: string;
-  company: string;
-  experience?: string;
-  propertiesSold?: number;
-  rating?: number;
-  verified?: boolean;
-}
-
-export interface PropertyDetail extends Property {
-  description: string;
-  yearBuilt: number;
-  garage: number;
-  propertyTax: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  area?: number;
+  areaUnit?: AreaUnit;
+  propertyType: PropertyType;
+  purpose: PropertyPurpose;
   amenities: string[];
-  nearby: {
-    name: string;
-    distance: string;
-    type: 'school' | 'hospital' | 'mall' | 'park' | 'transport' | 'restaurant';
-    icon?: string;
-  }[];
+  features?: string[];
   images: string[];
-  rating?: number;
-  reviews?: number;
-  agent: Agent;
-  virtualTour?: string;
-  floorPlan?: string;
-  lastUpdated?: string;
+  mainImage?: string;
+  videos?: string[];
+  status: PropertyStatus;
+  parking: boolean;
+  furnished?: boolean;
+  floor?: number;
+  totalFloors?: number;
+  yearBuilt?: number;
+  views: number;
+  favoritesCount: number;
+  isFeatured: boolean;
+  isVerified: boolean;
+  isPremium?: boolean;
+  rejectionReason?: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  soldAt?: string;
+  averageRating: number;
+  totalReviews: number;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+  };
 }
