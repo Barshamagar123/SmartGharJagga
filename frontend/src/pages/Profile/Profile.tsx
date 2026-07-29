@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/common/Button/Button';
-// ✅ Import Input
 import { Card, CardContent } from '../../components/common/Card/Card';
 import { authApi } from '../../services/api/auth';
 import Input from '../../components/common/Input/Input';
@@ -138,6 +137,42 @@ const Profile: React.FC = () => {
     }
   };
 
+  // ✅ Handle Role Change - Using authApi
+  const handleRoleChange = async (newRole: string) => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      // ✅ Use authApi.updateRole (correct URL)
+      const updatedUser = await authApi.updateRole(newRole);
+      
+      setSuccess(`Role changed to ${newRole} successfully!`);
+      
+      // Update local user
+      const updatedUserData = { 
+        ...user, 
+        role: newRole,
+        name: user?.name,
+        email: user?.email,
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUserData));
+      
+      if (profile) {
+        setProfile({ ...profile, role: newRole });
+      }
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Role change error:', err);
+      setError(err.response?.data?.message || 'Failed to change role. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ✅ Loading state
   if (authLoading || loading) {
     return (
@@ -242,6 +277,76 @@ const Profile: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* ✅ ROLE SWITCHER SECTION */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Switch Role</h3>
+                  <p className="text-sm text-gray-500">Change your account type</p>
+                </div>
+                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                  profile?.role === 'SELLER' 
+                    ? 'bg-purple-100 text-purple-700' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  Current: {profile?.role}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => handleRoleChange('BUYER')}
+                  disabled={profile?.role === 'BUYER' || loading}
+                  className={`p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-3 ${
+                    profile?.role === 'BUYER'
+                      ? 'border-[#2D5A27] bg-[#2D5A27]/5 cursor-default'
+                      : 'border-gray-200 hover:border-[#2D5A27]/50 hover:bg-gray-50'
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className="text-3xl">🏠</div>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-gray-900">Buyer</h4>
+                    <p className="text-xs text-gray-500">Looking to buy properties</p>
+                  </div>
+                  {profile?.role === 'BUYER' && (
+                    <span className="ml-auto text-[#2D5A27] text-xl">✓</span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleRoleChange('SELLER')}
+                  disabled={profile?.role === 'SELLER' || loading}
+                  className={`p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-3 ${
+                    profile?.role === 'SELLER'
+                      ? 'border-[#2D5A27] bg-[#2D5A27]/5 cursor-default'
+                      : 'border-gray-200 hover:border-[#2D5A27]/50 hover:bg-gray-50'
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className="text-3xl">📈</div>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-gray-900">Seller</h4>
+                    <p className="text-xs text-gray-500">Looking to sell properties</p>
+                  </div>
+                  {profile?.role === 'SELLER' && (
+                    <span className="ml-auto text-[#2D5A27] text-xl">✓</span>
+                  )}
+                </button>
+              </div>
+
+              {loading && (
+                <div className="mt-3 flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#2D5A27]"></div>
+                  Updating role...
+                </div>
+              )}
+
+              <p className="text-xs text-gray-400 mt-3">
+                ⚡ Changing role will update your dashboard experience
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Edit Profile Form */}
           {isEditing && (
             <Card className="mb-6">
@@ -316,7 +421,7 @@ const Profile: React.FC = () => {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
-                        helper="Password must be at least 8 characters"  // ✅ Use 'helper' not 'helperText'
+                        helper="Password must be at least 8 characters"
                       />
                     </div>
                     <div>

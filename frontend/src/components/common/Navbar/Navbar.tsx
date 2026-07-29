@@ -8,6 +8,14 @@ import { Button } from '../Button/Button';
 import { Avatar } from '../Avatar/Avatar';
 import { useAuth } from '../../../hooks/useAuth';
 
+// ✅ Add interface with optional badge
+interface NavLink {
+  label: string;
+  path: string;
+  locked: boolean;
+  badge?: string;  // ✅ Optional badge property
+}
+
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,35 +45,54 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Feature Lock Logic (Based on Business Model)
+  // ✅ Get User Role
+  const userRole = user?.role || 'BUYER';
+  const isSeller = userRole === 'SELLER' || userRole === 'ADMIN';
+
+  // ✅ Feature Lock Logic
   const isFeatureLocked = (feature: string) => {
-    // ✅ List Property - UNLOCKED only for authenticated users (Free or Premium)
     if (feature === 'List Property') {
-      return false; // Not locked by premium, but requires login (handled separately)
+      return false;
     }
-    
-    // ✅ AI Match - LOCKED (Premium only)
     if (feature === 'AI Match') {
       return true;
     }
-    
-    // ✅ Map Search - LOCKED (Premium only)
     if (feature === 'Map Search') {
       return true;
     }
-    
     return false;
   };
 
   const handleFeatureClick = (feature: string, path: string) => {
-    // ✅ Special handling for List Property - requires login but not premium
+    // ✅ List Property - Requires login
     if (feature === 'List Property') {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
         setShowLoginPopup(true);
         return;
       }
-      // If authenticated, proceed to list property (free for all authenticated users)
+      navigate(path);
+      return;
+    }
+
+    // ✅ Favorites - Requires login
+    if (feature === 'Favorites') {
+      if (!isAuthenticated) {
+        setSelectedFeature(feature);
+        setShowLoginPopup(true);
+        return;
+      }
+      navigate(path);
+      return;
+    }
+
+    // ✅ My Properties - Requires login (Seller only)
+    if (feature === 'My Properties') {
+      if (!isAuthenticated) {
+        setSelectedFeature(feature);
+        setShowLoginPopup(true);
+        return;
+      }
       navigate(path);
       return;
     }
@@ -86,38 +113,70 @@ const Navbar: React.FC = () => {
     navigate(path);
   };
 
-  // ✅ NAV LINKS
-  const navLinks = [
-    { label: 'Home', path: '/', locked: false },
-    { label: 'Properties', path: '/properties', locked: false },
-    {
-      label: 'AI Match',
-      path: '/ai-matching',
-      locked: true,
-      badge: '🔒 Premium',
-    },
-    {
-      label: 'Map Search',
-      path: '/map-search',
-      locked: true,
-      badge: '🔒 Premium',
-    },
-    {
-      label: 'List Property',
-      path: '/list-property',
-      locked: false, // Not premium locked, but requires authentication
-      badge: '✨ Free',
-    },
-  ];
+  // ✅ NAV LINKS - ROLE BASED
+  const getNavLinks = (): NavLink[] => {
+    // ✅ Common links for all users (no badge)
+    const commonLinks: NavLink[] = [
+      { label: 'Home', path: '/', locked: false },
+      { label: 'Properties', path: '/properties', locked: false },
+    ];
 
-  const getNavLinks = () => {
-    return navLinks;
+    // ✅ Buyer specific links
+    const buyerLinks: NavLink[] = [
+      { label: 'Favorites', path: '/favorites', locked: false },
+      {
+        label: 'AI Match',
+        path: '/ai-matching',
+        locked: true,
+        badge: '🔒 Premium',
+      },
+      {
+        label: 'Map Search',
+        path: '/map-search',
+        locked: true,
+        badge: '🔒 Premium',
+      },
+    ];
+
+    // ✅ Seller specific links
+    const sellerLinks: NavLink[] = [
+      { label: 'My Properties', path: '/my-properties', locked: false },
+      {
+        label: 'List Property',
+        path: '/list-property',
+        locked: false,
+        badge: '✨ Free',
+      },
+    ];
+
+    // ✅ Combine based on role
+    if (isSeller) {
+      return [...commonLinks, ...sellerLinks];
+    }
+    return [...commonLinks, ...buyerLinks];
   };
 
   const finalNavLinks = getNavLinks();
 
   const showPremiumBadge = isAuthenticated && isPremium;
   const showUpgradeButton = isAuthenticated && !isPremium;
+
+  // ✅ Role display in navbar
+  const getRoleDisplay = () => {
+    if (!isAuthenticated) return null;
+    if (isSeller) {
+      return (
+        <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">
+          📈 Seller
+        </span>
+      );
+    }
+    return (
+      <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
+        🏠 Buyer
+      </span>
+    );
+  };
 
   return (
     <>
@@ -149,13 +208,13 @@ const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* NAV LINKS */}
+            {/* ✅ NAV LINKS - ROLE BASED */}
             <div className="hidden lg:flex items-center gap-0.5 xl:gap-1">
               {finalNavLinks.map((link) => (
                 <button
                   key={link.path}
                   onClick={() => handleFeatureClick(link.label, link.path)}
-                  className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-xl hover:bg-[#2D5A27]/5 transition-all duration-200 relative group"
+                  className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-xl hover:bg-[#2D5A27]/5 transition-all duration-200 relative group cursor-pointer"
                 >
                   {link.label}
 
@@ -165,13 +224,11 @@ const Navbar: React.FC = () => {
                     </span>
                   )}
 
-                  {!link.locked && link.badge === '✨ Free' && (
+                  {!link.locked && link.badge && link.badge === '✨ Free' && (
                     <span className="ml-1.5 px-2 py-0.5 text-[9px] font-semibold uppercase rounded-full bg-green-100 text-green-700">
                       Free
                     </span>
                   )}
-
-                  <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#2D5A27] rounded-full transition-all duration-300 group-hover:w-1/2 group-hover:left-1/4" />
                 </button>
               ))}
             </div>
@@ -181,10 +238,13 @@ const Navbar: React.FC = () => {
               {/* Language Toggle */}
               <button
                 onClick={toggleLanguage}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200"
+                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer"
               >
                 {language === 'EN' ? '🇳🇵' : '🇬🇧'}
               </button>
+
+              {/* ✅ Role Badge */}
+              {getRoleDisplay()}
 
               {!isAuthenticated ? (
                 <Link
@@ -217,7 +277,7 @@ const Navbar: React.FC = () => {
 
                   {/* Avatar with Dropdown */}
                   <div className="relative group">
-                    <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200">
+                    <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer">
                       <Avatar
                         name={user?.name || 'User'}
                         size="sm"
@@ -235,20 +295,86 @@ const Navbar: React.FC = () => {
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
                         <p className="text-xs text-gray-400">{user?.email}</p>
-                        {showPremiumBadge && (
-                          <Badge variant="gold" size="sm" className="mt-1">👑 Premium</Badge>
-                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          {isSeller ? (
+                            <span className="text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                              📈 Seller
+                            </span>
+                          ) : (
+                            <span className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                              🏠 Buyer
+                            </span>
+                          )}
+                          {showPremiumBadge && (
+                            <Badge variant="gold" size="sm">👑 Premium</Badge>
+                          )}
+                        </div>
                       </div>
 
-                    
+                      {/* ✅ Dashboard - Common */}
                       <Link
-                        to="/favorites"
+                        to="/dashboard"
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
-                        <span className="mr-3 text-lg">❤️</span>
-                        Favorites
+                        <span className="mr-3 text-lg">📊</span>
+                        Dashboard
                       </Link>
 
+                      {/* ✅ Buyer Only Links */}
+                      {!isSeller && (
+                        <>
+                          <Link
+                            to="/favorites"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">❤️</span>
+                            Favorites
+                          </Link>
+                          <Link
+                            to="/ai-matching"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">🤖</span>
+                            AI Match
+                          </Link>
+                          <Link
+                            to="/map-search"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">🗺️</span>
+                            Map Search
+                          </Link>
+                        </>
+                      )}
+
+                      {/* ✅ Seller Only Links */}
+                      {isSeller && (
+                        <>
+                          <Link
+                            to="/my-properties"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">📋</span>
+                            My Properties
+                          </Link>
+                          <Link
+                            to="/list-property"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">➕</span>
+                            List Property
+                          </Link>
+                          <Link
+                            to="/analytics"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">📊</span>
+                            Analytics
+                          </Link>
+                        </>
+                      )}
+
+                      {/* ✅ Common Links - Messages */}
                       <Link
                         to="/messages"
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
@@ -272,6 +398,7 @@ const Navbar: React.FC = () => {
 
                       <div className="h-px bg-gray-100 my-1" />
 
+                      {/* ✅ Profile - Common */}
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
@@ -318,7 +445,7 @@ const Navbar: React.FC = () => {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200"
+                className="lg:hidden p-2.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer"
               >
                 <div className="w-5 h-4 flex flex-col justify-between">
                   <span className={`block w-full h-0.5 bg-gray-600 rounded-full transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
@@ -350,8 +477,7 @@ const Navbar: React.FC = () => {
                 <button
                   key={link.path}
                   onClick={() => {
-                    // ✅ Mobile menu: Same logic as desktop
-                    if (link.label === 'List Property') {
+                    if (link.label === 'List Property' || link.label === 'Favorites' || link.label === 'My Properties') {
                       if (!isAuthenticated) {
                         setSelectedFeature(link.label);
                         setShowLoginPopup(true);
@@ -386,7 +512,7 @@ const Navbar: React.FC = () => {
                   {link.locked && (
                     <Badge variant="gold" size="sm">🔒</Badge>
                   )}
-                  {!link.locked && link.badge === '✨ Free' && (
+                  {!link.locked && link.badge && link.badge === '✨ Free' && (
                     <Badge variant="success" size="sm">✅ Free</Badge>
                   )}
                 </button>
@@ -402,6 +528,46 @@ const Navbar: React.FC = () => {
                   >
                     📊 Dashboard
                   </Link>
+
+                  {/* ✅ Buyer Mobile Links */}
+                  {!isSeller && (
+                    <>
+                      <Link
+                        to="/favorites"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        ❤️ Favorites
+                      </Link>
+                      <Link
+                        to="/ai-matching"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        🤖 AI Match
+                      </Link>
+                    </>
+                  )}
+
+                  {/* ✅ Seller Mobile Links */}
+                  {isSeller && (
+                    <>
+                      <Link
+                        to="/my-properties"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        📋 My Properties
+                      </Link>
+                      <Link
+                        to="/list-property"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        ➕ List Property
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
 

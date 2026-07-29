@@ -1,6 +1,6 @@
 // src/pages/GoogleCallback.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 const GoogleCallback: React.FC = () => {
@@ -13,8 +13,14 @@ const GoogleCallback: React.FC = () => {
   const [userData, setUserData] = useState<any>(null);
   const [accessToken, setAccessToken] = useState('');
   const [refreshToken, setRefreshToken] = useState('');
+  
+  // ✅ Use ref to prevent multiple executions
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // ✅ Prevent multiple executions
+    if (hasProcessed.current) return;
+    
     const accessTokenParam = searchParams.get('accessToken');
     const refreshTokenParam = searchParams.get('refreshToken');
     const userParam = searchParams.get('user');
@@ -33,17 +39,19 @@ const GoogleCallback: React.FC = () => {
       try {
         const user = JSON.parse(decodeURIComponent(userParam));
         
-        // ✅ Check if user is new (no role selected yet)
+        // ✅ Check if user is new
         if (isNewUser === 'true' || !user.role) {
           setUserData(user);
           setAccessToken(accessTokenParam);
           setRefreshToken(refreshTokenParam);
-          setShowRoleSelection(true); // ✅ Show role selection
+          setShowRoleSelection(true);
+          hasProcessed.current = true; // ✅ Mark as processed
           return;
         }
 
         // ✅ Existing user - direct login
         googleLogin(user, accessTokenParam, refreshTokenParam);
+        hasProcessed.current = true; // ✅ Mark as processed
         setTimeout(() => {
           navigate('/dashboard', { replace: true });
         }, 1000);
@@ -60,13 +68,14 @@ const GoogleCallback: React.FC = () => {
         navigate('/login?error=missing_tokens');
       }, 3000);
     }
-  }, [searchParams, navigate, googleLogin]);
+  }, [searchParams, navigate, googleLogin]); // ✅ Dependencies are fine now
 
   // ✅ Handle Role Selection
   const handleRoleSelection = async () => {
     try {
-      // ✅ Update user role via API
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/v1/auth/update-role`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      
+      const response = await fetch(`${API_URL}/api/v1/auth/update-role`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

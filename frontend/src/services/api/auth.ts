@@ -107,4 +107,20 @@ export const authApi = {
   deleteAccount: async () => {
     await apiClient.delete('/auth/account');
   },
+
+  // ============================================
+  // ✅ ROLE MANAGEMENT (ADD THESE)
+  // ============================================
+
+  // ✅ Update user role
+  updateRole: async (role: string) => {
+    const response = await apiClient.put('/auth/update-role', { role });
+    return response.data.data;
+  },
+
+  // ✅ Get user role
+  getRole: async () => {
+    const response = await apiClient.get('/auth/role');
+    return response.data.data;
+  },
 };
