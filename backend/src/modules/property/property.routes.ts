@@ -19,33 +19,21 @@ const router = Router();
 // ============================================
 // PUBLIC ROUTES
 // ============================================
-router.get(
-  '/stats',
-  authMiddleware,
-  requireRole('ADMIN'),
-  propertyController.getPropertyStats
-);
-router.get(
-  '/favorites',
-  authMiddleware,
-  requireRole('BUYER'),
-  propertyController.getFavorites
-);
-
 router.get('/', propertyController.getProperties);
 router.get('/map', propertyController.getPropertiesForMap);
+router.get('/featured', propertyController.getFeaturedProperties); // ✅ NEW
 router.get('/:id', propertyController.getPropertyById);
 
 // ============================================
 // PROTECTED ROUTES
 // ============================================
 
-// ✅ CREATE PROPERTY - ALL DATA IN FORM-DATA!
+// ✅ CREATE PROPERTY
 router.post(
   '/',
   authMiddleware,
   requireRole('SELLER', 'ADMIN'),
-  uploadPropertyMedia,  // Handles both images and videos
+  uploadPropertyMedia,
   validate(createPropertySchema),
   propertyController.createProperty
 );
@@ -59,7 +47,7 @@ router.get(
 router.put(
   '/:id',
   authMiddleware,
-  uploadPropertyMedia,  // Handles both images and videos
+  uploadPropertyMedia,
   validate(updatePropertySchema),
   propertyController.updateProperty
 );
@@ -73,7 +61,6 @@ router.delete(
 // ============================================
 // FAVORITES ROUTES
 // ============================================
-
 router.post(
   '/:id/favorite',
   authMiddleware,
@@ -81,8 +68,31 @@ router.post(
   propertyController.toggleFavorite
 );
 
+router.get(
+  '/favorites',
+  authMiddleware,
+  requireRole('BUYER'),
+  propertyController.getFavorites
+);
 
+// ============================================
+// ✅ FEATURED ROUTES (NEW)
+// ============================================
+router.put(
+  '/:id/toggle-featured',
+  authMiddleware,
+  propertyController.toggleFeatured
+);
 
+// ============================================
+// ADMIN ROUTES
+// ============================================
+router.get(
+  '/stats',
+  authMiddleware,
+  requireRole('ADMIN'),
+  propertyController.getPropertyStats
+);
 
 router.put(
   '/:id/status',
@@ -90,7 +100,5 @@ router.put(
   requireRole('ADMIN'),
   propertyController.updatePropertyStatus
 );
-
-
 
 export default router;

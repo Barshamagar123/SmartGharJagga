@@ -2,20 +2,31 @@
 
 import { z } from 'zod';
 
+// ✅ AreaUnit enum for validation
+const AreaUnitEnum = z.enum([
+  'DHUR',
+  'AANA',
+  'ROPANI',
+  'BISWA',
+  'KATHA',
+  'SQFT',
+  'SQUARE_FEET',
+  'SQUARE_METER',
+  'HECTARE',
+]);
+
 export const createPropertySchema = z.object({
   body: z.object({
     title: z.string().min(3, 'Title must be at least 3 characters'),
     description: z.string().optional(),
     price: z.coerce.number().positive(),
-
     location: z.string().min(2, 'Location is required'),
     latitude: z.coerce.number().optional(),
-   longitude: z.coerce.number().optional(),
-bedrooms: z.coerce.number().int().min(0).optional(),
-bathrooms: z.coerce.number().int().min(0).optional(),
-area: z.coerce.number().positive().optional(),
-
-
+    longitude: z.coerce.number().optional(),
+    bedrooms: z.coerce.number().int().min(0).optional(),
+    bathrooms: z.coerce.number().int().min(0).optional(),
+    area: z.coerce.number().positive().optional(),
+    areaUnit: AreaUnitEnum.optional(), // ✅ ADDED
     propertyType: z.enum([
       'HOUSE',
       'RESIDENTIAL_LAND',
@@ -29,13 +40,12 @@ area: z.coerce.number().positive().optional(),
       'RESTAURANT',
     ]),
     amenities: z.array(z.string()).optional(),
-   parking: z.coerce.boolean().optional(),
-
-floor: z.coerce.number().int().optional(),
-
-yearBuilt: z.coerce.number().int().min(1900).max(2100).optional(),
+    parking: z.coerce.boolean().optional(),
+    floor: z.coerce.number().int().optional(),
+    yearBuilt: z.coerce.number().int().min(1900).max(2100).optional(),
     images: z.array(z.string()).optional(),
     videos: z.array(z.string()).optional(),
+    isFeatured: z.coerce.boolean().optional(), // ✅ ADDED
   }),
 });
 
@@ -50,6 +60,7 @@ export const updatePropertySchema = z.object({
     bedrooms: z.number().int().min(0).optional(),
     bathrooms: z.number().int().min(0).optional(),
     area: z.number().positive().optional(),
+    areaUnit: AreaUnitEnum.optional(), // ✅ ADDED
     propertyType: z.enum([
       'HOUSE',
       'RESIDENTIAL_LAND',
@@ -69,5 +80,6 @@ export const updatePropertySchema = z.object({
     images: z.array(z.string()).optional(),
     videos: z.array(z.string()).optional(),
     status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'SOLD']).optional(),
+    isFeatured: z.boolean().optional(), // ✅ ADDED
   }),
 });

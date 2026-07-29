@@ -18,7 +18,7 @@ export class PropertyController {
   constructor(private propertyService: PropertyService) {}
 
   // ============================================
-  // 1. CREATE PROPERTY - ALL DATA IN FORM-DATA!
+  // 1. CREATE PROPERTY
   // ============================================
   createProperty = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -32,7 +32,6 @@ export class PropertyController {
       throw new ApiError(401, 'User role not found');
     }
 
-    // ✅ Parse data from form-data
     let data = req.body;
     if (req.body.data) {
       try {
@@ -44,16 +43,14 @@ export class PropertyController {
       }
     }
 
-   const files = req.files as {
-  images?: Express.Multer.File[];
-  videos?: Express.Multer.File[];
-};
+    const files = req.files as {
+      images?: Express.Multer.File[];
+      videos?: Express.Multer.File[];
+    };
 
-const images = files?.images || [];
-const videos = files?.videos || [];
+    const images = files?.images || [];
+    const videos = files?.videos || [];
 
-console.log("Images:", images);
-console.log("Videos:", videos);
     const property = await this.propertyService.createProperty(
       userId,
       userRole,
@@ -83,6 +80,7 @@ console.log("Videos:", videos);
       limit: req.query.limit ? Number(req.query.limit) : 20,
       sortBy: req.query.sortBy as any,
       sortOrder: req.query.sortOrder as any,
+      isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined, // ✅ ADDED
     };
 
     const result = await this.propertyService.getProperties(filters);
@@ -122,7 +120,6 @@ console.log("Videos:", videos);
       throw new ApiError(400, 'Property ID is required');
     }
 
-    // ✅ Parse data from form-data
     let data = req.body;
     if (req.body.data) {
       try {
@@ -134,16 +131,14 @@ console.log("Videos:", videos);
       }
     }
 
-  const files = req.files as {
-  images?: Express.Multer.File[];
-  videos?: Express.Multer.File[];
-};
+    const files = req.files as {
+      images?: Express.Multer.File[];
+      videos?: Express.Multer.File[];
+    };
 
-const images = files?.images || [];
-const videos = files?.videos || [];
+    const images = files?.images || [];
+    const videos = files?.videos || [];
 
-console.log("Images:", images);
-console.log("Videos:", videos);
     const property = await this.propertyService.updateProperty(
       id,
       userId,
@@ -255,5 +250,34 @@ console.log("Videos:", videos);
 
     const properties = await this.propertyService.getFavorites(userId);
     ApiResponse.success(res, 200, 'Favorites fetched successfully', properties);
+  });
+
+  // ============================================
+  // 12. TOGGLE FEATURED (NEW)
+  // ============================================
+  toggleFeatured = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId) {
+      throw new ApiError(401, 'Authentication required');
+    }
+
+    const id = req.params.id as string;
+    if (!id) {
+      throw new ApiError(400, 'Property ID is required');
+    }
+
+    const result = await this.propertyService.toggleFeatured(id, userId, userRole || '');
+    ApiResponse.success(res, 200, result.message, { isFeatured: result.isFeatured });
+  });
+
+  // ============================================
+  // 13. GET FEATURED PROPERTIES (NEW)
+  // ============================================
+  getFeaturedProperties = asyncHandler(async (req: Request, res: Response) => {
+    const limit = req.query.limit ? Number(req.query.limit) : 6;
+    const properties = await this.propertyService.getFeaturedProperties(limit);
+    ApiResponse.success(res, 200, 'Featured properties fetched successfully', properties);
   });
 }

@@ -7,6 +7,7 @@ import {
   CreatePropertyRequest,
   UpdatePropertyRequest,
   PropertyFilter,
+  AreaUnit,
 } from './property.types';
 
 export class PropertyService {
@@ -16,13 +17,14 @@ export class PropertyService {
     this.fileService = new FileService();
   }
 
-
   private getFileUrls(files: Express.Multer.File[], folder: 'images' | 'videos'): string[] {
     if (!files || files.length === 0) return [];
     return files.map((file) => `/uploads/properties/${folder}/${file.filename}`);
   }
 
-
+  // ============================================
+  // 1. CREATE PROPERTY - WITH areaUnit & isFeatured
+  // ============================================
   async createProperty(
     userId: string,
     userRole: string,
@@ -34,7 +36,6 @@ export class PropertyService {
       throw new ApiError(403, 'Only sellers and admins can list properties');
     }
 
-    // ✅ Get image and video URLs from uploaded files
     const imageUrls = this.getFileUrls(imageFiles || [], 'images');
     const videoUrls = this.getFileUrls(videoFiles || [], 'videos');
 
@@ -56,6 +57,7 @@ export class PropertyService {
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
         area: data.area,
+        areaUnit: data.areaUnit, // ✅ ADDED
         propertyType: data.propertyType,
         purpose: 'SALE',
         amenities: data.amenities || [],
@@ -67,12 +69,16 @@ export class PropertyService {
         yearBuilt: data.yearBuilt,
         userId: userId,
         status: 'PENDING',
+        isFeatured: data.isFeatured || false, // ✅ ADDED
       },
     });
 
     return property;
   }
 
+  // ============================================
+  // 2. GET PROPERTIES - WITH isFeatured FILTER
+  // ============================================
   async getProperties(filters: PropertyFilter) {
     const {
       search,
@@ -89,6 +95,7 @@ export class PropertyService {
       limit = 20,
       sortBy = 'createdAt',
       sortOrder = 'desc',
+      isFeatured, // ✅ ADDED
     } = filters;
 
     const skip = (page - 1) * limit;
@@ -118,6 +125,11 @@ export class PropertyService {
     if (parking !== undefined) where.parking = parking;
     if (amenities && amenities.length > 0) {
       where.amenities = { hasSome: amenities };
+    }
+    
+    // ✅ ADDED: Featured filter
+    if (isFeatured !== undefined) {
+      where.isFeatured = isFeatured;
     }
 
     const total = await this.prisma.property.count({ where });
@@ -180,7 +192,9 @@ export class PropertyService {
     return property;
   }
 
-  
+  // ============================================
+  // 4. UPDATE PROPERTY - WITH areaUnit & isFeatured
+  // ============================================
   async updateProperty(
     id: string,
     userId: string,
@@ -226,6 +240,7 @@ export class PropertyService {
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
         area: data.area,
+        areaUnit: data.areaUnit, // ✅ ADDED
         propertyType: data.propertyType,
         amenities: data.amenities,
         parking: data.parking,
@@ -234,6 +249,7 @@ export class PropertyService {
         images: imageUrls,
         videos: videoUrls,
         mainImage: imageUrls.length > 0 ? imageUrls[0] : property.mainImage,
+        isFeatured: data.isFeatured !== undefined ? data.isFeatured : property.isFeatured, // ✅ ADDED
         ...(userRole !== 'ADMIN' ? { status: 'PENDING' } : {}),
       },
     });
@@ -241,6 +257,9 @@ export class PropertyService {
     return updatedProperty;
   }
 
+  // ============================================
+  // 5. DELETE PROPERTY
+  // ============================================
   async deleteProperty(id: string, userId: string, userRole: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -268,7 +287,9 @@ export class PropertyService {
     return { message: 'Property deleted successfully' };
   }
 
-
+  // ============================================
+  // 6. GET USER PROPERTIES
+  // ============================================
   async getUserProperties(userId: string) {
     const properties = await this.prisma.property.findMany({
       where: { userId },
@@ -289,7 +310,9 @@ export class PropertyService {
     return properties;
   }
 
-
+  // ============================================
+  // 7. UPDATE PROPERTY STATUS
+  // ============================================
   async updatePropertyStatus(id: string, status: PropertyStatus, reason?: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -311,7 +334,9 @@ export class PropertyService {
     return updatedProperty;
   }
 
-  
+  // ============================================
+  // 8. GET PROPERTIES FOR MAP
+  // ============================================
   async getPropertiesForMap() {
     const properties = await this.prisma.property.findMany({
       where: {
@@ -329,6 +354,9 @@ export class PropertyService {
         propertyType: true,
         bedrooms: true,
         mainImage: true,
+        area: true,
+        areaUnit: true, // ✅ ADDED
+        isFeatured: true, // ✅ ADDED
       },
     });
 
@@ -338,35 +366,35 @@ export class PropertyService {
   // ============================================
   // 9. GET PROPERTY STATS
   // ============================================
-// ============================================
-// 9. GET PROPERTY STATS - FIXED!
-// ============================================
-async getPropertyStats() {
-  try {
-    const total = await this.prisma.property.count();
-    const pending = await this.prisma.property.count({ where: { status: 'PENDING' } });
-    const approved = await this.prisma.property.count({ where: { status: 'APPROVED' } });
-    const sold = await this.prisma.property.count({ where: { status: 'SOLD' } });
-    const rejected = await this.prisma.property.count({ where: { status: 'REJECTED' } });
+  async getPropertyStats() {
+    try {
+      const total = await this.prisma.property.count();
+      const pending = await this.prisma.property.count({ where: { status: 'PENDING' } });
+      const approved = await this.prisma.property.count({ where: { status: 'APPROVED' } });
+      const sold = await this.prisma.property.count({ where: { status: 'SOLD' } });
+      const rejected = await this.prisma.property.count({ where: { status: 'REJECTED' } });
+      const featured = await this.prisma.property.count({ where: { isFeatured: true } }); // ✅ ADDED
 
-    return { 
-      total: total || 0,
-      pending: pending || 0,
-      approved: approved || 0,
-      sold: sold || 0,
-      rejected: rejected || 0 
-    };
-  } catch (error) {
-    console.error('Error fetching property stats:', error);
-    return { 
-      total: 0, 
-      pending: 0, 
-      approved: 0, 
-      sold: 0, 
-      rejected: 0 
-    };
+      return {
+        total: total || 0,
+        pending: pending || 0,
+        approved: approved || 0,
+        sold: sold || 0,
+        rejected: rejected || 0,
+        featured: featured || 0, // ✅ ADDED
+      };
+    } catch (error) {
+      console.error('Error fetching property stats:', error);
+      return {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        sold: 0,
+        rejected: 0,
+        featured: 0,
+      };
+    }
   }
-}
 
   // ============================================
   // 10. TOGGLE FAVORITE
@@ -442,5 +470,63 @@ async getPropertyStats() {
     });
 
     return favorites.map((f) => f.property);
+  }
+
+  // ============================================
+  // 12. TOGGLE FEATURED (NEW)
+  // ============================================
+  async toggleFeatured(id: string, userId: string, userRole: string) {
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+    });
+
+    if (!property) {
+      throw new ApiError(404, 'Property not found');
+    }
+
+    if (property.userId !== userId && userRole !== 'ADMIN') {
+      throw new ApiError(403, 'You are not authorized to perform this action');
+    }
+
+    const updatedProperty = await this.prisma.property.update({
+      where: { id },
+      data: {
+        isFeatured: !property.isFeatured,
+      },
+    });
+
+    return {
+      isFeatured: updatedProperty.isFeatured,
+      message: updatedProperty.isFeatured ? 'Property featured successfully' : 'Property unfeatured successfully',
+    };
+  }
+
+  // ============================================
+  // 13. GET FEATURED PROPERTIES (NEW)
+  // ============================================
+  async getFeaturedProperties(limit: number = 6) {
+    const properties = await this.prisma.property.findMany({
+      where: {
+        isFeatured: true,
+        status: 'APPROVED',
+      },
+      take: limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    return properties;
   }
 }

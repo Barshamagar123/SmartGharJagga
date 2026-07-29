@@ -82,6 +82,8 @@ model Property {
   bedrooms        Int?
   bathrooms       Int?
   area            Float?
+    areaUnit        AreaUnit?      // ✅ ADD THIS - DHUR, AANA, SQFT, etc.
+   
   propertyType    PropertyType
   purpose         Purpose
   amenities       String[]       @default([])
@@ -430,4 +432,15 @@ enum MessageStatus {
   SENT
   DELIVERED
   READ
+}
+enum AreaUnit {
+  DHUR
+  AANA
+  ROPANI
+  BISWA
+  KATHA
+  SQFT
+  SQUARE_FEET
+  SQUARE_METER
+  HECTARE
 }
