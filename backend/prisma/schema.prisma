@@ -10,7 +10,7 @@ datasource db {
 model User {
   id                  String         @id @default(uuid())
   email               String         @unique
-  passwordHash        String
+  passwordHash        String?
   name                String
   phone               String?
   role                Role           @default(BUYER)
@@ -20,6 +20,8 @@ model User {
   isActive            Boolean        @default(true)
   isEmailVerified     Boolean        @default(false)
   lastLogin           DateTime?
+   googleId            String?   @unique // ADD THIS FIELD
+
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
   analytics           Analytics[]

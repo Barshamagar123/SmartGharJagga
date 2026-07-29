@@ -39,9 +39,9 @@ const Navbar: React.FC = () => {
 
   // ✅ Feature Lock Logic (Based on Business Model)
   const isFeatureLocked = (feature: string) => {
-    // ✅ List Property - UNLOCKED for everyone (Free users can list)
+    // ✅ List Property - UNLOCKED only for authenticated users (Free or Premium)
     if (feature === 'List Property') {
-      return false; // ✅ Always unlocked
+      return false; // Not locked by premium, but requires login (handled separately)
     }
     
     // ✅ AI Match - LOCKED (Premium only)
@@ -58,6 +58,19 @@ const Navbar: React.FC = () => {
   };
 
   const handleFeatureClick = (feature: string, path: string) => {
+    // ✅ Special handling for List Property - requires login but not premium
+    if (feature === 'List Property') {
+      if (!isAuthenticated) {
+        setSelectedFeature(feature);
+        setShowLoginPopup(true);
+        return;
+      }
+      // If authenticated, proceed to list property (free for all authenticated users)
+      navigate(path);
+      return;
+    }
+
+    // For other features, check premium lock
     if (isFeatureLocked(feature)) {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
@@ -92,7 +105,7 @@ const Navbar: React.FC = () => {
     {
       label: 'List Property',
       path: '/list-property',
-      locked: false, // ✅ UNLOCKED for everyone
+      locked: false, // Not premium locked, but requires authentication
       badge: '✨ Free',
     },
   ];
@@ -344,6 +357,19 @@ const Navbar: React.FC = () => {
                 <button
                   key={link.path}
                   onClick={() => {
+                    // ✅ Mobile menu: Same logic as desktop
+                    if (link.label === 'List Property') {
+                      if (!isAuthenticated) {
+                        setSelectedFeature(link.label);
+                        setShowLoginPopup(true);
+                        setIsMobileMenuOpen(false);
+                        return;
+                      }
+                      navigate(link.path);
+                      setIsMobileMenuOpen(false);
+                      return;
+                    }
+
                     if (isFeatureLocked(link.label)) {
                       if (!isAuthenticated) {
                         setSelectedFeature(link.label);
