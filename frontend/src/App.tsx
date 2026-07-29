@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/common/Layout/Layout.tsx';
 import Home from './pages/HomePage/HomePage.tsx';
-import Properties from './pages/Properties/Properties';
 import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
@@ -13,6 +12,9 @@ import MapSearch from './pages/MapSearch/MapSearch';
 import GoogleCallback from './pages/Login/GoogleCallback.tsx';
 import Profile from './pages/Profile/Profile.tsx';
 import BuyerDashboard from './pages/Dashboard/BuyerDashboard.tsx';
+import PropertiesPage from './pages/Properties/PropertiesPage.tsx';
+import AddProperty from './pages/Properties/AddProperty.tsx';
+import EditProperty from './pages/Properties/EditProperty.tsx';
 
 function App() {
   return (
@@ -24,7 +26,10 @@ function App() {
             {/* ✅ Layout is INSIDE AuthProvider */}
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
-              <Route path="/properties" element={<Properties />} />
+              <Route path="/properties" element={<PropertiesPage />} />
+                      <Route path="/list-property" element={<AddProperty />} />
+            <Route path="/property/:id/edit" element={<EditProperty />} />
+
               <Route path="/property/:slug" element={<PropertyDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />

@@ -1,0 +1,149 @@
+// src/pages/properties/PropertiesPage.tsx
+
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import PropertyHeader from '../../components/properties/PropertyHeader';
+import PropertyFilters from '../../components/properties/PropertyFilters';
+import PropertyGrid from '../../components/properties/PropertyGrid';
+import PropertyPagination from '../../components/properties/PropertyPagination';
+import PropertySort from '../../components/properties/PropertySort';
+import { propertyApi } from '../../services/api/property';
+import type { Property, PropertyType } from '../../types/property';
+
+const PropertiesPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  // ✅ Filters with correct types
+  const [filters, setFilters] = useState({
+    propertyType: (searchParams.get('propertyType') as PropertyType) || '',
+    maxPrice: parseInt(searchParams.get('maxPrice') || '500'),
+    bedrooms: searchParams.get('bedrooms') || '',
+    bathrooms: searchParams.get('bathrooms') || '',
+    location: searchParams.get('location') || '',
+  });
+  
+  const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+
+  // Fetch properties
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        
+        // ✅ Build filter object with correct types
+        const filterParams: any = {
+          minPrice: 0,
+          maxPrice: filters.maxPrice * 100000,
+          page: currentPage,
+          limit: 12,
+          sortBy: sort === 'newest' ? 'createdAt' : sort === 'price_low' ? 'price' : 'views',
+          sortOrder: sort === 'price_low' ? 'asc' : 'desc',
+        };
+
+        // ✅ Only add if value exists
+        if (filters.propertyType) {
+          filterParams.propertyType = filters.propertyType as PropertyType;
+        }
+        if (filters.bedrooms) {
+          filterParams.bedrooms = parseInt(filters.bedrooms);
+        }
+        if (filters.bathrooms) {
+          filterParams.bathrooms = parseInt(filters.bathrooms);
+        }
+        if (filters.location) {
+          filterParams.location = filters.location;
+        }
+
+        const result = await propertyApi.getAll(filterParams);
+
+        setProperties(result.properties);
+        setTotal(result.total);
+        setTotalPages(result.totalPages);
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, [filters, sort, currentPage]);
+
+  const handleApplyFilters = () => {
+    setCurrentPage(1);
+    const params: any = {};
+    if (filters.propertyType) params.propertyType = filters.propertyType;
+    if (filters.location) params.location = filters.location;
+    if (filters.bedrooms) params.bedrooms = filters.bedrooms;
+    if (filters.bathrooms) params.bathrooms = filters.bathrooms;
+    if (filters.maxPrice !== 500) params.maxPrice = filters.maxPrice;
+    if (sort !== 'newest') params.sort = sort;
+    setSearchParams(params);
+  };
+
+  const handleFavoriteToggle = async (propertyId: string) => {
+    try {
+      const result = await propertyApi.toggleFavorite(propertyId);
+      setProperties(prev =>
+        prev.map(p =>
+          p.id === propertyId
+            ? { ...p, favoritesCount: result.favorited ? p.favoritesCount + 1 : p.favoritesCount - 1 }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--color-primary)]">
+      <PropertyHeader totalProperties={total} />
+
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <aside className="lg:w-72 xl:w-80 flex-shrink-0">
+            <PropertyFilters
+              propertyType={filters.propertyType}
+              setPropertyType={(value) => setFilters({ ...filters, propertyType: value as PropertyType })}
+              maxPrice={filters.maxPrice}
+              setMaxPrice={(value) => setFilters({ ...filters, maxPrice: value })}
+              bedrooms={filters.bedrooms}
+              setBedrooms={(value) => setFilters({ ...filters, bedrooms: value })}
+              bathrooms={filters.bathrooms}
+              setBathrooms={(value) => setFilters({ ...filters, bathrooms: value })}
+              location={filters.location}
+              setLocation={(value) => setFilters({ ...filters, location: value })}
+              onApplyFilters={handleApplyFilters}
+            />
+          </aside>
+
+          <main className="flex-1">
+            <PropertySort value={sort} onChange={setSort} />
+            
+            <PropertyGrid 
+              properties={properties} 
+              loading={loading}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
+
+            {totalPages > 1 && (
+              <PropertyPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PropertiesPage;

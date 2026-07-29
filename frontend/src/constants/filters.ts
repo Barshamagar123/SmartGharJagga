@@ -7,14 +7,24 @@ export const PURPOSE_OPTIONS = [
   { value: 'RENT', label: 'For Rent' },
   { value: 'LEASE', label: 'For Lease' },
 ];
+// src/constants/filters.ts
+
+// ✅ Make sure property types match the enum
 export const PROPERTY_TYPE_OPTIONS = [
-  { value: '', label: 'Any' },
-  { value: 'house', label: 'House' },
-  { value: 'apartment', label: 'Apartment' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'bungalow', label: 'Bungalow' },
-  { value: 'land', label: 'Land' },
-  { value: 'commercial', label: 'Commercial' },
+  { value: '', label: 'All Types' },
+  { value: 'HOUSE', label: 'House' },
+  { value: 'APARTMENT', label: 'Apartment' },
+  { value: 'VILLA', label: 'Villa' },
+  { value: 'BUNGALOW', label: 'Bungalow' },
+  { value: 'RESIDENTIAL_LAND', label: 'Residential Land' },
+  { value: 'COMMERCIAL_LAND', label: 'Commercial Land' },
+  { value: 'AGRICULTURAL_LAND', label: 'Agricultural Land' },
+  { value: 'INDUSTRIAL_LAND', label: 'Industrial Land' },
+  { value: 'SHOP', label: 'Shop' },
+  { value: 'OFFICE', label: 'Office' },
+  { value: 'WAREHOUSE', label: 'Warehouse' },
+  { value: 'HOTEL', label: 'Hotel' },
+  { value: 'RESTAURANT', label: 'Restaurant' },
 ];
 export const SORT_OPTIONS = [
   { value: 'latest', label: 'Sort by: Latest' },

@@ -10,9 +10,10 @@ import {
   CardFooter,
 } from '../common/Card/Card';
 import { BEDROOM_OPTIONS, BATHROOM_OPTIONS, PROPERTY_TYPE_OPTIONS } from '../../constants/filters';
+import type { PropertyType } from '../../types/property';
 
 interface PropertyFiltersProps {
-  propertyType: string;
+  propertyType: string | PropertyType;  // ✅ Allow both
   setPropertyType: (value: string) => void;
   maxPrice: number;
   setMaxPrice: (value: number) => void;
@@ -43,7 +44,7 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
       variant="default" 
       padding="md" 
       radius="lg" 
-      className="sticky top-28 mt-4" // Added mt-4 and adjusted top
+      className="sticky top-28 mt-4"
     >
       <CardHeader className="pb-3 mb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
