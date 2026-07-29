@@ -9,10 +9,14 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import passport from 'passport'; // ✅ ADD THIS IMPORT
 
 import { router } from '@/router';
 import { errorHandler, notFoundHandler } from '@/middleware/error.middleware';
 import { languageMiddleware } from '@/middleware/language.middleware';
+
+// ✅ IMPORT PASSPORT CONFIG (this runs the passport setup)
+import './config/passport.config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +86,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ✅ Serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ============================================
+// ✅ PASSPORT INITIALIZATION - ADD THIS
+// ============================================
+app.use(passport.initialize());
 
 // ============================================
 // ✅ API ROUTES

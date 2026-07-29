@@ -86,7 +86,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 2. LOGIN
+  // 2. LOGIN (Updated for Google Users)
   // ============================================
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
@@ -97,17 +97,28 @@ export class AuthService {
       throw new ApiError(401, 'Invalid email or password');
     }
 
+    // ✅ Check if user registered with Google
+    if (user.googleId && !user.passwordHash) {
+      throw new ApiError(401, 'This account uses Google Sign-In. Please use "Sign in with Google" instead.');
+    }
+
     if (!user.isActive) {
       throw new ApiError(403, 'Account is deactivated. Please contact support.');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      credentials.password,
-      user.passwordHash
-    );
+    // For normal users with password
+    if (user.passwordHash) {
+      const isPasswordValid = await bcrypt.compare(
+        credentials.password,
+        user.passwordHash
+      );
 
-    if (!isPasswordValid) {
-      throw new ApiError(401, 'Invalid email or password');
+      if (!isPasswordValid) {
+        throw new ApiError(401, 'Invalid email or password');
+      }
+    } else {
+      // This should not happen for Google users, but just in case
+      throw new ApiError(401, 'Invalid credentials');
     }
 
     await this.prisma.user.update({
@@ -217,6 +228,11 @@ export class AuthService {
       return;
     }
 
+    // ✅ Check if user is a Google user
+    if (user.googleId && !user.passwordHash) {
+      throw new ApiError(400, 'This account uses Google Sign-In. Password reset is not available. Please use "Sign in with Google".');
+    }
+
     const resetToken = crypto.randomBytes(32).toString('hex');
 
     await this.cacheService.set(
@@ -236,6 +252,19 @@ export class AuthService {
 
     if (!userId) {
       throw new ApiError(400, 'Invalid or expired reset token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    // ✅ Check if user is a Google user
+    if (user.googleId && !user.passwordHash) {
+      throw new ApiError(400, 'This account uses Google Sign-In. Password reset is not available.');
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -286,7 +315,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 9. CHANGE PASSWORD
+  // 9. CHANGE PASSWORD (Updated for Google Users)
   // ============================================
   async changePassword(
     userId: string,
@@ -301,9 +330,14 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
+    // ✅ Check if user is a Google user
+    if (user.googleId && !user.passwordHash) {
+      throw new ApiError(400, 'This account uses Google Sign-In. Password change is not available. Please use Google to sign in.');
+    }
+
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.passwordHash
+      user.passwordHash || ''
     );
 
     if (!isPasswordValid) {
@@ -319,7 +353,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 10. GET PROFILE
+  // 10. GET PROFILE (Updated with Google info)
   // ============================================
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -344,9 +378,13 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
+    // ✅ Add Google user indicator to response
     const { passwordHash, ...userWithoutPassword } = user;
 
-    return userWithoutPassword;
+    return {
+      ...userWithoutPassword,
+      isGoogleUser: user.googleId ? true : false,
+    };
   }
 
   // ============================================
@@ -371,12 +409,17 @@ export class AuthService {
         role: true,
         isVerified: true,
         isEmailVerified: true,
+        googleId: true,
         createdAt: true,
         updatedAt: true,
       },
     });
 
-    return user;
+    // ✅ Add Google user indicator
+    return {
+      ...user,
+      isGoogleUser: user.googleId ? true : false,
+    };
   }
 
   // ============================================
@@ -410,6 +453,7 @@ export class AuthService {
         isActive: true,
         avatarUrl: true,
         languagePref: true,
+        googleId: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -419,7 +463,100 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    return user;
+    return {
+      ...user,
+      isGoogleUser: user.googleId ? true : false,
+    };
+  }
+
+  // ============================================
+  // 14. LINK GOOGLE ACCOUNT TO EXISTING USER
+  // ============================================
+  async linkGoogleAccount(
+    userId: string,
+    googleId: string,
+    avatarUrl?: string
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    // Check if Google ID is already linked to another account
+    const existingGoogleUser = await this.prisma.user.findUnique({
+      where: { googleId },
+    });
+
+    if (existingGoogleUser && existingGoogleUser.id !== userId) {
+      throw new ApiError(409, 'Google account already linked to another user');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleId,
+        avatarUrl: avatarUrl || user.avatarUrl,
+        isEmailVerified: true,
+      },
+    });
+  }
+
+  // ============================================
+  // 15. UNLINK GOOGLE ACCOUNT
+  // ============================================
+  async unlinkGoogleAccount(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    // Check if user has a password (can't unlink if no password set)
+    if (!user.passwordHash) {
+      throw new ApiError(400, 'Cannot unlink Google account. Please set a password first.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleId: null,
+      },
+    });
+  }
+
+  // ============================================
+  // 16. SET PASSWORD FOR GOOGLE USER
+  // ============================================
+  async setPasswordForGoogleUser(
+    userId: string,
+    newPassword: string
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    // Check if user already has a password
+    if (user.passwordHash) {
+      throw new ApiError(400, 'User already has a password set');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: hashedPassword,
+      },
+    });
   }
 
   // ============================================
