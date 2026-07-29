@@ -1,8 +1,8 @@
 // src/pages/Home/Home.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../components/common/Button/Button';
 import {
   Card,
@@ -11,11 +11,76 @@ import {
   CardContent,
   CardFooter,
 } from '../../components/common/Card/Card';
+import FeaturedPropertiesSection from '../../components/Home/FeaturedPropertiesSection';
 
 const HomePage: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [priceRange, setPriceRange] = useState('');
+  const [currentPropertyIndex, setCurrentPropertyIndex] = useState(0);
+
+  // ✅ Featured Properties for Carousel
+  const featuredProperties = [
+    {
+      id: '1',
+      title: 'Land For Sale At Chyasal, Balkumari, Lalitpur',
+      location: 'Balkumari, Chyasal, Lalitpur Metropolitan City - 09, Lalitpur',
+      price: 'Rs 65,00,000',
+      pricePerUnit: '/aana',
+      landSize: '15.0',
+      landSizeUnit: 'aana',
+      direction: 'South',
+      contact: '9747899705',
+      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&q=80',
+    },
+    {
+      id: '2',
+      title: 'Modern Villa with Garden',
+      location: 'Lalitpur, Bhaisepati Metropolitan City - 5, Lalitpur',
+      price: 'Rs 4.8 Cr',
+      pricePerUnit: '',
+      landSize: '4.5',
+      landSizeUnit: 'aana',
+      direction: 'East',
+      contact: '9810342784',
+      image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=80',
+    },
+    {
+      id: '3',
+      title: 'Luxury Apartment with Mountain View',
+      location: 'Pokhara, Lakeside - 6, Kaski',
+      price: 'Rs 3.2 Cr',
+      pricePerUnit: '',
+      landSize: '1800',
+      landSizeUnit: 'sqft',
+      direction: 'North',
+      contact: '9851234567',
+      image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80',
+    },
+    {
+      id: '4',
+      title: 'Commercial Complex For Sale',
+      location: 'Kathmandu, New Road - 22, Kathmandu',
+      price: 'Rs 12.5 Cr',
+      pricePerUnit: '',
+      landSize: '2500',
+      landSizeUnit: 'sqft',
+      direction: 'West',
+      contact: '9801234567',
+      image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1200&q=80',
+    },
+  ];
+
+  // ✅ Auto-slide every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPropertyIndex((prevIndex) => 
+        prevIndex === featuredProperties.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [featuredProperties.length]);
 
   const categories = [
     { icon: '🏠', label: 'Houses', count: '128' },
@@ -24,87 +89,6 @@ const HomePage: React.FC = () => {
     { icon: '🏘️', label: 'Villas', count: '37' },
     { icon: '🌄', label: 'Land', count: '61' },
     { icon: '🏭', label: 'Commercial', count: '28' },
-  ];
-
-  const featuredProperties = [
-    {
-      id: 1,
-      title: 'Aspen Ridge Villa',
-      price: 'Rs 4.8 Cr',
-      location: 'Lalitpur, Bhaisepati',
-      beds: 5,
-      baths: 4,
-      sqft: '4,200',
-      image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
-      type: 'VILLA',
-      featured: true,
-    },
-    {
-      id: 2,
-      title: 'Greenwood Townhouse',
-      price: 'Rs 3.2 Cr',
-      location: 'Kathmandu, Baluwatar',
-      beds: 4,
-      baths: 3,
-      sqft: '3,100',
-      image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
-      type: 'HOUSE',
-      featured: true,
-    },
-    {
-      id: 3,
-      title: 'Monsoon Loft',
-      price: 'Rs 1.4 Cr',
-      location: 'Kathmandu, Thamel',
-      beds: 2,
-      baths: 2,
-      sqft: '1,350',
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-      type: 'APARTMENT',
-      featured: true,
-    },
-    {
-      id: 4,
-      title: 'Hilltop Bungalow',
-      price: 'Rs 2.8 Cr',
-      location: 'Pokhara, Lakeside',
-      beds: 3,
-      baths: 2,
-      sqft: '2,500',
-      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
-      type: 'BUNGALOW',
-      featured: true,
-    },
-    {
-      id: 5,
-      title: 'Modern Villa with Garden',
-      price: 'Rs 5.2 Cr',
-      location: 'Kathmandu, Budhanilkantha',
-      beds: 6,
-      baths: 5,
-      sqft: '5,000',
-      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
-      type: 'VILLA',
-      featured: true,
-    },
-    {
-      id: 6,
-      title: 'City Center Apartment',
-      price: 'Rs 2.1 Cr',
-      location: 'Lalitpur, Jawalakhel',
-      beds: 3,
-      baths: 2,
-      sqft: '1,800',
-      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800',
-      type: 'APARTMENT',
-      featured: false,
-    },
-  ];
-
-  const stats = [
-    { value: '500+', label: 'PROPERTIES' },
-    { value: '350+', label: 'HAPPY CLIENTS' },
-    { value: '50+', label: 'EXPERT AGENTS' },
   ];
 
   const fadeInUp = {
@@ -130,113 +114,118 @@ const HomePage: React.FC = () => {
   return (
     <div className="bg-[var(--color-primary)]">
       {/* ============================================
-      HERO SECTION
+      HERO SECTION - WITH MARQUEE HEADLINE
       ============================================ */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[35vh] md:min-h-[40vh] lg:min-h-[45vh] flex items-center justify-center overflow-hidden">
+        {/* Background Image with Blur */}
         <div className="absolute inset-0 z-0">
           <div
             className="w-full h-full bg-cover bg-center"
             style={{
               backgroundImage:
-                'url(https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920)',
+                'url(https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=80)',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-primary)]/95 via-[var(--color-primary)]/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-primary)] via-transparent to-transparent" />
+          <div className="absolute inset-0 backdrop-blur-[2px] bg-black/30" />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-8 py-20">
+        <div className="relative z-10 w-full max-w-4xl mx-auto px-8 text-center">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
-            className="max-w-3xl"
+            className="flex flex-col items-center"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="flex flex-wrap items-center gap-3 mb-6"
-            >
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2D5A27] text-white text-xs font-semibold rounded-full">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Verified Listing
-              </span>
-              <span className="text-sm text-[var(--color-text-secondary)] font-medium">
-                Legal title checked
-              </span>
-            </motion.div>
+            {/* Headline - Marquee Effect */}
+            <div className="overflow-hidden w-full">
+              <motion.div
+                animate={{ x: ['0%', '-50%'] }}
+                transition={{
+                  duration: 20,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+                className="flex whitespace-nowrap"
+              >
+                <span className="text-xl sm:text-2xl md:text-6xl lg:text-6xl font-bold text-white drop-shadow-lg px-4">
+                  <span className="text-[#D4AF37]">घर, जग्गा, अपार्टमेन्ट</span>
+                  <span className="text-white"> र व्यावसायिक सम्पत्ति</span>
+                  <span className="text-[#D4AF37]"> को लागि</span>
+                  <span className="text-white"> भरपर्दो मञ्च</span>
+                  <span className="text-[#D4AF37] ml-4">✦</span>
+                </span>
+                <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg px-4">
+                  <span className="text-[#D4AF37]">घर, जग्गा, अपार्टमेन्ट</span>
+                  <span className="text-white"> र व्यावसायिक सम्पत्ति</span>
+                  <span className="text-[#D4AF37]"> को लागि</span>
+                  <span className="text-white"> भरपर्दो मञ्च</span>
+                  <span className="text-[#D4AF37] ml-4">✦</span>
+                </span>
+              </motion.div>
+            </div>
 
-            <motion.h1
-              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-[var(--color-text-primary)] leading-tight"
-              variants={fadeInUp}
-            >
-              Find Your
-              <span className="block text-[#2D5A27]">Dream Property</span>
-            </motion.h1>
-
+            {/* Sub-headline */}
             <motion.p
-              className="mt-4 text-base sm:text-lg text-[var(--color-text-secondary)] max-w-xl leading-relaxed"
+              className="mt-2 text-xs sm:text-sm text-white/80 max-w-2xl mx-auto drop-shadow-md"
               variants={fadeInUp}
             >
-              Discover your perfect home with our premium real estate platform—curated
-              listings, honest agents, and neighborhoods you'll love coming home to.
+              नेपालको अग्रणी सम्पत्ति बजारमा <span className="text-[#D4AF37] font-semibold">५००+</span> विश्वसनीय सूचीहरू
             </motion.p>
 
+            {/* Search Box */}
             <motion.div
-              className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl p-3 shadow-xl border border-[var(--color-primary-border)]"
+              className="mt-3 w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-xl p-2 shadow-2xl border border-white/30"
               variants={fadeInUp}
             >
-              <div className="flex flex-col md:flex-row gap-2">
+              <div className="flex flex-col md:flex-row gap-1.5">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
-                    📍
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2D5A27] text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                   </span>
                   <input
                     type="text"
-                    placeholder="Location, e.g. Lalitpur"
+                    placeholder="स्थान, जस्तै: ललितपुर"
                     value={searchLocation}
                     onChange={(e) => setSearchLocation(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                    className="w-full pl-8 pr-2 py-1.5 bg-white/80 rounded-lg text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[#D4AF37] border border-transparent focus:border-[#D4AF37] transition-all"
                   />
                 </div>
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value)}
-                  className="px-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all min-w-[140px]"
+                  className="px-2 py-1.5 bg-white/80 rounded-lg text-xs text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[#D4AF37] border border-transparent focus:border-[#D4AF37] transition-all min-w-[100px] cursor-pointer"
                 >
-                  <option value="">Any type</option>
-                  <option value="house">House</option>
-                  <option value="apartment">Apartment</option>
-                  <option value="villa">Villa</option>
-                  <option value="land">Land</option>
-                  <option value="commercial">Commercial</option>
+                  <option value="">सबै प्रकार</option>
+                  <option value="house">घर</option>
+                  <option value="apartment">अपार्टमेन्ट</option>
+                  <option value="villa">भिल्ला</option>
+                  <option value="land">जग्गा</option>
+                  <option value="commercial">व्यावसायिक</option>
                 </select>
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-text-tertiary)] text-lg">
-                    💰
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#2D5A27] text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </span>
                   <input
                     type="text"
-                    placeholder="Price"
+                    placeholder="मूल्य दायरा"
                     value={priceRange}
                     onChange={(e) => setPriceRange(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-[var(--color-primary-surface)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                    className="w-full pl-8 pr-2 py-1.5 bg-white/80 rounded-lg text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[#D4AF37] border border-transparent focus:border-[#D4AF37] transition-all"
                   />
                 </div>
                 <Button
                   variant="primary"
-                  size="md"
-                  className="min-w-[120px]"
+                  size="sm"
+                  className="min-w-[80px] py-1.5 bg-[#D4AF37] hover:bg-[#B8962E] text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-xs"
                   leftIcon={
                     <svg
-                      className="w-5 h-5"
+                      className="w-3.5 h-3.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -250,377 +239,210 @@ const HomePage: React.FC = () => {
                     </svg>
                   }
                 >
-                  Search
+                  खोजी
                 </Button>
               </div>
             </motion.div>
 
+            {/* Stats */}
             <motion.div
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-secondary-surface)] rounded-xl border border-[#2D5A27]/10"
+              className="mt-2 flex flex-wrap items-center justify-center gap-3 text-[10px] text-white/70"
               variants={fadeInUp}
             >
-              <span className="text-lg">🏅</span>
-              <span className="text-sm font-semibold text-[#2D5A27]">Premium</span>
-              <span className="w-px h-5 bg-[#2D5A27]/30" />
-              <span className="text-sm text-[var(--color-text-secondary)] font-medium">
-                Bhaisepati
-              </span>
-              <span className="text-xs text-[var(--color-text-tertiary)] ml-1">
-                • Up to Rs 5 Cr
-              </span>
+              <span>५००+ सम्पत्तिहरू</span>
+              <span className="w-px h-3 bg-white/30" />
+              <span>३५०+ खुसी ग्राहकहरू</span>
+              <span className="w-px h-3 bg-white/30" />
+              <span>५०+ विज्ञ एजेन्टहरू</span>
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
 
-            <motion.div
-              className="mt-8 flex flex-wrap items-center gap-6 md:gap-10"
-              variants={fadeInUp}
-            >
-              {stats.map((stat, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div>
-                    <div className="text-2xl md:text-3xl font-bold text-[#2D5A27]">
-                      {stat.value}
+      {/* ============================================
+      FEATURED PROPERTY CAROUSEL - CONTINUOUS SLIDE
+      ============================================ */}
+      <section className="py-6 bg-[var(--color-primary)]">
+        <div className="max-w-6xl mx-auto px-4">
+
+          <div className="relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentPropertyIndex}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.6 }}
+                className="bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 border border-[var(--color-primary-border)]"
+              >
+                <div className="flex flex-col md:flex-row">
+                  {/* Image */}
+                  <div className="md:w-[55%] lg:w-[58%] h-56 md:h-64 lg:h-72 relative flex-shrink-0">
+                    <img
+                      src={featuredProperties[currentPropertyIndex].image}
+                      alt={featuredProperties[currentPropertyIndex].title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 left-3 bg-[#2D5A27] text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">
+                      ⭐ विशेष
                     </div>
-                    <div className="text-[10px] font-semibold text-[var(--color-text-tertiary)] tracking-wider">
-                      {stat.label}
+                    <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex gap-1.5">
+                      {featuredProperties.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentPropertyIndex(index)}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            index === currentPropertyIndex
+                              ? 'bg-white w-6'
+                              : 'bg-white/50 hover:bg-white/80'
+                          }`}
+                        />
+                      ))}
                     </div>
                   </div>
-                  {index < stats.length - 1 && (
-                    <div className="w-px h-10 bg-[var(--color-primary-border)]" />
-                  )}
+
+                  {/* Content */}
+                  <div className="flex-1 p-4 md:p-5 lg:p-6 flex flex-col justify-center">
+                    <h3 className="text-base md:text-lg lg:text-xl font-bold text-gray-900 leading-tight line-clamp-2">
+                      {featuredProperties[currentPropertyIndex].title}
+                    </h3>
+                    <p className="text-xs md:text-sm text-gray-500 flex items-center gap-1.5 mt-1.5">
+                      <span>📍</span> {featuredProperties[currentPropertyIndex].location}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2 mt-2 text-xs md:text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        📐 {featuredProperties[currentPropertyIndex].landSize} {featuredProperties[currentPropertyIndex].landSizeUnit}
+                      </span>
+                      <span className="w-px h-3 bg-gray-300" />
+                      <span className="flex items-center gap-1">
+                        🧭 {featuredProperties[currentPropertyIndex].direction}
+                      </span>
+                      <span className="w-px h-3 bg-gray-300" />
+                      <span className="flex items-center gap-1">
+                        📞 {featuredProperties[currentPropertyIndex].contact}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                      <div>
+                        <span className="text-xl md:text-2xl font-bold text-[#2D5A27]">
+                          {featuredProperties[currentPropertyIndex].price}
+                        </span>
+                        {featuredProperties[currentPropertyIndex].pricePerUnit && (
+                          <span className="text-xs text-gray-400 ml-1">
+                            {featuredProperties[currentPropertyIndex].pricePerUnit}
+                          </span>
+                        )}
+                      </div>
+                      <Link
+                        to={`/property/${featuredProperties[currentPropertyIndex].id}`}
+                        className="px-4 py-1.5 bg-[#2D5A27] text-white text-xs md:text-sm font-semibold rounded-lg hover:bg-[#23461E] transition-all duration-200 flex items-center gap-1 shadow-md hover:shadow-lg"
+                      >
+                        Explore
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-
-        <motion.div
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-        >
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-[var(--color-text-tertiary)] text-[10px] tracking-widest uppercase">
-              Scroll
-            </span>
-            <div className="w-6 h-10 rounded-full border-2 border-[var(--color-text-tertiary)]/30 flex items-start justify-center p-1">
-              <motion.div
-                className="w-1.5 h-1.5 rounded-full bg-[#2D5A27]"
-                animate={{ y: [0, 12, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-              />
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ============================================
-      BROWSE BY CATEGORY
-      ============================================ */}
-      <section className="py-20 bg-[var(--color-primary)]">
-        <div className="max-w-7xl mx-auto px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
-              Browse By Category
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-2">
-              Explore our property types
-            </h2>
-            <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-              From city apartments to hillside villas — find a home shaped around how you
-              actually live.
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {categories.map((category, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                whileHover={{ scale: 1.05, y: -5 }}
-              >
-                <Card
-                  variant="hover"
-                  padding="md"
-                  className="text-center cursor-pointer border border-[var(--color-primary-border)] group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#2D5A27] to-[#4A7D42] opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl" />
-                  <div className="relative z-10">
-                    <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                      {category.icon}
-                    </div>
-                    <CardTitle className="text-base font-semibold text-[var(--color-text-primary)] group-hover:text-[#2D5A27] transition-colors">
-                      {category.label}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                      {category.count} listings
-                    </CardDescription>
-                  </div>
-                </Card>
               </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+            </AnimatePresence>
 
-      {/* ============================================
-      FEATURED PROPERTIES ROW 1
-      ============================================ */}
-      <section className="py-20 bg-[var(--color-primary-surface)] border-t border-[var(--color-primary-border)]">
-        <div className="max-w-7xl mx-auto px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col sm:flex-row justify-between items-center mb-12"
-          >
-            <div>
-              <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
-                Featured Properties
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mt-1">
-                A curated selection of the season's most-loved listings.
-              </h2>
-            </div>
-            <Link
-              to="/properties"
-              className="mt-4 sm:mt-0 text-[#2D5A27] font-semibold hover:text-[#23461E] flex items-center gap-2 transition-colors group"
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => setCurrentPropertyIndex(
+                currentPropertyIndex === 0 ? featuredProperties.length - 1 : currentPropertyIndex - 1
+              )}
+              className="absolute left-1.5 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-700 w-8 h-8 md:w-9 md:h-9 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 border border-gray-100"
             >
-              View All Properties
-              <svg
-                className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
-            </Link>
-          </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {featuredProperties.slice(0, 3).map((property) => (
-              <motion.div
-                key={property.id}
-                variants={fadeInUp}
-                whileHover={{ y: -8 }}
-              >
-                <Card
-                  variant="hover"
-                  padding="none"
-                  className="overflow-hidden border border-[var(--color-primary-border)]"
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                          property.type === 'VILLA'
-                            ? 'bg-[#D4AF37] text-white'
-                            : property.type === 'HOUSE'
-                            ? 'bg-[#2D5A27] text-white'
-                            : property.type === 'APARTMENT'
-                            ? 'bg-[#4A7D42] text-white'
-                            : 'bg-[#6B9D63] text-white'
-                        }`}
-                      >
-                        {property.type}
-                      </span>
-                      {property.featured && (
-                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
-                          ⭐ FEATURED
-                        </span>
-                      )}
-                    </div>
-                    <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                      <svg
-                        className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <CardContent className="p-6">
-                    <CardTitle className="text-lg group-hover:text-[#2D5A27] transition-colors">
-                      {property.title}
-                    </CardTitle>
-                    <CardDescription className="text-sm flex items-center gap-1 mt-1">
-                      <span>📍</span> {property.location}
-                    </CardDescription>
-
-                    <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
-                      <span>🛏️ {property.beds} Beds</span>
-                      <span>🛁 {property.baths} Baths</span>
-                      <span>📐 {property.sqft} sqft</span>
-                    </div>
-
-                    <CardFooter className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)] px-0">
-                      <span className="text-2xl font-bold text-[#2D5A27]">
-                        {property.price}
-                      </span>
-                      <Link
-                        to={`/property/${property.id}`}
-                        className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-                      >
-                        View Details
-                      </Link>
-                    </CardFooter>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+            </button>
+            <button
+              onClick={() => setCurrentPropertyIndex(
+                currentPropertyIndex === featuredProperties.length - 1 ? 0 : currentPropertyIndex + 1
+              )}
+              className="absolute right-1.5 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white text-gray-700 w-8 h-8 md:w-9 md:h-9 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 border border-gray-100"
+            >
+              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
       </section>
+
+
+{/* ============================================
+PROPERTY CATEGORIES - SCROLL + DRAG (FIXED)
+============================================ */}
+<section className="py-4 bg-white border-y border-[#2D5A27]/10 w-full overflow-hidden">
+  <div className="relative w-full">
+    {/* Scrollable Container */}
+    <div className="overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-8">
+      {/* Drag Container */}
+      <motion.div 
+        drag="x"
+        dragConstraints={{ left: -800, right: 0 }}
+        dragElastic={0.05}
+        className="flex items-center gap-3 py-2 cursor-grab active:cursor-grabbing"
+        style={{ width: 'max-content' }}
+      >
+        {[
+          { icon: '🏠', label: 'Houses', count: '128' },
+          { icon: '🌄', label: 'Residential Land', count: '61' },
+          { icon: '🏭', label: 'Commercial Land', count: '28' },
+          { icon: '🌾', label: 'Agricultural Land', count: '15' },
+          { icon: '⚙️', label: 'Industrial Land', count: '12' },
+          { icon: '🛍️', label: 'Shops', count: '45' },
+          { icon: '📋', label: 'Offices', count: '33' },
+          { icon: '📦', label: 'Warehouses', count: '18' },
+          { icon: '🏨', label: 'Hotels', count: '9' },
+          { icon: '🍽️', label: 'Restaurants', count: '21' },
+        ].map((category, index) => (
+          <div
+            key={index}
+            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-[#F8F6F3] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-300 cursor-pointer group border border-transparent hover:border-[#2D5A27]/20"
+          >
+            <span className="text-xl md:text-2xl group-hover:scale-110 transition-transform duration-300">
+              {category.icon}
+            </span>
+            <span className="text-xs md:text-sm font-semibold text-[var(--color-text-primary)] group-hover:text-white transition-colors whitespace-nowrap">
+              {category.label}
+            </span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)] group-hover:text-white/70 transition-colors">
+              {category.count}
+            </span>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+
+    {/* Gradient Fade on Edges (Optional) */}
+    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+  </div>
+</section>
 
       {/* ============================================
-      FEATURED PROPERTIES ROW 2
+      FEATURED EXCLUSIVE PROPERTIES
       ============================================ */}
-      <section className="py-12 bg-[var(--color-primary-surface)]">
-        <div className="max-w-7xl mx-auto px-8">
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {featuredProperties.slice(3, 6).map((property) => (
-              <motion.div
-                key={property.id}
-                variants={fadeInUp}
-                whileHover={{ y: -8 }}
-              >
-                <Card
-                  variant="hover"
-                  padding="none"
-                  className="overflow-hidden border border-[var(--color-primary-border)]"
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                          property.type === 'VILLA'
-                            ? 'bg-[#D4AF37] text-white'
-                            : property.type === 'HOUSE'
-                            ? 'bg-[#2D5A27] text-white'
-                            : property.type === 'APARTMENT'
-                            ? 'bg-[#4A7D42] text-white'
-                            : property.type === 'BUNGALOW'
-                            ? 'bg-[#6B9D63] text-white'
-                            : 'bg-[#94A3B8] text-white'
-                        }`}
-                      >
-                        {property.type}
-                      </span>
-                      {property.featured && (
-                        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-[#D4AF37] text-white">
-                          ⭐ FEATURED
-                        </span>
-                      )}
-                    </div>
-                    <button className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                      <svg
-                        className="w-5 h-5 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <CardContent className="p-6">
-                    <CardTitle className="text-lg group-hover:text-[#2D5A27] transition-colors">
-                      {property.title}
-                    </CardTitle>
-                    <CardDescription className="text-sm flex items-center gap-1 mt-1">
-                      <span>📍</span> {property.location}
-                    </CardDescription>
-
-                    <div className="flex items-center gap-3 text-sm text-[var(--color-text-secondary)] mt-3">
-                      <span>🛏️ {property.beds} Beds</span>
-                      <span>🛁 {property.baths} Baths</span>
-                      <span>📐 {property.sqft} sqft</span>
-                    </div>
-
-                    <CardFooter className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)] px-0">
-                      <span className="text-2xl font-bold text-[#2D5A27]">
-                        {property.price}
-                      </span>
-                      <Link
-                        to={`/property/${property.id}`}
-                        className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-                      >
-                        View Details
-                      </Link>
-                    </CardFooter>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      <FeaturedPropertiesSection />
 
       {/* ============================================
       FREE & PREMIUM
       ============================================ */}
-      <section className="py-20 bg-[var(--color-primary)] border-t border-[var(--color-primary-border)]">
+      <section className="py-12 bg-[var(--color-primary)] border-t border-[var(--color-primary-border)]">
         <div className="max-w-7xl mx-auto px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-8"
           >
             <span className="text-sm font-semibold text-[#2D5A27] uppercase tracking-wider">
               Choose Your Plan
@@ -859,7 +681,7 @@ const HomePage: React.FC = () => {
       {/* ============================================
       CTA SECTION
       ============================================ */}
-      <section className="py-8 md:py-12 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl mx-8">
+      <section className="py-6 md:py-8 bg-[#2D5A27] relative overflow-hidden rounded-2xl md:rounded-3xl mx-8">
         <div className="max-w-5xl mx-auto px-8">
           <div className="relative z-10 max-w-4xl mx-auto text-center py-4 md:py-6">
             <motion.div
@@ -877,11 +699,11 @@ const HomePage: React.FC = () => {
                 🏡
               </motion.div>
 
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2">
+              <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-2">
                 Ready to find your dream home?
               </h2>
 
-              <p className="text-white/80 max-w-2xl mx-auto mb-4 text-sm md:text-base leading-relaxed">
+              <p className="text-white/80 max-w-2xl mx-auto mb-4 text-sm leading-relaxed">
                 Start exploring hand-picked homes, or talk with an expert agent — either
                 way, we're here to help.
               </p>
@@ -891,8 +713,8 @@ const HomePage: React.FC = () => {
                   <Link to="/properties">
                     <Button
                       variant="primary"
-                      size="md"
-                      className="px-5 py-2.5 md:px-6 md:py-3 text-sm bg-white text-[#2D5A27] hover:bg-gray-100"
+                      size="sm"
+                      className="px-5 py-2 text-sm bg-white text-[#2D5A27] hover:bg-gray-100"
                     >
                       Explore Properties
                     </Button>
@@ -903,8 +725,8 @@ const HomePage: React.FC = () => {
                   <Link to="/contact">
                     <Button
                       variant="outline"
-                      size="md"
-                      className="px-5 py-2.5 md:px-6 md:py-3 text-sm border-white/50 text-white hover:bg-white hover:text-[#2D5A27]"
+                      size="sm"
+                      className="px-5 py-2 text-sm border-white/50 text-white hover:bg-white hover:text-[#2D5A27]"
                     >
                       Contact Us
                     </Button>
