@@ -1,5 +1,28 @@
 // src/app.ts
 
+// ============================================
+// ✅ LOAD ENVIRONMENT VARIABLES - MUST BE FIRST
+// ============================================
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env file from root directory
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+// ✅ Debug: Check if env loaded
+console.log('\n🔍 Environment Check:');
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? '✅ Loaded' : '❌ MISSING');
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '✅ Loaded' : '❌ MISSING');
+console.log('NODE_ENV:', process.env.NODE_ENV || '❌ MISSING');
+
+// ============================================
+// ✅ NOW IMPORT EVERYTHING ELSE
+// ============================================
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -7,24 +30,19 @@ import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import passport from 'passport'; // ✅ ADD THIS IMPORT
+import passport from 'passport';
 
 import { router } from '@/router';
 import { errorHandler, notFoundHandler } from '@/middleware/error.middleware';
 import { languageMiddleware } from '@/middleware/language.middleware';
 
-// ✅ IMPORT PASSPORT CONFIG (this runs the passport setup)
+// ✅ Import passport config AFTER env is loaded
 import './config/passport.config';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app: Application = express();
 
 // ============================================
-// ✅ CORS CONFIGURATION - Using process.env
+// ✅ CORS CONFIGURATION
 // ============================================
 const allowedOrigins = [
   'http://localhost:5173',
@@ -36,7 +54,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
       callback(null, true);
@@ -51,28 +68,20 @@ app.use(cors({
   maxAge: 86400,
 }));
 
-// ✅ Handle preflight requests
 app.options('*', cors());
-
-// ✅ Cookie parser
 app.use(cookieParser());
-
-// ✅ Language middleware
 app.use(languageMiddleware);
 
-// ✅ Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
 app.use(compression());
 
-// ✅ Logging
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-// ✅ Rate limiting
 const limiter = rateLimit({
   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW || '15') || 15) * 60 * 1000,
   max: parseInt(process.env.RATE_LIMIT_MAX || '100') || 100,
@@ -80,15 +89,13 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ✅ Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ✅ Serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ============================================
-// ✅ PASSPORT INITIALIZATION - ADD THIS
+// ✅ PASSPORT INITIALIZATION
 // ============================================
 app.use(passport.initialize());
 
