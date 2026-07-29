@@ -2,7 +2,10 @@
 
 import React from 'react';
 import { Input } from '../common/Input/Input';
-import { PROPERTY_TYPE_OPTIONS, PURPOSE_OPTIONS } from '../../constants/filters';
+import { 
+  PROPERTY_TYPE_OPTIONS, 
+  PURPOSE_OPTIONS,
+} from '../../constants/filters';
 import { AREA_UNIT_OPTIONS } from '../../utils/areaUtils';
 
 interface PropertyFormStep1Props {
@@ -14,6 +17,9 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
   formData,
   updateField,
 }) => {
+  // ✅ Debug: Log formData to see what's coming in
+  console.log('📍 Step 1 - formData:', formData);
+
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-bold text-gray-900">Basic Information</h3>
@@ -23,10 +29,13 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
         {/* Title */}
         <div className="md:col-span-2">
           <Input
-            label="Property Title"
+            label="Property Title *"
             placeholder="e.g. Modern Villa with Garden"
             value={formData.title || ''}
-            onChange={(e) => updateField('title', e.target.value)}
+            onChange={(e) => {
+              console.log('📝 Title changed:', e.target.value);
+              updateField('title', e.target.value);
+            }}
             required
           />
         </div>
@@ -47,22 +56,28 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
 
         {/* Price */}
         <Input
-          label="Price (Rs)"
+          label="Price (Rs) *"
           type="number"
           placeholder="Enter price"
           value={formData.price || ''}
-          onChange={(e) => updateField('price', parseFloat(e.target.value))}
+          onChange={(e) => {
+            console.log('📝 Price changed:', e.target.value);
+            updateField('price', e.target.value);
+          }}
           required
         />
 
         {/* Property Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Property Type
+            Property Type *
           </label>
           <select
             value={formData.propertyType || ''}
-            onChange={(e) => updateField('propertyType', e.target.value)}
+            onChange={(e) => {
+              console.log('📝 Property Type changed:', e.target.value);
+              updateField('propertyType', e.target.value);
+            }}
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
             required
           >
@@ -78,7 +93,7 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
         {/* Purpose */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Purpose
+            Purpose *
           </label>
           <select
             value={formData.purpose || 'SALE'}

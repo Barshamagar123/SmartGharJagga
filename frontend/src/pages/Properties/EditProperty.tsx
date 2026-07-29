@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { propertyApi } from '../../services/api/property';
 import PropertyForm from '../../components/properties/PropertyForm';
+import { propertyApi } from '../../services/api/property';
 
 const EditProperty: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,10 +43,7 @@ const EditProperty: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-[#2D5A27] mx-auto" />
-          <p className="mt-4 text-gray-600">Loading property details...</p>
-        </div>
+        <Loader2 className="w-12 h-12 animate-spin text-[#2D5A27]" />
       </div>
     );
   }
@@ -70,7 +67,6 @@ const EditProperty: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
         <button
           onClick={() => navigate('/my-properties')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"

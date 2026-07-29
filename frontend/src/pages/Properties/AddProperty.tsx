@@ -3,6 +3,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+// ✅ Fix: Correct import path - PropertyForm is in components/property/ not components/properties/
 import PropertyForm from '../../components/properties/PropertyForm';
 const AddProperty: React.FC = () => {
   const navigate = useNavigate();
