@@ -1,4 +1,4 @@
-// src/config/passport.config.ts
+// src/config/passport.config.ts (Updated)
 
 import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile, VerifyCallback } from 'passport-google-oauth20';
@@ -7,31 +7,14 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { config } from './index';
 
-// ✅ Debug: Check if config values are loaded
-console.log('\n🔍 Google OAuth Config Check:');
-console.log('GOOGLE_CLIENT_ID:', config.GOOGLE_CLIENT_ID ? '✅ Loaded' : '❌ MISSING');
-console.log('GOOGLE_CLIENT_SECRET:', config.GOOGLE_CLIENT_SECRET ? '✅ Loaded' : '❌ MISSING');
-console.log('GOOGLE_CALLBACK_URL:', config.GOOGLE_CALLBACK_URL || '❌ MISSING');
-
-// ✅ Validate credentials
-if (!config.GOOGLE_CLIENT_ID || !config.GOOGLE_CLIENT_SECRET) {
-  console.error('\n❌ Google OAuth credentials are missing!');
-  console.error('Please check your .env file');
-  console.error('GOOGLE_CLIENT_ID:', config.GOOGLE_CLIENT_ID);
-  console.error('GOOGLE_CLIENT_SECRET:', config.GOOGLE_CLIENT_SECRET ? '********' : 'undefined');
-} else {
-  console.log('✅ Google OAuth credentials validated successfully!\n');
-}
-
 const prisma = new PrismaClient();
 
-// Configure Google Strategy
 passport.use(
   new GoogleStrategy(
     {
-      clientID: config.GOOGLE_CLIENT_ID || '',
-      clientSecret: config.GOOGLE_CLIENT_SECRET || '',
-      callbackURL: config.GOOGLE_CALLBACK_URL || 'http://localhost:5001/api/v1/auth/google/callback',
+      clientID: config.GOOGLE_CLIENT_ID,
+      clientSecret: config.GOOGLE_CLIENT_SECRET,
+      callbackURL: config.GOOGLE_CALLBACK_URL,
       scope: ['profile', 'email'],
     },
     async (
@@ -41,8 +24,6 @@ passport.use(
       done: VerifyCallback
     ) => {
       try {
-        console.log('✅ Google Profile received:', profile.id);
-
         const { id: googleId, emails, displayName, photos } = profile;
 
         if (!emails || emails.length === 0) {
@@ -53,16 +34,21 @@ passport.use(
         const name = displayName || email.split('@')[0];
         const avatarUrl = photos && photos.length > 0 ? photos[0].value : undefined;
 
+        // ✅ Check if user exists with this Google ID
         let user = await prisma.user.findUnique({
           where: { googleId },
         });
 
+        let isNewUser = false;
+
+        // If not found by Google ID, check by email
         if (!user) {
           user = await prisma.user.findUnique({
             where: { email },
           });
 
           if (user) {
+            // ✅ Existing user - link Google account
             user = await prisma.user.update({
               where: { id: user.id },
               data: {
@@ -72,6 +58,8 @@ passport.use(
               },
             });
           } else {
+            // ✅ New user - create with default BUYER role
+            isNewUser = true;
             const randomPassword = crypto.randomBytes(32).toString('hex');
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
@@ -83,7 +71,7 @@ passport.use(
                 avatarUrl: avatarUrl || null,
                 passwordHash: hashedPassword,
                 isEmailVerified: true,
-                role: 'BUYER',
+                role: 'BUYER', // ✅ Default role
                 isActive: true,
               },
             });
@@ -95,30 +83,14 @@ passport.use(
           data: { lastLogin: new Date() },
         });
 
-        return done(null, user);
+        // ✅ Pass isNewUser flag to frontend
+        return done(null, { ...user, isNewUser });
       } catch (error) {
-        console.error('❌ Google Strategy Error:', error);
+        console.error('Google Strategy Error:', error);
         return done(error, undefined);
       }
     }
   )
 );
-
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id: string, done) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
-
-console.log('✅ Google OAuth Strategy configured successfully!\n');
 
 export default passport;

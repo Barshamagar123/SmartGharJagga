@@ -7,11 +7,13 @@ import { asyncHandler } from '@/utils/asyncHandler';
 import { ApiResponse } from '@/utils/apiResponse';
 import { ApiError } from '@/utils/apiError';
 import { config } from '@/config';
+import { PrismaClient } from '@prisma/client';
 
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private googleAuthService: GoogleAuthService
+    private googleAuthService: GoogleAuthService,
+    private prisma: PrismaClient // ✅ Added prisma
   ) {}
 
   // ============================================
@@ -168,11 +170,12 @@ export class AuthController {
       // Process Google user and generate tokens
       const result = await this.googleAuthService.handleGoogleCallback(user);
 
-      // Redirect to frontend with tokens as query params
+      // ✅ Pass isNewUser flag to frontend
       const redirectUrl = `${config.FRONTEND_URL}/auth/callback?` +
         `accessToken=${encodeURIComponent(result.accessToken)}&` +
         `refreshToken=${encodeURIComponent(result.refreshToken)}&` +
-        `user=${encodeURIComponent(JSON.stringify(result.user))}`;
+        `user=${encodeURIComponent(JSON.stringify(result.user))}&` +
+        `isNewUser=${result.isNewUser || false}`;
 
       console.log('Google auth successful, redirecting to frontend');
       return res.redirect(redirectUrl);
@@ -210,5 +213,69 @@ export class AuthController {
       isGoogleUser,
       user,
     });
+  });
+
+  // ============================================
+  // ✅ ROLE MANAGEMENT (NEW)
+  // ============================================
+
+  /**
+   * Update user role
+   * Allows users to switch between BUYER and SELLER
+   */
+  updateRole = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new ApiError(401, 'Authentication required');
+    
+    const { role } = req.body;
+    
+    // ✅ Validate role
+    if (!role || !['BUYER', 'SELLER', 'ADMIN'].includes(role)) {
+      throw new ApiError(400, 'Invalid role. Must be BUYER, SELLER, or ADMIN');
+    }
+
+    // ✅ Update user role
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isVerified: true,
+        isEmailVerified: true,
+        avatarUrl: true,
+        phone: true,
+        googleId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    ApiResponse.success(res, 200, 'Role updated successfully', user);
+  });
+
+  /**
+   * Get user role
+   * Returns current role of the user
+   */
+  getRole = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new ApiError(401, 'Authentication required');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    ApiResponse.success(res, 200, 'Role fetched successfully', { role: user.role });
   });
 }

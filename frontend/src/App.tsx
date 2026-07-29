@@ -2,7 +2,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { LanguageProvider } from './components/context/LanguageContext';
 import Layout from './components/common/Layout/Layout.tsx';
 import Home from './pages/HomePage/HomePage.tsx';
 import Properties from './pages/Properties/Properties';
@@ -20,7 +19,7 @@ function App() {
     <Router>
       {/* ✅ CRITICAL: AuthProvider MUST wrap EVERYTHING */}
       <AuthProvider>
-        <LanguageProvider>
+       
           <Routes>
             {/* ✅ Layout is INSIDE AuthProvider */}
             <Route element={<Layout />}>
@@ -36,7 +35,7 @@ function App() {
               <Route path="/map-search" element={<MapSearch />} />
             </Route>
           </Routes>
-        </LanguageProvider>
+        
       </AuthProvider>
     </Router>
   );

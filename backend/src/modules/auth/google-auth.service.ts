@@ -7,16 +7,24 @@ import { ApiError } from '@/utils/apiError';
 import { CacheService } from '@/services/internal/cache.service';
 import { TokenPayload, AuthResponse } from './auth.types';
 
+// ✅ Extended response with isNewUser flag
+export interface GoogleAuthResponse extends AuthResponse {
+  isNewUser: boolean;
+}
+
 export class GoogleAuthService {
   constructor(
     private prisma: PrismaClient,
     private cacheService: CacheService
   ) {}
 
-  async handleGoogleCallback(user: any): Promise<AuthResponse> {
+  async handleGoogleCallback(user: any): Promise<GoogleAuthResponse> {
     if (!user) {
       throw new ApiError(401, 'Google authentication failed');
     }
+
+    // ✅ Check if user is new
+    const isNewUser = user.isNewUser || false;
 
     // Generate tokens
     const accessToken = this.generateAccessToken({
@@ -55,6 +63,7 @@ export class GoogleAuthService {
       },
       accessToken,
       refreshToken,
+      isNewUser, // ✅ Added isNewUser flag
     };
   }
 

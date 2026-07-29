@@ -34,8 +34,8 @@ const cacheService = new CacheService();
 const authService = new AuthService(prisma, emailService, cacheService);
 const googleAuthService = new GoogleAuthService(prisma, cacheService);
 
-// ✅ Pass both services to controller
-const authController = new AuthController(authService, googleAuthService);
+// ✅ Pass prisma to controller
+const authController = new AuthController(authService, googleAuthService, prisma);
 
 const router = Router();
 
@@ -150,6 +150,29 @@ router.get(
   '/google/status',
   authMiddleware,
   authController.checkGoogleAuth
+);
+
+// ============================================
+// ✅ ROLE MANAGEMENT ROUTES (NEW)
+// ============================================
+
+/**
+ * Update user role
+ * Allows users to switch between BUYER, SELLER, ADMIN
+ */
+router.put(
+  '/update-role',
+  authMiddleware,
+  authController.updateRole
+);
+
+/**
+ * Get current user role
+ */
+router.get(
+  '/role',
+  authMiddleware,
+  authController.getRole
 );
 
 // ============================================
