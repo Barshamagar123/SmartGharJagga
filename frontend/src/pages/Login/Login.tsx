@@ -16,6 +16,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -44,10 +45,27 @@ const Login: React.FC = () => {
         setError(response?.message || 'Login failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      // ✅ Handle Google user error
+      if (err.response?.data?.message?.includes('Google Sign-In')) {
+        setError('This account uses Google Sign-In. Please use "Continue with Google" below.');
+      } else {
+        setError(err.response?.data?.message || 'Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // ✅ Handle Google Login
+  const handleGoogleLogin = () => {
+    setIsGoogleLoading(true);
+    setError('');
+    
+    // Get the backend URL from environment or use default
+    const backendUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5001';
+    
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = `${backendUrl}/api/v1/auth/google`;
   };
 
   const fadeInUp = {
@@ -233,20 +251,33 @@ const Login: React.FC = () => {
                   </div>
 
                   {/* Social Login Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
+                    {/* ✅ Google Login Button - Full Width */}
                     <button
                       type="button"
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[var(--color-primary-border)] rounded-xl hover:bg-[var(--color-primary-hover)] transition-all duration-200"
+                      onClick={handleGoogleLogin}
+                      disabled={isGoogleLoading}
+                      className={`flex items-center justify-center gap-3 px-4 py-3 border border-[var(--color-primary-border)] rounded-xl hover:bg-[var(--color-primary-hover)] transition-all duration-200 ${
+                        isGoogleLoading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                        <path fill="#4A90E2" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                      </svg>
-                      <span className="text-sm font-medium text-[var(--color-text-primary)]">Google</span>
+                      {isGoogleLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#2D5A27]"></div>
+                      ) : (
+                        <svg className="w-5 h-5" viewBox="0 0 24 24">
+                          <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                          <path fill="#4A90E2" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                      )}
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {isGoogleLoading ? 'Redirecting to Google...' : 'Continue with Google'}
+                      </span>
                     </button>
-                    <button
+
+                    {/* Facebook Button - Commented out or removed */}
+                    {/* <button
                       type="button"
                       className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[var(--color-primary-border)] rounded-xl hover:bg-[var(--color-primary-hover)] transition-all duration-200"
                     >
@@ -254,7 +285,7 @@ const Login: React.FC = () => {
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                       </svg>
                       <span className="text-sm font-medium text-[var(--color-text-primary)]">Facebook</span>
-                    </button>
+                    </button> */}
                   </div>
 
                   {/* Sign Up Link */}
@@ -284,6 +315,9 @@ const Login: React.FC = () => {
               <span>Email: <span className="font-medium">demo@smartgharjagga.com</span></span>
               <span>Password: <span className="font-medium">demo123</span></span>
             </div>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+              Or use <span className="font-medium text-[#2D5A27]">Continue with Google</span> for instant access
+            </p>
           </motion.div>
         </motion.div>
       </div>
