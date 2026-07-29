@@ -1,5 +1,18 @@
 // src/config/index.ts
 
+// ✅ Load env FIRST - Add this at the top
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env file from root directory
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
+// ✅ Now export config
 export const config = {
   // Node Environment
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -46,7 +59,7 @@ export const config = {
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   
   // ============================================
-  // GOOGLE OAUTH - ADD THESE LINES
+  // GOOGLE OAUTH
   // ============================================
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
@@ -54,5 +67,5 @@ export const config = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 } as const;
 
-// Optional: Export type for TypeScript
+// Export type for TypeScript
 export type Config = typeof config;

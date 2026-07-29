@@ -27,7 +27,7 @@ function App() {
               <Route path="/property/:slug" element={<PropertyDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-                      <Route path="/auth/callback" element={<GoogleCallback />} />
+              <Route path="/auth/callback" element={<GoogleCallback />} />
 
               <Route path="/ai-matching" element={<AIMatching />} />
               <Route path="/map-search" element={<MapSearch />} />

@@ -13,27 +13,24 @@ console.log('GOOGLE_CLIENT_ID:', config.GOOGLE_CLIENT_ID ? '✅ Loaded' : '❌ M
 console.log('GOOGLE_CLIENT_SECRET:', config.GOOGLE_CLIENT_SECRET ? '✅ Loaded' : '❌ MISSING');
 console.log('GOOGLE_CALLBACK_URL:', config.GOOGLE_CALLBACK_URL || '❌ MISSING');
 
-// ✅ Validate credentials before creating strategy
+// ✅ Validate credentials
 if (!config.GOOGLE_CLIENT_ID || !config.GOOGLE_CLIENT_SECRET) {
   console.error('\n❌ Google OAuth credentials are missing!');
-  console.error('Please check your .env file and config/index.ts');
+  console.error('Please check your .env file');
   console.error('GOOGLE_CLIENT_ID:', config.GOOGLE_CLIENT_ID);
   console.error('GOOGLE_CLIENT_SECRET:', config.GOOGLE_CLIENT_SECRET ? '********' : 'undefined');
-  
-  // Don't exit process, just log error and continue
-  // The strategy will fail gracefully
 } else {
   console.log('✅ Google OAuth credentials validated successfully!\n');
 }
 
 const prisma = new PrismaClient();
 
-// Configure Google Strategy with your credentials
+// Configure Google Strategy
 passport.use(
   new GoogleStrategy(
     {
-      clientID: config.GOOGLE_CLIENT_ID || 'missing_client_id',
-      clientSecret: config.GOOGLE_CLIENT_SECRET || 'missing_client_secret',
+      clientID: config.GOOGLE_CLIENT_ID || '',
+      clientSecret: config.GOOGLE_CLIENT_SECRET || '',
       callbackURL: config.GOOGLE_CALLBACK_URL || 'http://localhost:5001/api/v1/auth/google/callback',
       scope: ['profile', 'email'],
     },
@@ -46,12 +43,9 @@ passport.use(
       try {
         console.log('✅ Google Profile received:', profile.id);
 
-        // Extract user info from Google profile
         const { id: googleId, emails, displayName, photos } = profile;
 
-        // Validate email
         if (!emails || emails.length === 0) {
-          console.error('❌ No email found from Google profile');
           return done(new Error('No email found from Google'), undefined);
         }
 
@@ -59,23 +53,16 @@ passport.use(
         const name = displayName || email.split('@')[0];
         const avatarUrl = photos && photos.length > 0 ? photos[0].value : undefined;
 
-        console.log(`📧 Processing Google user: ${email}`);
-
-        // Check if user exists with this Google ID
         let user = await prisma.user.findUnique({
           where: { googleId },
         });
 
-        // If not found by Google ID, check by email
         if (!user) {
-          console.log(`🔍 User not found by Google ID, checking by email: ${email}`);
           user = await prisma.user.findUnique({
             where: { email },
           });
 
-          // If user exists with same email but no Google ID, link them
           if (user) {
-            console.log(`🔗 Linking Google account to existing user: ${email}`);
             user = await prisma.user.update({
               where: { id: user.id },
               data: {
@@ -85,8 +72,6 @@ passport.use(
               },
             });
           } else {
-            // Create new user
-            console.log(`🆕 Creating new user from Google: ${email}`);
             const randomPassword = crypto.randomBytes(32).toString('hex');
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
@@ -105,13 +90,11 @@ passport.use(
           }
         }
 
-        // Update last login
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLogin: new Date() },
         });
 
-        console.log(`✅ Google authentication successful for: ${email}`);
         return done(null, user);
       } catch (error) {
         console.error('❌ Google Strategy Error:', error);
@@ -121,7 +104,6 @@ passport.use(
   )
 );
 
-// Serialize user for session (if using sessions)
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
 });
@@ -133,7 +115,6 @@ passport.deserializeUser(async (id: string, done) => {
     });
     done(null, user);
   } catch (error) {
-    console.error('❌ Deserialize user error:', error);
     done(error, null);
   }
 });

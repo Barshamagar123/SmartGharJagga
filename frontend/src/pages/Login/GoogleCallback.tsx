@@ -34,7 +34,7 @@ const GoogleCallback: React.FC = () => {
         
         // ✅ Redirect to dashboard or home
         setTimeout(() => {
-          navigate('/dashboard', { replace: true });
+          navigate('/', { replace: true });
         }, 1000);
       } catch (error) {
         console.error('Failed to parse user data:', error);
