@@ -2,13 +2,29 @@
 
 import { PrismaClient } from '@prisma/client';
 import { ApiError } from '@/utils/apiError';
-import { PropertyLocation, HeatMapData, SearchArea, NearbyPlace } from './map.types';
+import { 
+  PropertyLocation, 
+  HeatMapData, 
+  SearchArea, 
+  NearbyPlace, 
+  NearbyPlacesRequest,
+  GooglePlacesResponse,
+  GooglePlace
+} from './map.types';
 
 export class MapService {
-  constructor(private prisma: PrismaClient) {}
+  private googlePlacesApiKey: string;
+
+  constructor(private prisma: PrismaClient) {
+    this.googlePlacesApiKey = process.env.GOOGLE_PLACES_API_KEY || '';
+    
+    if (!this.googlePlacesApiKey) {
+      console.warn('⚠️ GOOGLE_PLACES_API_KEY is not set. Nearby places will use database fallback.');
+    }
+  }
 
   // ============================================
-  // 1. Get All Property Locations for Map
+  // 1. Get All Property Locations
   // ============================================
   async getPropertyLocations(): Promise<PropertyLocation[]> {
     const properties = await this.prisma.property.findMany({
@@ -68,7 +84,6 @@ export class MapService {
       },
     });
 
-    // Calculate weight based on price and views
     const maxPrice = Math.max(...properties.map((p) => Number(p.price)), 1);
     const maxViews = Math.max(...properties.map((p) => p.views), 1);
 
@@ -114,8 +129,6 @@ export class MapService {
   async searchByArea(searchArea: SearchArea): Promise<PropertyLocation[]> {
     const { lat, lng, radius } = searchArea;
 
-    // Convert radius to degrees (approximate)
-    // 1 degree ≈ 111 km
     const latDelta = radius / 111;
     const lngDelta = radius / (111 * Math.cos(lat * Math.PI / 180));
 
@@ -164,82 +177,224 @@ export class MapService {
   }
 
   // ============================================
-  // 5. Get Nearby Places
+  // 5. Get Nearby Places - DYNAMIC (Google Places API)
   // ============================================
   async getNearbyPlaces(
     lat: number,
     lng: number,
-    radius: number = 2 // Default 2km
+    radius: number = 2,
+    types: string[] = ['school', 'hospital', 'market', 'park', 'restaurant', 'bank', 'pharmacy', 'supermarket', 'cafe', 'gym'],
+    limit: number = 20,
+    keyword?: string,
+    minRating?: number
   ): Promise<NearbyPlace[]> {
-    // Note: In production, you would use Google Places API
-    // This is a mock implementation for demonstration
+    try {
+      // ✅ Use Google Places API if key is available
+      if (this.googlePlacesApiKey) {
+        console.log(`📍 Fetching nearby places from Google Places API for ${lat}, ${lng}`);
+        const places = await this.fetchFromGooglePlaces(lat, lng, radius, types, limit, keyword, minRating);
+        
+        if (places.length > 0) {
+          console.log(`✅ Found ${places.length} places from Google Places API`);
+          return places;
+        }
+      }
+      
+      // ✅ Fallback to database
+      console.log('⚠️ Falling back to database for nearby places');
+      return await this.getNearbyPlacesFromDB(lat, lng, radius, limit);
+    } catch (error) {
+      console.error('❌ Error fetching nearby places:', error);
+      return await this.getNearbyPlacesFromDB(lat, lng, radius, limit);
+    }
+  }
+
+  // ============================================
+  // 5a. Fetch from Google Places API
+  // ============================================
+  private async fetchFromGooglePlaces(
+    lat: number,
+    lng: number,
+    radius: number,
+    types: string[],
+    limit: number,
+    keyword?: string,
+    minRating?: number
+  ): Promise<NearbyPlace[]> {
+    // ✅ Map our types to Google Places types
+    const typeMapping: Record<string, string[]> = {
+      'school': ['school'],
+      'hospital': ['hospital'],
+      'market': ['shopping_mall', 'market'],
+      'park': ['park'],
+      'restaurant': ['restaurant', 'food'],
+      'bank': ['bank'],
+      'pharmacy': ['pharmacy'],
+      'supermarket': ['supermarket', 'grocery_or_supermarket'],
+      'cafe': ['cafe'],
+      'gym': ['gym'],
+      'mall': ['shopping_mall'],
+      'atm': ['atm'],
+      'bus_station': ['bus_station'],
+    };
+
+    // ✅ Build Google Places API URL
+    const googleTypes = types.flatMap(t => typeMapping[t] || [t]);
+    const typeParam = googleTypes.join('|');
     
-    // For now, return mock data based on property locations
+    let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius * 1000}&key=${this.googlePlacesApiKey}`;
+    
+    if (typeParam) {
+      url += `&types=${typeParam}`;
+    }
+    
+    if (keyword) {
+      url += `&keyword=${encodeURIComponent(keyword)}`;
+    }
+
+    console.log(`📤 Google Places API URL: ${url}`);
+
+    const response = await fetch(url);
+    
+    // ✅ FIX: Parse JSON and cast to GooglePlacesResponse
+    const rawData = await response.json();
+    const data = rawData as GooglePlacesResponse;
+
+    // ✅ Check for errors
+    if (data.status === 'REQUEST_DENIED') {
+      console.error('❌ Google Places API: Request denied. Check API key and permissions.');
+      throw new Error('Google Places API request denied. Please check API key and enable Places API.');
+    }
+
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      console.error(`❌ Google Places API error: ${data.status}`);
+      throw new Error(`Google Places API error: ${data.status}`);
+    }
+
+    if (!data.results || data.results.length === 0) {
+      return [];
+    }
+
+    // ✅ Transform Google Places response to our format
+    let places: NearbyPlace[] = data.results.map((place: GooglePlace) => {
+      // Determine the primary type
+      let primaryType: NearbyPlace['type'] = 'restaurant';
+      for (const [key, googleTypes] of Object.entries(typeMapping)) {
+        if (place.types.some(t => googleTypes.includes(t))) {
+          primaryType = key as NearbyPlace['type'];
+          break;
+        }
+      }
+
+      // Calculate distance from user location
+      const distance = this.calculateDistance(
+        lat,
+        lng,
+        place.geometry.location.lat,
+        place.geometry.location.lng
+      ) * 1000; // Convert to meters
+
+      return {
+        id: place.place_id,
+        name: place.name,
+        address: place.vicinity || place.formatted_address || '',
+        type: primaryType,
+        lat: place.geometry.location.lat,
+        lng: place.geometry.location.lng,
+        distance: Math.round(distance * 100) / 100,
+        rating: place.rating,
+        userRatingsTotal: place.user_ratings_total,
+        priceLevel: place.price_level,
+        phoneNumber: place.formatted_phone_number,
+        website: place.website,
+        openingHours: place.opening_hours?.weekday_text,
+        photoReference: place.photos?.[0]?.photo_reference,
+        isOpen: place.opening_hours?.open_now,
+      };
+    });
+
+    // ✅ Filter by min rating if specified
+    if (minRating) {
+      places = places.filter(p => p.rating && p.rating >= minRating);
+    }
+
+    // ✅ Sort by distance
+    places.sort((a, b) => a.distance - b.distance);
+
+    // ✅ Limit results
+    return places.slice(0, limit);
+  }
+
+  // ============================================
+  // 5b. Fallback: Get Nearby Places from Database
+  // ============================================
+  private async getNearbyPlacesFromDB(
+    lat: number,
+    lng: number,
+    radius: number,
+    limit: number
+  ): Promise<NearbyPlace[]> {
+    const latDelta = radius / 111;
+    const lngDelta = radius / (111 * Math.cos(lat * Math.PI / 180));
+
     const properties = await this.prisma.property.findMany({
       where: {
         status: 'APPROVED',
-        latitude: { not: null },
-        longitude: { not: null },
+        latitude: {
+          gte: lat - latDelta,
+          lte: lat + latDelta,
+        },
+        longitude: {
+          gte: lng - lngDelta,
+          lte: lng + lngDelta,
+        },
       },
-      take: 10,
+      take: limit,
       select: {
         id: true,
         title: true,
         latitude: true,
         longitude: true,
         propertyType: true,
+        location: true,
       },
     });
 
-    // Mock nearby places (schools, hospitals, markets, parks, restaurants)
-    const mockPlaces: NearbyPlace[] = [
-      {
-        id: 'school-1',
-        name: 'Kathmandu School',
-        type: 'school',
-        lat: lat + 0.005,
-        lng: lng + 0.003,
-        distance: 0.5,
-      },
-      {
-        id: 'hospital-1',
-        name: 'Kathmandu Hospital',
-        type: 'hospital',
-        lat: lat - 0.004,
-        lng: lng + 0.006,
-        distance: 0.8,
-      },
-      {
-        id: 'market-1',
-        name: 'City Market',
-        type: 'market',
-        lat: lat + 0.008,
-        lng: lng - 0.005,
-        distance: 1.2,
-      },
-      {
-        id: 'park-1',
-        name: 'Central Park',
-        type: 'park',
-        lat: lat - 0.003,
-        lng: lng - 0.007,
-        distance: 0.9,
-      },
-      {
-        id: 'restaurant-1',
-        name: 'Nepali Restaurant',
-        type: 'restaurant',
-        lat: lat + 0.007,
-        lng: lng + 0.009,
-        distance: 1.5,
-      },
-    ];
+    const typeMap: Record<string, NearbyPlace['type']> = {
+      HOUSE: 'school',
+      RESIDENTIAL_LAND: 'park',
+      COMMERCIAL_LAND: 'market',
+      SHOP: 'market',
+      OFFICE: 'bank',
+      HOTEL: 'restaurant',
+      RESTAURANT: 'restaurant',
+    };
 
-    return mockPlaces;
+    const places: NearbyPlace[] = properties.map((p) => {
+      const distance = this.calculateDistance(
+        lat,
+        lng,
+        p.latitude!,
+        p.longitude!
+      ) * 1000;
+
+      return {
+        id: p.id,
+        name: p.title,
+        address: p.location,
+        type: typeMap[p.propertyType] || 'restaurant',
+        lat: p.latitude!,
+        lng: p.longitude!,
+        distance: Math.round(distance * 100) / 100,
+      };
+    });
+
+    places.sort((a, b) => a.distance - b.distance);
+    return places;
   }
 
   // ============================================
-  // 6. Get Property by Location (Nearest)
+  // 6. Get Nearest Properties
   // ============================================
   async getNearestProperties(
     lat: number,
@@ -252,7 +407,7 @@ export class MapService {
         latitude: { not: null },
         longitude: { not: null },
       },
-      take: limit * 2, // Get extra for filtering
+      take: limit * 2,
       select: {
         id: true,
         title: true,
@@ -269,7 +424,6 @@ export class MapService {
       },
     });
 
-    // Calculate distance and sort
     const withDistance = properties.map((p) => {
       const distance = this.calculateDistance(
         lat,
@@ -296,6 +450,14 @@ export class MapService {
       images: p.images,
       mainImage: p.mainImage || undefined,
     }));
+  }
+
+  // ============================================
+  // 7. Get Place Photo URL (Helper)
+  // ============================================
+  getPlacePhotoUrl(photoReference: string, maxWidth: number = 400): string {
+    if (!this.googlePlacesApiKey) return '';
+    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${this.googlePlacesApiKey}`;
   }
 
   // ============================================
