@@ -1,8 +1,23 @@
 // src/types/property.ts
 
-export type AreaUnit = 'DHUR' | 'AANA' | 'ROPANI' | 'BISWA' | 'KATHA' | 'SQFT' | 'SQUARE_FEET' | 'SQUARE_METER' | 'HECTARE';
+/**
+ * Area units supported for land/property measurement
+ */
+export type AreaUnit =
+  | 'DHUR'
+  | 'AANA'
+  | 'ROPANI'
+  | 'BISWA'
+  | 'KATHA'
+  | 'SQFT'
+  | 'SQUARE_FEET'
+  | 'SQUARE_METER'
+  | 'HECTARE';
 
-export type PropertyType = 
+/**
+ * Property types (matches backend enum)
+ */
+export type PropertyType =
   | 'HOUSE'
   | 'RESIDENTIAL_LAND'
   | 'COMMERCIAL_LAND'
@@ -17,9 +32,26 @@ export type PropertyType =
   | 'VILLA'
   | 'BUNGALOW';
 
-export type PropertyStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SOLD' | 'RENTED' | 'INACTIVE';
+/**
+ * Property listing status
+ */
+export type PropertyStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'SOLD'
+  | 'RENTED'
+  | 'INACTIVE';
+
+/**
+ * Property purpose (sale, rent, lease)
+ */
 export type PropertyPurpose = 'SALE' | 'RENT' | 'LEASE';
 
+/**
+ * Complete Property interface
+ * Matches the Prisma schema + relations
+ */
 export interface Property {
   id: string;
   propertyId: string;
@@ -60,6 +92,7 @@ export interface Property {
   soldAt?: string;
   averageRating: number;
   totalReviews: number;
+  /** Agent/Seller info (populated on detail) */
   user?: {
     id: string;
     name: string;
@@ -68,3 +101,42 @@ export interface Property {
     avatarUrl?: string;
   };
 }
+
+/**
+ * Property filters for listing/search
+ */
+export interface PropertyFilters {
+  search?: string;
+  location?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  propertyType?: PropertyType;
+  bedrooms?: number;
+  bathrooms?: number;
+  parking?: boolean;
+  amenities?: string[];
+  status?: PropertyStatus;
+  isFeatured?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: 'price' | 'createdAt' | 'views';
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Paginated property response
+ */
+export interface PropertyListResponse {
+  properties: Property[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// ✅ Export all types
+export type { 
+  PropertyType as PropertyTypeEnum,
+  PropertyStatus as PropertyStatusEnum,
+  PropertyPurpose as PropertyPurposeEnum,
+};

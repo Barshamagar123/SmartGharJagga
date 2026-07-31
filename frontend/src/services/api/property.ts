@@ -1,10 +1,17 @@
 // src/services/api/property.ts
 
 import apiClient from './client';
-import type { Property, PropertyType, PropertyStatus, PropertyPurpose } from '../../types/property';
+import type { 
+  Property, 
+  PropertyType, 
+  PropertyStatus, 
+  PropertyPurpose,
+  PropertyFilters,
+  PropertyListResponse 
+} from '../../types/property';
 
 // ============================================
-// TYPES
+// REQUEST TYPES
 // ============================================
 
 export interface CreatePropertyData {
@@ -31,40 +38,15 @@ export interface UpdatePropertyData extends Partial<CreatePropertyData> {
   status?: PropertyStatus;
 }
 
-export interface PropertyFilter {
-  search?: string;
-  location?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  propertyType?: PropertyType;
-  bedrooms?: number;
-  bathrooms?: number;
-  parking?: boolean;
-  amenities?: string[];
-  status?: PropertyStatus;
-  isFeatured?: boolean;
-  page?: number;
-  limit?: number;
-  sortBy?: 'price' | 'createdAt' | 'views';
-  sortOrder?: 'asc' | 'desc';
-}
-
-export interface PropertyResponse {
-  properties: Property[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 // ============================================
 // PROPERTY API
 // ============================================
 
 export const propertyApi = {
-  // ============================================
-  // 1. CREATE PROPERTY
-  // ============================================
+  /**
+   * 1. CREATE PROPERTY
+   * Supports FormData (with files) or JSON
+   */
   create: async (data: FormData | CreatePropertyData): Promise<Property> => {
     if (data instanceof FormData) {
       const response = await apiClient.post('/properties', data, {
@@ -79,10 +61,11 @@ export const propertyApi = {
     return response.data.data;
   },
 
-  // ============================================
-  // 2. GET ALL PROPERTIES
-  // ============================================
-  getAll: async (filters?: PropertyFilter): Promise<PropertyResponse> => {
+  /**
+   * 2. GET ALL PROPERTIES
+   * With filters and pagination
+   */
+  getAll: async (filters?: PropertyFilters): Promise<PropertyListResponse> => {
     const params = new URLSearchParams();
     
     if (filters) {
@@ -97,17 +80,18 @@ export const propertyApi = {
     return response.data.data;
   },
 
-  // ============================================
-  // 3. GET PROPERTY BY ID
-  // ============================================
+  /**
+   * 3. GET PROPERTY BY ID
+   */
   getById: async (id: string): Promise<Property> => {
     const response = await apiClient.get(`/properties/${id}`);
     return response.data.data;
   },
 
-  // ============================================
-  // 4. UPDATE PROPERTY
-  // ============================================
+  /**
+   * 4. UPDATE PROPERTY
+   * Supports FormData (with files) or JSON
+   */
   update: async (id: string, data: FormData | UpdatePropertyData): Promise<Property> => {
     if (data instanceof FormData) {
       const response = await apiClient.put(`/properties/${id}`, data, {
@@ -122,41 +106,41 @@ export const propertyApi = {
     return response.data.data;
   },
 
-  // ============================================
-  // 5. DELETE PROPERTY - ✅ FIXED
-  // ============================================
+  /**
+   * 5. DELETE PROPERTY
+   */
   delete: async (id: string): Promise<{ message: string }> => {
     const response = await apiClient.delete(`/properties/${id}`);
     return response.data;
   },
 
-  // ============================================
-  // 6. GET USER'S PROPERTIES
-  // ============================================
+  /**
+   * 6. GET USER'S PROPERTIES
+   */
   getMyProperties: async (): Promise<Property[]> => {
     const response = await apiClient.get('/properties/my/properties');
     return response.data.data;
   },
 
-  // ============================================
-  // 7. GET FEATURED PROPERTIES
-  // ============================================
+  /**
+   * 7. GET FEATURED PROPERTIES
+   */
   getFeatured: async (limit: number = 6): Promise<Property[]> => {
     const response = await apiClient.get(`/properties/featured?limit=${limit}`);
     return response.data.data;
   },
 
-  // ============================================
-  // 8. GET PROPERTIES FOR MAP
-  // ============================================
+  /**
+   * 8. GET PROPERTIES FOR MAP
+   */
   getForMap: async (): Promise<Property[]> => {
     const response = await apiClient.get('/properties/map');
     return response.data.data;
   },
 
-  // ============================================
-  // 9. GET PROPERTY STATS
-  // ============================================
+  /**
+   * 9. GET PROPERTY STATS
+   */
   getStats: async (): Promise<{
     total: number;
     pending: number;
@@ -169,34 +153,38 @@ export const propertyApi = {
     return response.data.data;
   },
 
-  // ============================================
-  // 10. TOGGLE FAVORITE
-  // ============================================
+  /**
+   * 10. TOGGLE FAVORITE
+   */
   toggleFavorite: async (propertyId: string): Promise<{ favorited: boolean }> => {
     const response = await apiClient.post(`/properties/${propertyId}/favorite`);
     return response.data.data;
   },
 
-  // ============================================
-  // 11. GET FAVORITES
-  // ============================================
+  /**
+   * 11. GET FAVORITES
+   */
   getFavorites: async (): Promise<Property[]> => {
     const response = await apiClient.get('/properties/favorites');
     return response.data.data;
   },
 
-  // ============================================
-  // 12. TOGGLE FEATURED (Admin/Seller)
-  // ============================================
+  /**
+   * 12. TOGGLE FEATURED (Admin/Seller)
+   */
   toggleFeatured: async (propertyId: string): Promise<{ isFeatured: boolean }> => {
     const response = await apiClient.put(`/properties/${propertyId}/toggle-featured`);
     return response.data.data;
   },
 
-  // ============================================
-  // 13. UPDATE PROPERTY STATUS (Admin only)
-  // ============================================
-  updateStatus: async (propertyId: string, status: PropertyStatus, reason?: string): Promise<Property> => {
+  /**
+   * 13. UPDATE PROPERTY STATUS (Admin only)
+   */
+  updateStatus: async (
+    propertyId: string,
+    status: PropertyStatus,
+    reason?: string
+  ): Promise<Property> => {
     const response = await apiClient.put(`/properties/${propertyId}/status`, { status, reason });
     return response.data.data;
   },

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { propertyApi } from '../services/api/property';
+import type { Property } from '../types/property';
 
 interface FormData {
   title: string;
@@ -45,7 +46,16 @@ const initialFormData: FormData = {
   videos: [],
 };
 
-export const usePropertyForm = (initialData?: Partial<FormData>) => {
+interface UsePropertyFormReturn {
+  formData: FormData;
+  loading: boolean;
+  error: string | null;
+  updateField: (field: keyof FormData, value: any) => void;
+  resetForm: () => void;
+  submitForm: () => Promise<{ success: boolean; data?: Property }>;
+}
+
+export const usePropertyForm = (initialData?: Partial<FormData>): UsePropertyFormReturn => {
   const [formData, setFormData] = useState<FormData>({
     ...initialFormData,
     ...initialData,
@@ -55,7 +65,11 @@ export const usePropertyForm = (initialData?: Partial<FormData>) => {
   const [error, setError] = useState<string | null>(null);
 
   const updateField = useCallback((field: keyof FormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      console.log(`📝 Updated ${field}:`, value);
+      return newData;
+    });
   }, []);
 
   const resetForm = useCallback(() => {
@@ -64,6 +78,9 @@ export const usePropertyForm = (initialData?: Partial<FormData>) => {
   }, []);
 
   const submitForm = async () => {
+    console.log('📤 ===== SUBMITTING PROPERTY FORM =====');
+    console.log('📤 Form Data:', formData);
+
     setLoading(true);
     setError(null);
 
@@ -79,7 +96,7 @@ export const usePropertyForm = (initialData?: Partial<FormData>) => {
         bedrooms: formData.bedrooms,
         bathrooms: formData.bathrooms,
         area: formData.area,
-        areaUnit: formData.areaUnit,
+        areaUnit: formData.areaUnit || 'SQFT',
         propertyType: formData.propertyType,
         purpose: formData.purpose,
         parking: formData.parking,
@@ -88,28 +105,63 @@ export const usePropertyForm = (initialData?: Partial<FormData>) => {
         amenities: formData.amenities,
       };
 
-      // ✅ Create FormData for file uploads
+      console.log('📤 Payload:', payload);
+
+      // ✅ Create FormData
       const formDataToSend = new FormData();
       formDataToSend.append('data', JSON.stringify(payload));
 
       // ✅ Append images
-      formData.images.forEach((img) => {
-        if (img instanceof File) formDataToSend.append('images', img);
-      });
+      if (formData.images && formData.images.length > 0) {
+        for (const image of formData.images) {
+          if (image instanceof File) {
+            formDataToSend.append('images', image);
+          }
+        }
+      }
 
       // ✅ Append videos
-      formData.videos.forEach((video) => {
-        if (video instanceof File) formDataToSend.append('videos', video);
+      if (formData.videos && formData.videos.length > 0) {
+        for (const video of formData.videos) {
+          if (video instanceof File) {
+            formDataToSend.append('videos', video);
+          }
+        }
+      }
+
+      // ✅ Log FormData
+      console.log('📤 FormData entries:');
+      formDataToSend.forEach((value, key) => {
+        if (value instanceof File) {
+          console.log(`  ${key}: File(${value.name}, ${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
       });
 
+      // ✅ Send request
       const result = await propertyApi.create(formDataToSend);
+      
+      console.log('✅ Property created successfully:', result);
       setLoading(false);
       return { success: true, data: result };
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to create property';
-      setError(message);
+      console.error('❌ Submit Error:', err);
+      console.error('❌ Error Response:', err.response?.data);
+      
+      const errorResponse = err.response?.data;
+      if (errorResponse?.errors) {
+        const messages = errorResponse.errors.map((e: any) => {
+          const field = e.field?.replace('body.data.', '') || e.field || '';
+          return field ? `${field}: ${e.message}` : e.message;
+        }).join('\n');
+        setError(`Validation failed:\n${messages}`);
+      } else {
+        setError(errorResponse?.message || 'Failed to create property');
+      }
+      
       setLoading(false);
-      return { success: false, data: null };
+      return { success: false };
     }
   };
 

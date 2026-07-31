@@ -12,6 +12,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+  timeout: 30000, // ✅ 30 seconds timeout
 });
 
 // ✅ Request Interceptor
@@ -21,7 +22,11 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
+    
+    // ✅ Log request for debugging (only in development)
+    if (import.meta.env.DEV) {
+      console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
   (error) => {
@@ -33,12 +38,34 @@ apiClient.interceptors.request.use(
 // ✅ Response Interceptor
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('📥 API Response:', response.status, response.config.url);
-    console.log('📥 API Response Data:', response.data);
+    // ✅ Log response (only in development)
+    if (import.meta.env.DEV) {
+      console.log(`📥 ${response.status} ${response.config.url}`);
+    }
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.response?.data);
+    // ✅ Handle 401 Unauthorized - Redirect to login
+    if (error.response?.status === 401) {
+      console.warn('🔒 Session expired. Redirecting to login...');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      
+      // ✅ Redirect to login page (if not already there)
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    
+    // ✅ Log error details
+    console.error('❌ API Error:', {
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      errors: error.response?.data?.errors,
+      url: error.config?.url,
+    });
+    
     return Promise.reject(error);
   }
 );
