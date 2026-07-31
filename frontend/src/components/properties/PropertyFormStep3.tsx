@@ -1,48 +1,56 @@
 // src/components/property/PropertyFormStep3.tsx
 
 import React, { useRef } from 'react';
-import { Upload, X, Image as ImageIcon, Video } from 'lucide-react';
+import { Upload, X, ImageIcon, Video } from 'lucide-react';
 
-interface PropertyFormStep3Props {
+interface Step3Props {
   formData: any;
   updateField: (field: string, value: any) => void;
 }
 
-const PropertyFormStep3: React.FC<PropertyFormStep3Props> = ({
-  formData,
-  updateField,
-}) => {
+const PropertyFormStep3: React.FC<Step3Props> = ({ formData, updateField }) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const images = formData.images || [];
   const videos = formData.videos || [];
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'images' | 'videos') => {
     const files = Array.from(e.target.files || []);
-    // Here you would upload to Cloudinary/S3 and get URLs
-    // For now, we'll just store the file objects
-    const newImages = [...images, ...files];
-    updateField('images', newImages);
+    const current = type === 'images' ? images : videos;
+    updateField(type, [...current, ...files]);
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const newVideos = [...videos, ...files];
-    updateField('videos', newVideos);
+  const removeFile = (index: number, type: 'images' | 'videos') => {
+    const current = type === 'images' ? images : videos;
+    const updated = [...current];
+    updated.splice(index, 1);
+    updateField(type, updated);
   };
 
-  const removeImage = (index: number) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    updateField('images', newImages);
-  };
-
-  const removeVideo = (index: number) => {
-    const newVideos = [...videos];
-    newVideos.splice(index, 1);
-    updateField('videos', newVideos);
-  };
+  const renderFile = (file: any, index: number, type: 'images' | 'videos') => (
+    <div key={index} className="relative group">
+      {typeof file === 'string' ? (
+        <img src={file} alt={`${type} ${index}`} className="w-full h-28 object-cover rounded-lg border" />
+      ) : (
+        <div className="w-full h-28 bg-gray-100 rounded-lg border flex flex-col items-center justify-center">
+          {type === 'images' ? (
+            <ImageIcon className="w-8 h-8 text-gray-400" />
+          ) : (
+            <Video className="w-8 h-8 text-gray-400" />
+          )}
+          <span className="text-xs text-gray-400 mt-1">{file.name}</span>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => removeFile(index, type)}
+        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -52,35 +60,10 @@ const PropertyFormStep3: React.FC<PropertyFormStep3Props> = ({
       {/* Images */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Property Images
-          <span className="text-xs text-gray-400 ml-2">(Max 10 images)</span>
+          Property Images <span className="text-xs text-gray-400 ml-2">(Max 10)</span>
         </label>
-
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {images.map((image: any, index: number) => (
-            <div key={index} className="relative group">
-              {typeof image === 'string' ? (
-                <img
-                  src={image}
-                  alt={`Property ${index + 1}`}
-                  className="w-full h-28 object-cover rounded-lg border border-gray-200"
-                />
-              ) : (
-                <div className="w-full h-28 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                  <ImageIcon className="w-8 h-8 text-gray-400" />
-                  <span className="text-xs text-gray-400 block mt-1">{image.name}</span>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => removeImage(index)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-
+          {images.map((img: any, i: number) => renderFile(img, i, 'images'))}
           {images.length < 10 && (
             <button
               type="button"
@@ -92,41 +75,23 @@ const PropertyFormStep3: React.FC<PropertyFormStep3Props> = ({
             </button>
           )}
         </div>
-
         <input
           ref={imageInputRef}
           type="file"
           accept="image/*"
           multiple
           className="hidden"
-          onChange={handleImageUpload}
+          onChange={(e) => handleUpload(e, 'images')}
         />
       </div>
 
       {/* Videos */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Property Videos
-          <span className="text-xs text-gray-400 ml-2">(Optional)</span>
+          Property Videos <span className="text-xs text-gray-400 ml-2">(Optional)</span>
         </label>
-
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {videos.map((video: any, index: number) => (
-            <div key={index} className="relative group">
-              <div className="w-full h-28 bg-gray-900 rounded-lg border border-gray-200 flex items-center justify-center">
-                <Video className="w-8 h-8 text-white" />
-                <span className="text-xs text-gray-400 block mt-1">{video.name}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeVideo(index)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-
+          {videos.map((video: any, i: number) => renderFile(video, i, 'videos'))}
           <button
             type="button"
             onClick={() => videoInputRef.current?.click()}
@@ -136,14 +101,13 @@ const PropertyFormStep3: React.FC<PropertyFormStep3Props> = ({
             <span className="text-xs text-gray-400 mt-1">Upload Video</span>
           </button>
         </div>
-
         <input
           ref={videoInputRef}
           type="file"
           accept="video/*"
           multiple
           className="hidden"
-          onChange={handleVideoUpload}
+          onChange={(e) => handleUpload(e, 'videos')}
         />
       </div>
     </div>

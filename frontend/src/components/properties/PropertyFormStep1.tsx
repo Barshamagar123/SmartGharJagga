@@ -2,24 +2,15 @@
 
 import React from 'react';
 import { Input } from '../common/Input/Input';
-import { 
-  PROPERTY_TYPE_OPTIONS, 
-  PURPOSE_OPTIONS,
-} from '../../constants/filters';
+import { PROPERTY_TYPE_OPTIONS, PURPOSE_OPTIONS } from '../../constants/filters';
 import { AREA_UNIT_OPTIONS } from '../../utils/areaUtils';
 
-interface PropertyFormStep1Props {
+interface Step1Props {
   formData: any;
   updateField: (field: string, value: any) => void;
 }
 
-const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
-  formData,
-  updateField,
-}) => {
-  // ✅ Debug: Log formData to see what's coming in
-  console.log('📍 Step 1 - formData:', formData);
-
+const PropertyFormStep1: React.FC<Step1Props> = ({ formData, updateField }) => {
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-bold text-gray-900">Basic Information</h3>
@@ -32,24 +23,19 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
             label="Property Title *"
             placeholder="e.g. Modern Villa with Garden"
             value={formData.title || ''}
-            onChange={(e) => {
-              console.log('📝 Title changed:', e.target.value);
-              updateField('title', e.target.value);
-            }}
+            onChange={(e) => updateField('title', e.target.value)}
             required
           />
         </div>
 
         {/* Description */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
           <textarea
             value={formData.description || ''}
             onChange={(e) => updateField('description', e.target.value)}
             rows={4}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27]"
             placeholder="Describe your property in detail..."
           />
         </div>
@@ -60,50 +46,36 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
           type="number"
           placeholder="Enter price"
           value={formData.price || ''}
-          onChange={(e) => {
-            console.log('📝 Price changed:', e.target.value);
-            updateField('price', e.target.value);
-          }}
+          onChange={(e) => updateField('price', e.target.value)}
           required
         />
 
         {/* Property Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Property Type *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Property Type *</label>
           <select
             value={formData.propertyType || ''}
-            onChange={(e) => {
-              console.log('📝 Property Type changed:', e.target.value);
-              updateField('propertyType', e.target.value);
-            }}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+            onChange={(e) => updateField('propertyType', e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27]"
             required
           >
             <option value="">Select type</option>
-            {PROPERTY_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+            {PROPERTY_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
 
         {/* Purpose */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Purpose *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Purpose *</label>
           <select
             value={formData.purpose || 'SALE'}
             onChange={(e) => updateField('purpose', e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27]"
           >
-            {PURPOSE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+            {PURPOSE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
@@ -137,18 +109,14 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
 
         {/* Area Unit */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Area Unit
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Area Unit</label>
           <select
-            value={formData.areaUnit || 'AANA'}
+            value={formData.areaUnit || 'SQFT'}
             onChange={(e) => updateField('areaUnit', e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27]"
           >
-            {AREA_UNIT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+            {AREA_UNIT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
@@ -160,11 +128,9 @@ const PropertyFormStep1: React.FC<PropertyFormStep1Props> = ({
             id="parking"
             checked={formData.parking || false}
             onChange={(e) => updateField('parking', e.target.checked)}
-            className="w-4 h-4 text-[#2D5A27] rounded focus:ring-[#2D5A27]"
+            className="w-4 h-4 text-[#2D5A27] rounded"
           />
-          <label htmlFor="parking" className="text-sm font-medium text-gray-700">
-            Parking Available
-          </label>
+          <label htmlFor="parking" className="text-sm font-medium text-gray-700">Parking Available</label>
         </div>
 
         {/* Floor */}

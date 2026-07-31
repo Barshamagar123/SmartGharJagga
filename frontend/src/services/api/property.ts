@@ -66,7 +66,6 @@ export const propertyApi = {
   // 1. CREATE PROPERTY
   // ============================================
   create: async (data: FormData | CreatePropertyData): Promise<Property> => {
-    // If data is FormData, send as is
     if (data instanceof FormData) {
       const response = await apiClient.post('/properties', data, {
         headers: {
@@ -76,7 +75,6 @@ export const propertyApi = {
       return response.data.data;
     }
 
-    // If data is object, send as JSON
     const response = await apiClient.post('/properties', data);
     return response.data.data;
   },
@@ -125,10 +123,11 @@ export const propertyApi = {
   },
 
   // ============================================
-  // 5. DELETE PROPERTY
+  // 5. DELETE PROPERTY - ✅ FIXED
   // ============================================
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/properties/${id}`);
+  delete: async (id: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete(`/properties/${id}`);
+    return response.data;
   },
 
   // ============================================
