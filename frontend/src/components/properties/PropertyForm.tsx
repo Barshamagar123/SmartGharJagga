@@ -14,7 +14,7 @@ import PropertyFormStep2 from './PropertyFormStep2';
 import PropertyFormStep3 from './PropertyFormStep3';
 import PropertyFormStep4 from './PropertyFormStep4';
 import usePropertyForm from '../../hooks/usePropertyForm';
-// ✅ Add this import
+
 interface PropertyFormProps {
   initialData?: any;
   isEdit?: boolean;
@@ -29,7 +29,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   onCancel,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const { formData, setFormData, loading, error, submitForm, updateField } = usePropertyForm(initialData);
+  const { formData, loading, error, submitForm, updateField } = usePropertyForm(initialData);
 
   const steps = [
     { id: 'basic', label: 'Basic Info', icon: '📋' },
@@ -38,7 +38,44 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
     { id: 'review', label: 'Review', icon: '✅' },
   ];
 
+  // ✅ Validate Step 1 before moving forward
+  const validateStep1 = () => {
+    const errors: string[] = [];
+
+    if (!formData.title || formData.title.trim().length < 3) {
+      errors.push('Title must be at least 3 characters');
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      errors.push('Price must be greater than 0');
+    }
+    if (!formData.propertyType) {
+      errors.push('Please select a property type');
+    }
+    if (!formData.purpose) {
+      errors.push('Please select a purpose');
+    }
+
+    if (errors.length > 0) {
+      alert(errors.join('\n')); // ✅ Show error to user
+      return false;
+    }
+    return true;
+  };
+
+  // ✅ Validate Step 2 before moving forward
+  const validateStep2 = () => {
+    if (!formData.location || formData.location.trim().length < 2) {
+      alert('Please enter a valid location');
+      return false;
+    }
+    return true;
+  };
+
   const handleNext = () => {
+    // ✅ Validate based on current step
+    if (currentStep === 0 && !validateStep1()) return;
+    if (currentStep === 1 && !validateStep2()) return;
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -51,6 +88,14 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   };
 
   const handleSubmit = async () => {
+    console.log('🔍 Final form data before submit:', formData);
+    
+    // ✅ Final validation before submit
+    if (!formData.title || !formData.price || !formData.location || !formData.propertyType) {
+      alert('Please fill all required fields');
+      return;
+    }
+
     const result = await submitForm();
     if (result.success && onSuccess) {
       onSuccess(result.data);

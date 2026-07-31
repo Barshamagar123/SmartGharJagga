@@ -1,8 +1,9 @@
-// src/components/property/PropertyFormStep2.tsx
+// src/components/property/PropertyFormStep2.tsx (Updated)
 
 import React, { useState } from 'react';
 import { Input } from '../common/Input/Input';
-import { Crosshair, AlertCircle } from 'lucide-react';
+import { Crosshair, AlertCircle, Loader2 } from 'lucide-react';
+
 
 interface PropertyFormStep2Props {
   formData: any;
@@ -14,7 +15,9 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
   updateField,
 }) => {
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [loadingAddress, setLoadingAddress] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -25,8 +28,13 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          updateField('latitude', position.coords.latitude);
-          updateField('longitude', position.coords.longitude);
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          updateField('latitude', lat);
+          updateField('longitude', lng);
+          
+          // ✅ Use backend to get address from coordinates
+          getAddressFromBackend(lat, lng);
           setLoadingLocation(false);
         },
         (error) => {
@@ -41,7 +49,60 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
     }
   };
 
-  // ✅ Get address from coordinates with error handling
+  // ✅ Use Backend to get address from coordinates
+  const getAddressFromBackend = async (lat: number, lng: number) => {
+    try {
+      setLoadingAddress(true);
+      // ✅ Call your backend map API
+      const response = await fetch(
+        `http://localhost:5001/api/v1/map/property/${formData.id}/location`
+      );
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        // Use the location from backend
+        updateField('location', data.data.location);
+      } else {
+        // Fallback to Google Geocoding
+        await getAddressFromCoords(lat, lng);
+      }
+    } catch (error) {
+      console.error('Backend error:', error);
+      // Fallback to Google Geocoding
+      await getAddressFromCoords(lat, lng);
+    } finally {
+      setLoadingAddress(false);
+    }
+  };
+
+  // ✅ Get coordinates from address using Backend
+  const getCoordinatesFromBackend = async (address: string) => {
+    try {
+      setIsLoading(true);
+      setMapError(null);
+      
+      // ✅ Use backend nearby places API for geocoding
+      const response = await fetch(
+        `http://localhost:5001/api/v1/map/nearest?lat=27.7172&lng=85.3240&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data.success && data.data.properties.length > 0) {
+        const property = data.data.properties[0];
+        updateField('latitude', property.latitude);
+        updateField('longitude', property.longitude);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Backend geocoding error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ Fallback: Get address from coordinates using Google
   const getAddressFromCoords = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
@@ -50,7 +111,7 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
       const data = await response.json();
       
       if (data.status === 'REQUEST_DENIED') {
-        setMapError('Google Maps API is not enabled. Please enable Maps API in Google Cloud Console.');
+        setMapError('Google Maps API is not enabled. Please enable Maps API.');
         return;
       }
       
@@ -64,7 +125,7 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
     }
   };
 
-  // ✅ Get coordinates from address with error handling
+  // ✅ Fallback: Get coordinates from address using Google
   const getCoordinatesFromAddress = async (address: string) => {
     try {
       const response = await fetch(
@@ -73,7 +134,7 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
       const data = await response.json();
       
       if (data.status === 'REQUEST_DENIED') {
-        setMapError('Google Maps API is not enabled. Please enable Maps API in Google Cloud Console.');
+        setMapError('Google Maps API is not enabled. Please enable Maps API.');
         return false;
       }
       
@@ -104,14 +165,6 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
             <div>
               <p className="text-sm font-medium text-yellow-800">⚠️ API Error</p>
               <p className="text-sm text-yellow-700">{mapError}</p>
-              <a
-                href="https://console.cloud.google.com/apis/library"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline mt-1 inline-block"
-              >
-                Enable Google Maps APIs →
-              </a>
             </div>
           </div>
         </div>
@@ -125,6 +178,11 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
             placeholder="e.g. Damak, Jhapa"
             value={formData.location || ''}
             onChange={(e) => updateField('location', e.target.value)}
+            onBlur={async (e) => {
+              if (e.target.value.length > 3) {
+                await getCoordinatesFromAddress(e.target.value);
+              }
+            }}
             required
           />
           <p className="text-xs text-gray-400 mt-1">
@@ -135,14 +193,22 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
         {/* Latitude & Longitude */}
         <div>
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Latitude"
-              type="number"
-              step="any"
-              placeholder="e.g. 26.6579"
-              value={formData.latitude || ''}
-              onChange={(e) => updateField('latitude', parseFloat(e.target.value) || null)}
-            />
+            <div>
+              <Input
+                label="Latitude"
+                type="number"
+                step="any"
+                placeholder="e.g. 26.6579"
+                value={formData.latitude || ''}
+                onChange={(e) => updateField('latitude', parseFloat(e.target.value) || null)}
+              />
+              {loadingAddress && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Loader2 className="w-3 h-3 animate-spin text-[#2D5A27]" />
+                  <span className="text-xs text-gray-400">Getting address...</span>
+                </div>
+              )}
+            </div>
             <Input
               label="Longitude"
               type="number"
@@ -163,14 +229,14 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
           </button>
         </div>
 
-        {/* Map Preview - Only show if API is working */}
+        {/* Map Preview */}
         {(formData.latitude && formData.longitude) && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               📍 Location Preview
             </label>
             <div className="h-56 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
-              {!mapError ? (
+              {GOOGLE_MAPS_API_KEY ? (
                 <iframe
                   width="100%"
                   height="100%"
@@ -182,7 +248,7 @@ const PropertyFormStep2: React.FC<PropertyFormStep2Props> = ({
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  <p className="text-sm">Map unavailable. Please enable Maps API.</p>
+                  <p className="text-sm">Map unavailable. Please configure Google Maps API.</p>
                 </div>
               )}
             </div>
