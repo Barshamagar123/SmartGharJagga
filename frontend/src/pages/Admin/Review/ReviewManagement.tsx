@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Search, Filter, MoreVertical, CheckCircle, XCircle,
+  Search, Filter, MoreVertical, CheckCircle,
   Eye, Trash2, Star, User, MessageCircle, Calendar,
   ChevronDown, ChevronUp, Clock, RefreshCw
 } from 'lucide-react';

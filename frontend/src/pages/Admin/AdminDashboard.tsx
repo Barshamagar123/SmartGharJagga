@@ -8,7 +8,7 @@ import {
   ArrowUp, ArrowDown, MoreVertical,
   Activity, Calendar, MapPin, Star
 } from 'lucide-react';
-import { adminApi } from '../../services/api/admin';
+import { adminApi } from '../../services/api/admin'
 import StatsCard from '../../components/admin/StatsCard';
 import ChartCard from '../../components/admin/ChartCard';
 import DataTable from '../../components/admin/DataTable';

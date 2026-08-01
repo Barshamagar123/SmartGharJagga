@@ -8,7 +8,7 @@ interface StatsCardProps {
   label: string;
   value: string | number;
   change: string;
-  trend: 'up' | 'down';
+  trend: 'up' | 'down' | string;  // ✅ Allow string
   color: string;
   bgColor: string;
   iconColor?: string;
@@ -24,7 +24,8 @@ const StatsCard: React.FC<StatsCardProps> = ({
   bgColor,
   iconColor = 'text-[#1B6B45]'
 }) => {
-  const isUp = trend === 'up';
+  // ✅ Convert string to boolean
+  const isUp = trend === 'up' || trend === '+';
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
