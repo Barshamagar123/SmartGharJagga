@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import PropertyForm from '../../components/properties/PropertyForm';
+// ✅ FIXED: PropertyForm actually lives in components/property/ (singular),
+// not components/properties/ (plural).
 import { propertyApi } from '../../services/api/property';
+import PropertyForm from '../../components/properties/PropertyForm';
 
 const EditProperty: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +77,11 @@ const EditProperty: React.FC = () => {
           Back to My Properties
         </button>
 
+        {/*
+          ✅ propertyData already contains "id" from the API response, and
+          usePropertyForm (via PropertyForm) picks that up automatically to
+          know which property to PUT to when isEdit=true.
+        */}
         <PropertyForm
           initialData={propertyData}
           isEdit={true}

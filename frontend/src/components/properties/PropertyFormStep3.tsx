@@ -19,6 +19,8 @@ const PropertyFormStep3: React.FC<Step3Props> = ({ formData, updateField }) => {
     const files = Array.from(e.target.files || []);
     const current = type === 'images' ? images : videos;
     updateField(type, [...current, ...files]);
+    // allow re-selecting the same file after removing it
+    e.target.value = '';
   };
 
   const removeFile = (index: number, type: 'images' | 'videos') => {
@@ -39,7 +41,7 @@ const PropertyFormStep3: React.FC<Step3Props> = ({ formData, updateField }) => {
           ) : (
             <Video className="w-8 h-8 text-gray-400" />
           )}
-          <span className="text-xs text-gray-400 mt-1">{file.name}</span>
+          <span className="text-xs text-gray-400 mt-1 px-1 truncate max-w-full">{file.name}</span>
         </div>
       )}
       <button

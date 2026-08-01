@@ -1,13 +1,13 @@
 // src/services/api/property.ts
 
 import apiClient from './client';
-import type { 
-  Property, 
-  PropertyType, 
-  PropertyStatus, 
+import type {
+  Property,
+  PropertyType,
+  PropertyStatus,
   PropertyPurpose,
   PropertyFilters,
-  PropertyListResponse 
+  PropertyListResponse,
 } from '../../types/property';
 
 // ============================================
@@ -46,12 +46,20 @@ export const propertyApi = {
   /**
    * 1. CREATE PROPERTY
    * Supports FormData (with files) or JSON
+   *
+   * ⚠️ IMPORTANT: Never manually set 'Content-Type': 'multipart/form-data'.
+   * The browser must set it automatically so it can include the required
+   * boundary string (e.g. multipart/form-data; boundary=----WebKitForm...).
+   * Without the boundary, multer on the backend cannot parse the request
+   * and req.files / req.body.data will be empty or the request will fail.
    */
   create: async (data: FormData | CreatePropertyData): Promise<Property> => {
     if (data instanceof FormData) {
       const response = await apiClient.post('/properties', data, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          // Force axios to drop any default JSON content-type and let the
+          // browser generate the correct multipart boundary automatically.
+          'Content-Type': undefined,
         },
       });
       return response.data.data;
@@ -67,7 +75,7 @@ export const propertyApi = {
    */
   getAll: async (filters?: PropertyFilters): Promise<PropertyListResponse> => {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -96,7 +104,7 @@ export const propertyApi = {
     if (data instanceof FormData) {
       const response = await apiClient.put(`/properties/${id}`, data, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': undefined,
         },
       });
       return response.data.data;

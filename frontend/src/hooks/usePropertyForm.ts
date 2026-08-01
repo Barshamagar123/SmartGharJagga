@@ -5,6 +5,7 @@ import { propertyApi } from '../services/api/property';
 import type { Property } from '../types/property';
 
 interface FormData {
+  id?: string;
   title: string;
   description: string;
   price: string;
@@ -55,10 +56,32 @@ interface UsePropertyFormReturn {
   submitForm: () => Promise<{ success: boolean; data?: Property }>;
 }
 
-export const usePropertyForm = (initialData?: Partial<FormData>): UsePropertyFormReturn => {
+/**
+ * Normalizes a property object (as returned from the API, used to prefill
+ * an edit form) into the shape this hook's FormData expects.
+ *
+ * - price comes back from the API as a number, but the form stores it as a
+ *   string (because it's bound to a text/number input) — without this
+ *   conversion the input would silently show nothing on edit.
+ * - images/videos come back as arrays of URL strings, which is fine — the
+ *   preview components already handle string vs File.
+ */
+const normalizeInitialData = (data?: Partial<Property> | Partial<FormData>): Partial<FormData> => {
+  if (!data) return {};
+
+  return {
+    ...data,
+    price: data.price !== undefined && data.price !== null ? String(data.price) : '',
+  } as Partial<FormData>;
+};
+
+export const usePropertyForm = (
+  initialData?: Partial<Property> | Partial<FormData>,
+  isEdit: boolean = false
+): UsePropertyFormReturn => {
   const [formData, setFormData] = useState<FormData>({
     ...initialFormData,
-    ...initialData,
+    ...normalizeInitialData(initialData),
   });
 
   const [loading, setLoading] = useState(false);
@@ -111,7 +134,10 @@ export const usePropertyForm = (initialData?: Partial<FormData>): UsePropertyFor
       const formDataToSend = new FormData();
       formDataToSend.append('data', JSON.stringify(payload));
 
-      // ✅ Append images
+      // ✅ Append only newly-added images (File objects).
+      // Existing images (plain URL strings from the server, present when
+      // editing) are intentionally NOT re-sent — the backend keeps them
+      // automatically and just appends whatever new files arrive.
       if (formData.images && formData.images.length > 0) {
         for (const image of formData.images) {
           if (image instanceof File) {
@@ -120,7 +146,7 @@ export const usePropertyForm = (initialData?: Partial<FormData>): UsePropertyFor
         }
       }
 
-      // ✅ Append videos
+      // ✅ Append only newly-added videos (File objects) — same reasoning.
       if (formData.videos && formData.videos.length > 0) {
         for (const video of formData.videos) {
           if (video instanceof File) {
@@ -139,27 +165,32 @@ export const usePropertyForm = (initialData?: Partial<FormData>): UsePropertyFor
         }
       });
 
-      // ✅ Send request
-      const result = await propertyApi.create(formDataToSend);
-      
-      console.log('✅ Property created successfully:', result);
+      // ✅ Send request — create vs update depending on mode
+      const result =
+        isEdit && formData.id
+          ? await propertyApi.update(formData.id, formDataToSend)
+          : await propertyApi.create(formDataToSend);
+
+      console.log('✅ Property saved successfully:', result);
       setLoading(false);
       return { success: true, data: result };
     } catch (err: any) {
       console.error('❌ Submit Error:', err);
       console.error('❌ Error Response:', err.response?.data);
-      
+
       const errorResponse = err.response?.data;
       if (errorResponse?.errors) {
-        const messages = errorResponse.errors.map((e: any) => {
-          const field = e.field?.replace('body.data.', '') || e.field || '';
-          return field ? `${field}: ${e.message}` : e.message;
-        }).join('\n');
+        const messages = errorResponse.errors
+          .map((e: any) => {
+            const field = e.field?.replace('body.data.', '') || e.field || '';
+            return field ? `${field}: ${e.message}` : e.message;
+          })
+          .join('\n');
         setError(`Validation failed:\n${messages}`);
       } else {
-        setError(errorResponse?.message || 'Failed to create property');
+        setError(errorResponse?.message || 'Failed to save property');
       }
-      
+
       setLoading(false);
       return { success: false };
     }

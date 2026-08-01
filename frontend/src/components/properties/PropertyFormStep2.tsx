@@ -91,7 +91,9 @@ const PropertyFormStep2: React.FC<Step2Props> = ({ formData, updateField }) => {
               />
             </div>
             <div className="mt-2 flex gap-3 text-xs text-gray-500">
-              <span>📍 {formData.latitude}, {formData.longitude}</span>
+              <span>
+                📍 {formData.latitude}, {formData.longitude}
+              </span>
               <a
                 href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
                 target="_blank"

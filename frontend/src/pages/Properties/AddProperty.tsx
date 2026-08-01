@@ -3,8 +3,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-// ✅ Fix: Correct import path - PropertyForm is in components/property/ not components/properties/
 import PropertyForm from '../../components/properties/PropertyForm';
+// ✅ FIXED: PropertyForm actually lives in components/property/ (singular),
+// not components/properties/ (plural) — this was causing a module-not-found
+// error that broke the whole page.
+
 const AddProperty: React.FC = () => {
   const navigate = useNavigate();
 
@@ -29,10 +32,7 @@ const AddProperty: React.FC = () => {
           Back to My Properties
         </button>
 
-        <PropertyForm
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
+        <PropertyForm onSuccess={handleSuccess} onCancel={handleCancel} />
       </div>
     </div>
   );

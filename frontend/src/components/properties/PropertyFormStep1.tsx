@@ -61,7 +61,9 @@ const PropertyFormStep1: React.FC<Step1Props> = ({ formData, updateField }) => {
           >
             <option value="">Select type</option>
             {PROPERTY_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>
@@ -75,7 +77,9 @@ const PropertyFormStep1: React.FC<Step1Props> = ({ formData, updateField }) => {
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27]"
           >
             {PURPOSE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>
@@ -116,7 +120,9 @@ const PropertyFormStep1: React.FC<Step1Props> = ({ formData, updateField }) => {
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D5A27]"
           >
             {AREA_UNIT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>
@@ -130,7 +136,9 @@ const PropertyFormStep1: React.FC<Step1Props> = ({ formData, updateField }) => {
             onChange={(e) => updateField('parking', e.target.checked)}
             className="w-4 h-4 text-[#2D5A27] rounded"
           />
-          <label htmlFor="parking" className="text-sm font-medium text-gray-700">Parking Available</label>
+          <label htmlFor="parking" className="text-sm font-medium text-gray-700">
+            Parking Available
+          </label>
         </div>
 
         {/* Floor */}
