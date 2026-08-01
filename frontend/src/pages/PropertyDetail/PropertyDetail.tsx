@@ -1,86 +1,43 @@
 // src/pages/PropertyDetail/PropertyDetail.tsx
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Heart, Share2, Loader2, 
-  Calendar, Phone, Mail, MapPin, Star,
+import {
+  ArrowLeft, Heart, Loader2,
+  Phone, Mail, MapPin, Star,
   BedDouble, Bath, Maximize2, Car,
-  Building2, DollarSign, CheckCircle,
+  CheckCircle,
   QrCode, Copy, Download, ExternalLink,
   User, ChevronLeft, ChevronRight, X,
-  Maximize, Clock, Home, Navigation,
-  Award, Shield, MessageCircle, Info,
-  Send, Layers, Ruler, CalendarDays
+  Maximize, Shield, MessageCircle,
+  Send,
 } from 'lucide-react';
-import type { PropertyDetail as PropertyDetailType } from '../../types/property';
+import { propertyApi } from '../../services/api/property';
+import { reviewApi } from '../../services/api/review';
+import { formatArea } from '../../utils/areaUtils';
+import type { Property } from '../../types/property';
 
-// Mock Data
-const MOCK_PROPERTY: PropertyDetailType = {
-  id: 1,
-  slug: 'luxury-villa-budhanilkantha',
-  title: 'Contemporary Luxury Villa in Budhanilkantha',
-  price: 'NPR 8,50,000,000',
-  location: 'Budhanilkantha, Kathmandu',
-  beds: 3,
-  baths: 4,
-  sqft: '3,500',
-  image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=900&auto=format&fit=crop',
-  type: 'VILLA',
-  featured: true,
-  status: 'AVAILABLE',
-  description: 'This exquisite property offers modern architecture, spacious interiors, and a peaceful garden. It features high-end finishes throughout.',
-  yearBuilt: 2022,
-  garage: 2,
-  propertyTax: 'NPR 1,20,000/year',
-  coordinates: {
-    lat: 27.7745,
-    lng: 85.3681,
-  },
-  amenities: [
-    'WiFi', 'Air Conditioning', 'Security System', 'Gym',
-    'Swimming Pool', 'Garden', 'Kitchen', 'Parking',
-    'Furnished', 'Smart TV', 'Fireplace'
-  ],
-  nearby: [
-    { name: 'Budhanilkantha School', distance: '500m', type: 'school' },
-    { name: 'City Hospital', distance: '1.2km', type: 'hospital' },
-    { name: 'Supermarket', distance: '800m', type: 'mall' },
-    { name: 'Bus Stop', distance: '300m', type: 'transport' },
-  ],
-  images: [
-    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=900&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&auto=format&fit=crop',
-  ],
-  rating: 4.8,
-  reviews: 5,
-  agent: {
-    name: 'Sital Paudel',
-    phone: '+977 9851342035',
-    email: 'sales@lalpurjanepal.com.np',
-    avatar: 'https://ui-avatars.com/api/?name=Sital+Paudel&size=100&background=2D5A27&color=fff',
-    company: 'Lalpurja Nepal Real Estate',
-    experience: '8+ Years',
-    propertiesSold: 120,
-    rating: 4.9,
-    verified: true,
-  },
-  virtualTour: 'https://example.com/virtual-tour',
-  lastUpdated: '2 days ago',
-};
+// ✅ Import Review Components
+import ReviewCard from '../../components/Review/ReviewCard';
+import ReviewForm from '../../components/Review/ReviewForm';
+import RatingStars from '../../components/Review/RatingStars';
+import { useAuth } from '../../hooks/useAuth';
+
+const formatPrice = (price: number) => `Rs ${price.toLocaleString()}`;
 
 const PropertyDetail: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [property, setProperty] = useState<PropertyDetailType | null>(null);
+  const { user, isAuthenticated } = useAuth();
+
+  const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [currentImage, setCurrentImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const [isQRExpanded, setIsQRExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -88,35 +45,70 @@ const PropertyDetail: React.FC = () => {
     fullName: '',
     phoneNumber: '',
     email: '',
-    message: 'Hi, I am interested in this House for Sale at Budhanilkantha, Kathmandu'
+    message: '',
   });
 
+  // ✅ Review States
+  const [reviews, setReviews] = useState([]);
+  const [ratingStats, setRatingStats] = useState({
+    average: 0,
+    total: 0,
+    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  });
+  const [userReview, setUserReview] = useState(null);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+
+  // ✅ Fetch property data
   useEffect(() => {
-    const fetchProperty = async () => {
-      try {
-        setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setProperty(MOCK_PROPERTY);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (!id) return;
+    fetchPropertyData();
+  }, [id]);
+
+  const fetchPropertyData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [data, reviewsData, statsData] = await Promise.all([
+        propertyApi.getById(id!),
+        reviewApi.getByProperty(id!),
+        reviewApi.getStats(id!)
+      ]);
+
+      setProperty(data);
+      setFavoritesCount(data.favoritesCount || 0);
+      setReviews(reviewsData);
+      setRatingStats(statsData);
+
+      // ✅ Check if user already reviewed
+      if (isAuthenticated && reviewsData.length > 0) {
+        const userReviewData = reviewsData.find((r: any) => r.reviewer?.id === user?.id);
+        setUserReview(userReviewData);
       }
-    };
-    fetchProperty();
-  }, [slug]);
 
-  const nextImage = () => {
-    if (property) {
-      setCurrentImage((prev) => (prev + 1) % property.images.length);
+      setFormData((prev) => ({
+        ...prev,
+        message: `Hi, I am interested in this ${data.propertyType?.replace('_', ' ') || 'property'} at ${data.location}`,
+      }));
+    } catch (err: any) {
+      console.error('Error fetching property:', err);
+      setError(err.response?.data?.message || 'Failed to load property');
+    } finally {
+      setLoading(false);
+      setLoadingReviews(false);
     }
   };
 
-  const prevImage = () => {
-    if (property) {
-      setCurrentImage((prev) => (prev - 1 + property.images.length) % property.images.length);
-    }
-  };
+  // Build the gallery from real images
+  const images: string[] =
+    property?.images && property.images.length > 0
+      ? property.images
+      : property?.mainImage
+      ? [property.mainImage]
+      : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80'];
+
+  const nextImage = () => setCurrentImage((prev) => (prev + 1) % images.length);
+  const prevImage = () => setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -124,8 +116,20 @@ const PropertyDetail: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleFavoriteToggle = async () => {
+    if (!id) return;
+    try {
+      const result = await propertyApi.toggleFavorite(id);
+      setIsFavorited(result.favorited);
+      setFavoritesCount((prev) => (result.favorited ? prev + 1 : Math.max(0, prev - 1)));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Enquiry submitted:', formData);
     setIsSubmitted(true);
     setTimeout(() => setIsSubmitted(false), 3000);
   };
@@ -138,7 +142,23 @@ const PropertyDetail: React.FC = () => {
     );
   }
 
-  if (!property) return null;
+  if (error || !property) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error || 'Property not found'}</p>
+          <button
+            onClick={() => navigate('/properties')}
+            className="px-6 py-2 bg-[#2D5A27] text-white rounded-lg hover:bg-[#23461E]"
+          >
+            Back to Properties
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const agent = property.user;
 
   return (
     <div className="pt-16 md:pt-20 bg-[#F8FAFC] min-h-screen">
@@ -150,7 +170,7 @@ const PropertyDetail: React.FC = () => {
             <span className="text-[#94A3B8]">/</span>
             <Link to="/properties" className="text-[#475569] hover:text-[#2D5A27]">Properties</Link>
             <span className="text-[#94A3B8]">/</span>
-            <span className="text-[#0F172A] font-medium truncate">Luxury Villa in Budhanilkantha</span>
+            <span className="text-[#0F172A] font-medium truncate">{property.title}</span>
           </nav>
         </div>
       </div>
@@ -168,19 +188,17 @@ const PropertyDetail: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* LEFT COLUMN - 8 Columns */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Gallery with Thumbnails */}
+            {/* Gallery */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-              {/* Main Image */}
               <div className="relative rounded-xl overflow-hidden bg-gray-100">
                 <img
-                  src={property.images[currentImage]}
+                  src={images[currentImage]}
                   alt={property.title}
                   className="w-full h-[400px] md:h-[500px] object-cover cursor-pointer"
                   onClick={() => setIsLightboxOpen(true)}
                 />
-                
-                {/* Navigation Arrows */}
-                {property.images.length > 1 && (
+
+                {images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -197,12 +215,10 @@ const PropertyDetail: React.FC = () => {
                   </>
                 )}
 
-                {/* Image Counter */}
                 <div className="absolute bottom-4 right-4 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full">
-                  {currentImage + 1} / {property.images.length}
+                  {currentImage + 1} / {images.length}
                 </div>
 
-                {/* Expand Button */}
                 <button
                   onClick={() => setIsLightboxOpen(true)}
                   className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2 rounded-lg transition-all duration-200"
@@ -210,18 +226,16 @@ const PropertyDetail: React.FC = () => {
                   <Maximize size={18} />
                 </button>
 
-                {/* Featured Badge */}
-                {property.featured && (
+                {property.isFeatured && (
                   <div className="absolute top-4 left-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
                     FEATURED
                   </div>
                 )}
               </div>
 
-              {/* Thumbnails */}
-              {property.images.length > 1 && (
+              {images.length > 1 && (
                 <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                  {property.images.map((image, index) => (
+                  {images.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImage(index)}
@@ -231,11 +245,7 @@ const PropertyDetail: React.FC = () => {
                           : 'border-transparent hover:border-gray-300'
                       }`}
                     >
-                      <img
-                        src={image}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={image} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -256,11 +266,11 @@ const PropertyDetail: React.FC = () => {
                     <X size={32} />
                   </button>
                   <img
-                    src={property.images[currentImage]}
+                    src={images[currentImage]}
                     alt={property.title}
                     className="w-full max-h-[80vh] object-contain rounded-lg"
                   />
-                  {property.images.length > 1 && (
+                  {images.length > 1 && (
                     <>
                       <button
                         onClick={prevImage}
@@ -277,17 +287,19 @@ const PropertyDetail: React.FC = () => {
                     </>
                   )}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
-                    {currentImage + 1} of {property.images.length}
+                    {currentImage + 1} of {images.length}
                   </div>
                 </div>
               </div>
             )}
 
             {/* Property Description */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <h2 className="text-lg font-semibold text-[#0F172A] mb-3">Property Description</h2>
-              <p className="text-[#475569] leading-relaxed">{property.description}</p>
-            </div>
+            {property.description && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <h2 className="text-lg font-semibold text-[#0F172A] mb-3">Property Description</h2>
+                <p className="text-[#475569] leading-relaxed whitespace-pre-line">{property.description}</p>
+              </div>
+            )}
 
             {/* Property Specs */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
@@ -295,144 +307,226 @@ const PropertyDetail: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-[#F8FAFC] rounded-xl">
                   <BedDouble size={20} className="text-[#2D5A27] mx-auto" />
-                  <div className="font-semibold text-[#0F172A] mt-1">{property.beds} Beds</div>
+                  <div className="font-semibold text-[#0F172A] mt-1">
+                    {property.bedrooms ?? 'N/A'} {property.bedrooms ? 'Beds' : ''}
+                  </div>
                 </div>
                 <div className="text-center p-3 bg-[#F8FAFC] rounded-xl">
                   <Bath size={20} className="text-[#2D5A27] mx-auto" />
-                  <div className="font-semibold text-[#0F172A] mt-1">{property.baths} Baths</div>
+                  <div className="font-semibold text-[#0F172A] mt-1">
+                    {property.bathrooms ?? 'N/A'} {property.bathrooms ? 'Baths' : ''}
+                  </div>
                 </div>
                 <div className="text-center p-3 bg-[#F8FAFC] rounded-xl">
                   <Maximize2 size={20} className="text-[#2D5A27] mx-auto" />
-                  <div className="font-semibold text-[#0F172A] mt-1">{property.sqft} Sq Ft</div>
+                  <div className="font-semibold text-[#0F172A] mt-1">
+                    {property.area && property.areaUnit ? formatArea(property.area, property.areaUnit) : 'N/A'}
+                  </div>
                 </div>
                 <div className="text-center p-3 bg-[#F8FAFC] rounded-xl">
                   <Car size={20} className="text-[#2D5A27] mx-auto" />
-                  <div className="font-semibold text-[#0F172A] mt-1">Coverage</div>
+                  <div className="font-semibold text-[#0F172A] mt-1">
+                    {property.parking ? 'Parking' : 'No Parking'}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Location Map */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
-                  <MapPin size={20} className="text-[#2D5A27]" />
-                  Location Map
-                </h3>
-                <span className="text-sm text-[#475569]">{property.location}</span>
-              </div>
-              
-              <div className="w-full h-[300px] rounded-xl overflow-hidden bg-[#EDF5EC] relative">
-                {/* Google Maps Embed */}
-                <iframe
-                  src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${property.coordinates.lat},${property.coordinates.lng}&zoom=15&maptype=roadmap`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Property Location Map"
-                  className="rounded-xl"
-                />
-                
-                {/* Map Pin Overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <div className="relative">
-                    <div className="w-8 h-8 bg-[#2D5A27] rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                      <MapPin size={16} className="text-white" />
-                    </div>
-                    <div className="absolute -inset-4 bg-[#2D5A27]/20 rounded-full animate-ping"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Nearby Places */}
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-[#0F172A] mb-2">Nearby Places</h4>
+            {/* Amenities */}
+            {property.amenities && property.amenities.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <h3 className="text-sm font-semibold text-[#0F172A] mb-4">Amenities</h3>
                 <div className="flex flex-wrap gap-2">
-                  {property.nearby.map((place, index) => (
-                    <span key={index} className="flex items-center gap-1 text-xs bg-[#F8FAFC] px-3 py-1.5 rounded-full text-[#475569] border border-gray-200">
-                      <MapPin size={12} className="text-[#2D5A27]" />
-                      {place.name} ({place.distance})
+                  {property.amenities.map((amenity, i) => (
+                    <span
+                      key={i}
+                      className="text-xs bg-[#F8FAFC] px-3 py-1.5 rounded-full text-[#475569] border border-gray-200"
+                    >
+                      {amenity}
                     </span>
                   ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Virtual Tour & QR */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <div className="flex flex-wrap items-center gap-4">
-                <button className="flex items-center gap-2 px-4 py-2 bg-[#EDF5EC] text-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-colors">
-                  <ExternalLink size={18} />
-                  360° Virtual Tour
-                </button>
-                <div className="flex items-center gap-2">
-                  <QrCode size={20} className="text-[#2D5A27]" />
-                  <span className="text-sm text-[#475569]">Scan for Property Details</span>
+            {/* Location Map */}
+            {property.latitude != null && property.longitude != null && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
+                    <MapPin size={20} className="text-[#2D5A27]" />
+                    Location Map
+                  </h3>
+                  <span className="text-sm text-[#475569]">{property.location}</span>
+                </div>
+
+                <div className="w-full h-[300px] rounded-xl overflow-hidden bg-[#EDF5EC] relative">
+                  <iframe
+                    src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${property.latitude},${property.longitude}&zoom=15&maptype=roadmap`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Property Location Map"
+                    className="rounded-xl"
+                  />
                 </div>
               </div>
+            )}
+
+            {/* ============================================
+            ✅ REVIEWS SECTION - ADDED HERE
+            ============================================ */}
+            <div id="reviews-section" className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-[#0F172A]">Reviews & Ratings</h2>
+                  <div className="flex items-center gap-4 mt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-bold text-[#2D5A27]">
+                        {ratingStats.average.toFixed(1)}
+                      </span>
+                      <RatingStars rating={ratingStats.average} size="lg" />
+                    </div>
+                    <span className="text-sm text-[#475569]">
+                      ({ratingStats.total} reviews)
+                    </span>
+                  </div>
+                </div>
+                {isAuthenticated && !userReview && (
+                  <button
+                    onClick={() => document.getElementById('review-form')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="px-4 py-2 bg-[#2D5A27] text-white rounded-lg hover:bg-[#23461E] transition-colors text-sm"
+                  >
+                    Write a Review
+                  </button>
+                )}
+              </div>
+
+              {/* Rating Distribution */}
+              {ratingStats.total > 0 && (
+                <div className="bg-[#F8FAFC] rounded-xl p-6 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <h4 className="font-semibold text-[#0F172A] mb-3">Rating Distribution</h4>
+                      {[5, 4, 3, 2, 1].map((star) => (
+                        <div key={star} className="flex items-center gap-3 mb-2">
+                          <span className="text-sm w-6">{star} ⭐</span>
+                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#D4AF37] rounded-full transition-all duration-500"
+                              style={{
+                                width: ratingStats.total > 0
+                                  ? `${(ratingStats.distribution[star as keyof typeof ratingStats.distribution] / ratingStats.total) * 100}%`
+                                  : '0%'
+                              }}
+                            />
+                          </div>
+                          <span className="text-sm text-[#475569] w-12">
+                            {ratingStats.distribution[star as keyof typeof ratingStats.distribution]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-center bg-white rounded-lg p-6">
+                      <div className="text-center">
+                        <div className="text-5xl font-bold text-[#2D5A27]">
+                          {ratingStats.average.toFixed(1)}
+                        </div>
+                        <RatingStars rating={ratingStats.average} size="lg" className="mt-2" />
+                        <p className="text-sm text-[#475569] mt-2">
+                          Based on {ratingStats.total} reviews
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews List */}
+              {loadingReviews ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-32" />
+                          <div className="h-3 bg-gray-200 rounded w-24" />
+                          <div className="h-16 bg-gray-200 rounded w-full" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review: any) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-[#F8FAFC] rounded-xl">
+                  <p className="text-[#475569]">No reviews yet. Be the first to review!</p>
+                </div>
+              )}
+
+              {/* Review Form */}
+              {isAuthenticated && !userReview && (
+                <div id="review-form" className="mt-6">
+                  <ReviewForm propertyId={id!} onSuccess={fetchPropertyData} />
+                </div>
+              )}
+
+              {userReview && (
+                <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-700 flex items-center gap-2">
+                    <CheckCircle size={16} />
+                    You have already reviewed this property. Thank you for your feedback!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* RIGHT COLUMN - 4 Columns */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 sticky top-24">
-              {/* ============================================
-              SELLER DETAILS - TOP OF ENQUIRY FORM
-              ============================================ */}
+              {/* Seller details */}
               <div className="mb-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-[#EDF5EC] rounded-full flex items-center justify-center flex-shrink-0">
-                    <User size={24} className="text-[#2D5A27]" />
+                  <div className="w-12 h-12 bg-[#EDF5EC] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {agent?.avatarUrl ? (
+                      <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={24} className="text-[#2D5A27]" />
+                    )}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-[#0F172A]">{property.agent.name}</h4>
-                    <p className="text-xs text-[#475569]">{property.agent.company}</p>
+                    <h4 className="font-semibold text-[#0F172A]">{agent?.name || 'Seller'}</h4>
+                    {property.isVerified && (
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <Shield size={12} /> Verified listing
+                      </span>
+                    )}
                   </div>
                 </div>
-                
-                {/* Seller Contact */}
+
                 <div className="bg-[#F8FAFC] rounded-xl p-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-sm text-[#475569]">
-                    <Phone size={14} className="text-[#2D5A27] flex-shrink-0" />
-                    <span>{property.agent.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-[#475569]">
-                    <Mail size={14} className="text-[#2D5A27] flex-shrink-0" />
-                    <span className="truncate">{property.agent.email}</span>
-                  </div>
-                </div>
-
-                {/* Seller Stats */}
-                <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div className="text-center p-2 bg-[#F8FAFC] rounded-lg">
-                    <div className="text-xs font-semibold text-[#0F172A]">{property.agent.experience}</div>
-                    <div className="text-[10px] text-[#475569]">Experience</div>
-                  </div>
-                  <div className="text-center p-2 bg-[#F8FAFC] rounded-lg">
-                    <div className="text-xs font-semibold text-[#0F172A]">{property.agent.propertiesSold}+</div>
-                    <div className="text-[10px] text-[#475569]">Properties</div>
-                  </div>
-                  <div className="text-center p-2 bg-[#F8FAFC] rounded-lg">
-                    <div className="text-xs font-semibold text-[#0F172A] flex items-center justify-center gap-0.5">
-                      <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                      {property.agent.rating}
+                  {agent?.phone && (
+                    <div className="flex items-center gap-2 text-sm text-[#475569]">
+                      <Phone size={14} className="text-[#2D5A27] flex-shrink-0" />
+                      <span>{agent.phone}</span>
                     </div>
-                    <div className="text-[10px] text-[#475569]">Rating</div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  <span className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle size={12} />
-                    Verified Seller
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                    <Shield size={12} />
-                    Licensed
-                  </span>
+                  )}
+                  {agent?.email && (
+                    <div className="flex items-center gap-2 text-sm text-[#475569]">
+                      <Mail size={14} className="text-[#2D5A27] flex-shrink-0" />
+                      <span className="truncate">{agent.email}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -441,16 +535,18 @@ const PropertyDetail: React.FC = () => {
                   <div>
                     <div className="text-xs text-[#475569]">Price</div>
                     <div className="font-serif text-2xl font-bold text-[#2D5A27]">
-                      {property.price}
+                      {formatPrice(property.price)}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center gap-1">
-                      <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{property.rating}</span>
-                      <span className="text-[#94A3B8]">({property.reviews})</span>
-                    </div>
-                    <div className="text-xs text-[#94A3B8]">{property.status}</div>
+                    <button
+                      onClick={handleFavoriteToggle}
+                      className="flex items-center gap-1 text-sm text-[#475569] hover:text-red-500 transition-colors"
+                    >
+                      <Heart size={16} className={isFavorited ? 'fill-red-500 text-red-500' : ''} />
+                      {favoritesCount}
+                    </button>
+                    <div className="text-xs text-[#94A3B8] mt-1">{property.status}</div>
                   </div>
                 </div>
               </div>
@@ -459,28 +555,33 @@ const PropertyDetail: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 text-sm mb-4">
                 <div className="flex items-center gap-2 text-[#475569]">
                   <BedDouble size={14} className="text-[#2D5A27]" />
-                  {property.beds} Beds
+                  {property.bedrooms ?? 'N/A'} Beds
                 </div>
                 <div className="flex items-center gap-2 text-[#475569]">
                   <Bath size={14} className="text-[#2D5A27]" />
-                  {property.baths} Baths
+                  {property.bathrooms ?? 'N/A'} Baths
                 </div>
                 <div className="flex items-center gap-2 text-[#475569]">
                   <Maximize2 size={14} className="text-[#2D5A27]" />
-                  {property.sqft} sqft
+                  {property.area && property.areaUnit ? formatArea(property.area, property.areaUnit) : 'N/A'}
                 </div>
                 <div className="flex items-center gap-2 text-[#475569]">
                   <Car size={14} className="text-[#2D5A27]" />
-                  {property.garage} Cars
+                  {property.parking ? 'Parking available' : 'No parking'}
                 </div>
               </div>
 
-              <button className="w-full py-3 bg-[#2D5A27] text-white rounded-xl hover:bg-[#23461E] transition-colors font-medium mb-4 flex items-center justify-center gap-2">
-                <Phone size={18} />
-                Contact Agent
-              </button>
+              {agent?.phone && (
+                <a
+                  href={`tel:${agent.phone}`}
+                  className="w-full py-3 bg-[#2D5A27] text-white rounded-xl hover:bg-[#23461E] transition-colors font-medium mb-4 flex items-center justify-center gap-2"
+                >
+                  <Phone size={18} />
+                  Contact Agent
+                </a>
+              )}
 
-              {/* QR Code Section */}
+              {/* QR / Share */}
               <div className="border-t border-gray-200 pt-4 mb-4">
                 <button
                   onClick={() => setIsQRExpanded(!isQRExpanded)}
@@ -488,21 +589,14 @@ const PropertyDetail: React.FC = () => {
                 >
                   <div className="flex items-center gap-2">
                     <QrCode size={18} className="text-[#2D5A27]" />
-                    <span className="text-sm font-medium text-[#0F172A]">QR Code</span>
+                    <span className="text-sm font-medium text-[#0F172A]">Share this listing</span>
                   </div>
-                  <span className="text-xs text-[#94A3B8]">
-                    {isQRExpanded ? 'Hide' : 'Show'}
-                  </span>
+                  <span className="text-xs text-[#94A3B8]">{isQRExpanded ? 'Hide' : 'Show'}</span>
                 </button>
 
                 {isQRExpanded && (
                   <div className="mt-3">
-                    <div className="flex items-center justify-center bg-[#F8FAFC] rounded-xl p-4">
-                      <div className="bg-white p-3 rounded-lg border border-gray-200">
-                        <QrCode size={80} className="text-[#2D5A27]" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-3">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={handleCopyLink}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#F8FAFC] hover:bg-[#EDF5EC] rounded-lg transition-colors text-sm text-[#475569]"
@@ -510,12 +604,7 @@ const PropertyDetail: React.FC = () => {
                         {copied ? <CheckCircle size={16} className="text-green-500" /> : <Copy size={16} />}
                         {copied ? 'Copied!' : 'Copy Link'}
                       </button>
-                      <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-[#F8FAFC] hover:bg-[#EDF5EC] rounded-lg transition-colors text-sm text-[#475569]">
-                        <Download size={16} />
-                        Download
-                      </button>
                     </div>
-                    <p className="text-xs text-[#94A3B8] text-center mt-2">Scan for Property Details</p>
                   </div>
                 )}
               </div>
@@ -534,45 +623,37 @@ const PropertyDetail: React.FC = () => {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-3">
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="Full Name *"
-                        className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm"
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="tel"
-                        placeholder="Phone Number *"
-                        className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm"
-                        value={formData.phoneNumber}
-                        onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="email"
-                        placeholder="Email (Optional)"
-                        className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <textarea
-                        rows={3}
-                        placeholder="Message *"
-                        className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm resize-none"
-                        value={formData.message}
-                        onChange={(e) => setFormData({...formData, message: e.target.value})}
-                        required
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      placeholder="Full Name *"
+                      className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Phone Number *"
+                      className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm"
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email (Optional)"
+                      className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                    <textarea
+                      rows={3}
+                      placeholder="Message *"
+                      className="w-full px-4 py-2.5 bg-[#F8FAFC] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all text-sm resize-none"
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      required
+                    />
                     <button
                       type="submit"
                       className="w-full py-3 bg-[#2D5A27] text-white rounded-xl hover:bg-[#23461E] transition-colors font-medium text-sm flex items-center justify-center gap-2"
