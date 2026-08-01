@@ -13,6 +13,7 @@ interface NavLink {
   path: string;
   locked: boolean;
   badge?: string;
+  requiresAuth?: boolean;
 }
 
 const Navbar: React.FC = () => {
@@ -28,7 +29,6 @@ const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const isPremium = false;
 
-  // ✅ Admin routes ma navbar completely hide
   if (location.pathname.startsWith('/admin')) {
     return null;
   }
@@ -53,16 +53,24 @@ const Navbar: React.FC = () => {
   const userRole = user?.role || 'BUYER';
   const isSeller = userRole === 'SELLER';
   const isAdmin = userRole === 'ADMIN';
+  const isBuyer = userRole === 'BUYER';
 
   const isFeatureLocked = (feature: string) => {
-    if (feature === 'List Property') return false;
     if (feature === 'AI Match') return true;
     if (feature === 'Map Search') return true;
     return false;
   };
 
-  const handleFeatureClick = (feature: string, path: string) => {
-    if (feature === 'List Property' || feature === 'Favorites' || feature === 'My Properties') {
+  const handleFeatureClick = (feature: string, path: string, requiresAuth: boolean = false) => {
+    // If feature requires auth and user is not authenticated -> show login popup
+    if (requiresAuth && !isAuthenticated) {
+      setSelectedFeature(feature);
+      setShowLoginPopup(true);
+      return;
+    }
+
+    // List Property - check auth
+    if (feature === 'List Property') {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
         setShowLoginPopup(true);
@@ -72,6 +80,29 @@ const Navbar: React.FC = () => {
       return;
     }
 
+    // Favorites - check auth
+    if (feature === 'Favorites') {
+      if (!isAuthenticated) {
+        setSelectedFeature(feature);
+        setShowLoginPopup(true);
+        return;
+      }
+      navigate(path);
+      return;
+    }
+
+    // My Properties - check auth
+    if (feature === 'My Properties') {
+      if (!isAuthenticated) {
+        setSelectedFeature(feature);
+        setShowLoginPopup(true);
+        return;
+      }
+      navigate(path);
+      return;
+    }
+
+    // Premium features - AI Match, Map Search
     if (isFeatureLocked(feature)) {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
@@ -84,32 +115,53 @@ const Navbar: React.FC = () => {
         return;
       }
     }
+
     navigate(path);
   };
 
-  // ✅ NAV LINKS - ROLE BASED (No admin links)
+  // ✅ NAV LINKS - ROLE BASED
   const getNavLinks = (): NavLink[] => {
+    // ✅ Common links for everyone
     const commonLinks: NavLink[] = [
       { label: 'Home', path: '/', locked: false },
       { label: 'Properties', path: '/properties', locked: false },
     ];
 
-    // ✅ Buyer specific links
-    if (!isSeller) {
+    // ✅ NON-AUTHENTICATED USERS - Sabai links dekhcha (List Property, AI Match, Map Search)
+    if (!isAuthenticated) {
       return [
         ...commonLinks,
-        { label: 'Favorites', path: '/favorites', locked: false },
-        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium' },
-        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium' },
+        { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
+        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
       ];
     }
 
-    // ✅ Seller specific links
-    return [
-      ...commonLinks,
-      { label: 'My Properties', path: '/my-properties', locked: false },
-      { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free' },
-    ];
+    // ✅ AUTHENTICATED BUYER - List Property HATAYO, tara AI Match ra Map Search dekhcha
+    if (isBuyer && !isSeller && !isAdmin) {
+      return [
+        ...commonLinks,
+        { label: 'Favorites', path: '/favorites', locked: false, requiresAuth: true },
+        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
+      ];
+    }
+
+    // ✅ AUTHENTICATED SELLER - List Property dekhcha
+    if (isSeller && isAuthenticated) {
+      return [
+        ...commonLinks,
+        { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
+        { label: 'My Properties', path: '/my-properties', locked: false, requiresAuth: true },
+      ];
+    }
+
+    // ✅ ADMIN
+    if (isAdmin) {
+      return commonLinks;
+    }
+
+    return commonLinks;
   };
 
   const finalNavLinks = getNavLinks();
@@ -117,7 +169,6 @@ const Navbar: React.FC = () => {
   const showPremiumBadge = isAuthenticated && isPremium;
   const showUpgradeButton = isAuthenticated && !isPremium;
 
-  // ✅ Role display in navbar
   const getRoleDisplay = () => {
     if (!isAuthenticated) return null;
     if (isAdmin) {
@@ -171,12 +222,12 @@ const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* ✅ NAV LINKS - ROLE BASED */}
+            {/* ✅ NAV LINKS */}
             <div className="hidden lg:flex items-center gap-0.5 xl:gap-1">
               {finalNavLinks.map((link) => (
                 <button
                   key={link.path}
-                  onClick={() => handleFeatureClick(link.label, link.path)}
+                  onClick={() => handleFeatureClick(link.label, link.path, link.requiresAuth || false)}
                   className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-xl hover:bg-[#2D5A27]/5 transition-all duration-200 relative group cursor-pointer"
                 >
                   {link.label}
@@ -198,7 +249,6 @@ const Navbar: React.FC = () => {
 
             {/* RIGHT ACTIONS */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Language Toggle */}
               <button
                 onClick={toggleLanguage}
                 className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer"
@@ -206,7 +256,6 @@ const Navbar: React.FC = () => {
                 {language === 'EN' ? '🇳🇵' : '🇬🇧'}
               </button>
 
-              {/* ✅ Role Badge */}
               {getRoleDisplay()}
 
               {!isAuthenticated ? (
@@ -218,7 +267,6 @@ const Navbar: React.FC = () => {
                 </Link>
               ) : (
                 <>
-                  {/* Upgrade Button */}
                   {showUpgradeButton && (
                     <Link
                       to="/subscription"
@@ -238,7 +286,6 @@ const Navbar: React.FC = () => {
                     </span>
                   )}
 
-                  {/* Avatar with Dropdown */}
                   <div className="relative group">
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer">
                       <Avatar
@@ -252,9 +299,7 @@ const Navbar: React.FC = () => {
                       </svg>
                     </button>
 
-                    {/* Dropdown Menu */}
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      {/* User Info */}
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
                         <p className="text-xs text-gray-400">{user?.email}</p>
@@ -278,7 +323,6 @@ const Navbar: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* ✅ Dashboard - Common */}
                       <Link
                         to="/dashboard"
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
@@ -287,7 +331,18 @@ const Navbar: React.FC = () => {
                         Dashboard
                       </Link>
 
-                      {/* ✅ Buyer Only Links */}
+                      {/* ✅ List Property - Only for Seller (not for buyer) */}
+                      {!isBuyer && !isAdmin && (
+                        <Link
+                          to="/list-property"
+                          className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                        >
+                          <span className="mr-3 text-lg">➕</span>
+                          List Property
+                        </Link>
+                      )}
+
+                      {/* ✅ Buyer links */}
                       {!isSeller && !isAdmin && (
                         <>
                           <Link
@@ -303,6 +358,7 @@ const Navbar: React.FC = () => {
                           >
                             <span className="mr-3 text-lg">🤖</span>
                             AI Match
+                            {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                           </Link>
                           <Link
                             to="/map-search"
@@ -310,11 +366,12 @@ const Navbar: React.FC = () => {
                           >
                             <span className="mr-3 text-lg">🗺️</span>
                             Map Search
+                            {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                           </Link>
                         </>
                       )}
 
-                      {/* ✅ Seller Only Links */}
+                      {/* ✅ Seller links */}
                       {isSeller && !isAdmin && (
                         <>
                           <Link
@@ -323,13 +380,6 @@ const Navbar: React.FC = () => {
                           >
                             <span className="mr-3 text-lg">📋</span>
                             My Properties
-                          </Link>
-                          <Link
-                            to="/list-property"
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
-                          >
-                            <span className="mr-3 text-lg">➕</span>
-                            List Property
                           </Link>
                           <Link
                             to="/analytics"
@@ -341,7 +391,7 @@ const Navbar: React.FC = () => {
                         </>
                       )}
 
-                      {/* ✅ Admin Only Links - Only "Admin Panel" */}
+                      {/* ✅ Admin links */}
                       {isAdmin && (
                         <>
                           <div className="h-px bg-gray-100 my-1" />
@@ -355,7 +405,6 @@ const Navbar: React.FC = () => {
                         </>
                       )}
 
-                      {/* ✅ Common Links - Messages */}
                       <Link
                         to="/messages"
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
@@ -366,7 +415,6 @@ const Navbar: React.FC = () => {
 
                       <div className="h-px bg-gray-100 my-1" />
 
-                      {/* ✅ Profile - Common */}
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
@@ -410,7 +458,6 @@ const Navbar: React.FC = () => {
                 </>
               )}
 
-              {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="lg:hidden p-2.5 rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer"
@@ -445,6 +492,13 @@ const Navbar: React.FC = () => {
                 <button
                   key={link.path}
                   onClick={() => {
+                    if (link.requiresAuth && !isAuthenticated) {
+                      setSelectedFeature(link.label);
+                      setShowLoginPopup(true);
+                      setIsMobileMenuOpen(false);
+                      return;
+                    }
+
                     if (link.label === 'List Property' || link.label === 'Favorites' || link.label === 'My Properties') {
                       if (!isAuthenticated) {
                         setSelectedFeature(link.label);
@@ -497,7 +551,18 @@ const Navbar: React.FC = () => {
                     📊 Dashboard
                   </Link>
 
-                  {/* ✅ Buyer Mobile Links */}
+                  {/* ✅ List Property - Only for Seller, NOT for Buyer */}
+                  {!isBuyer && !isAdmin && (
+                    <Link
+                      to="/list-property"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                    >
+                      ➕ List Property
+                    </Link>
+                  )}
+
+                  {/* ✅ Buyer mobile links */}
                   {!isSeller && !isAdmin && (
                     <>
                       <Link
@@ -513,11 +578,20 @@ const Navbar: React.FC = () => {
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
                         🤖 AI Match
+                        {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
+                      </Link>
+                      <Link
+                        to="/map-search"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        🗺️ Map Search
+                        {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                       </Link>
                     </>
                   )}
 
-                  {/* ✅ Seller Mobile Links */}
+                  {/* ✅ Seller mobile links */}
                   {isSeller && !isAdmin && (
                     <>
                       <Link
@@ -527,17 +601,10 @@ const Navbar: React.FC = () => {
                       >
                         📋 My Properties
                       </Link>
-                      <Link
-                        to="/list-property"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
-                      >
-                        ➕ List Property
-                      </Link>
                     </>
                   )}
 
-                  {/* ✅ Admin Mobile Link */}
+                  {/* ✅ Admin mobile link */}
                   {isAdmin && (
                     <>
                       <div className="h-px bg-gray-100 my-2" />
