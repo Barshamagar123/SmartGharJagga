@@ -44,7 +44,7 @@ function App() {
             <Route path="/map-search" element={<MapSearch />} />
           </Route>
 
-          {/* ✅ Admin Routes - With Sidebar (No Layout) */}
+          {/* ✅ Admin Routes - Without Layout */}
           <Route
             path="/admin"
             element={

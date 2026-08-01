@@ -19,16 +19,28 @@ const Login: React.FC = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
 
   // ✅ Check for success message from register
   useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
-      // Clear the state after showing
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  // ✅ After login, redirect based on role
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else if (user.role === 'SELLER') {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +52,11 @@ const Login: React.FC = () => {
       const response = await login(email, password);
       
       if (response && response.success) {
-        navigate('/');
+        // ✅ Redirect handled by useEffect
       } else {
         setError(response?.message || 'Login failed');
       }
     } catch (err: any) {
-      // ✅ Handle Google user error
       if (err.response?.data?.message?.includes('Google Sign-In')) {
         setError('This account uses Google Sign-In. Please use "Continue with Google" below.');
       } else {
@@ -61,10 +72,7 @@ const Login: React.FC = () => {
     setIsGoogleLoading(true);
     setError('');
     
-    // Get the backend URL from environment or use default
     const backendUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5001';
-    
-    // Redirect to backend Google OAuth endpoint
     window.location.href = `${backendUrl}/api/v1/auth/google`;
   };
 
@@ -119,7 +127,7 @@ const Login: React.FC = () => {
             </Link>
           </motion.div>
 
-          {/* ✅ Success Message from Register */}
+          {/* Success Message */}
           {successMessage && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -250,9 +258,8 @@ const Login: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Social Login Buttons */}
+                  {/* Google Login Button */}
                   <div className="grid grid-cols-1 gap-3">
-                    {/* ✅ Google Login Button - Full Width */}
                     <button
                       type="button"
                       onClick={handleGoogleLogin}
@@ -262,7 +269,7 @@ const Login: React.FC = () => {
                       }`}
                     >
                       {isGoogleLoading ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#2D5A27]"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#2D5A27]" />
                       ) : (
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                           <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -275,17 +282,6 @@ const Login: React.FC = () => {
                         {isGoogleLoading ? 'Redirecting to Google...' : 'Continue with Google'}
                       </span>
                     </button>
-
-                    {/* Facebook Button - Commented out or removed */}
-                    {/* <button
-                      type="button"
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[var(--color-primary-border)] rounded-xl hover:bg-[var(--color-primary-hover)] transition-all duration-200"
-                    >
-                      <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                      </svg>
-                      <span className="text-sm font-medium text-[var(--color-text-primary)]">Facebook</span>
-                    </button> */}
                   </div>
 
                   {/* Sign Up Link */}

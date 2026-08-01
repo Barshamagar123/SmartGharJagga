@@ -1,19 +1,18 @@
 // src/components/common/Navbar/Navbar.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '../Badge/Badge';
 import { Button } from '../Button/Button';
 import { Avatar } from '../Avatar/Avatar';
 import { useAuth } from '../../../hooks/useAuth';
 
-// ✅ Add interface with optional badge
 interface NavLink {
   label: string;
   path: string;
   locked: boolean;
-  badge?: string;  // ✅ Optional badge property
+  badge?: string;
 }
 
 const Navbar: React.FC = () => {
@@ -24,9 +23,15 @@ const Navbar: React.FC = () => {
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { user, isAuthenticated, logout } = useAuth();
   const isPremium = false;
+
+  // ✅ Admin routes ma navbar completely hide
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,27 +50,19 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  // ✅ Get User Role
   const userRole = user?.role || 'BUYER';
-  const isSeller = userRole === 'SELLER' || userRole === 'ADMIN';
+  const isSeller = userRole === 'SELLER';
+  const isAdmin = userRole === 'ADMIN';
 
-  // ✅ Feature Lock Logic
   const isFeatureLocked = (feature: string) => {
-    if (feature === 'List Property') {
-      return false;
-    }
-    if (feature === 'AI Match') {
-      return true;
-    }
-    if (feature === 'Map Search') {
-      return true;
-    }
+    if (feature === 'List Property') return false;
+    if (feature === 'AI Match') return true;
+    if (feature === 'Map Search') return true;
     return false;
   };
 
   const handleFeatureClick = (feature: string, path: string) => {
-    // ✅ List Property - Requires login
-    if (feature === 'List Property') {
+    if (feature === 'List Property' || feature === 'Favorites' || feature === 'My Properties') {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
         setShowLoginPopup(true);
@@ -75,29 +72,6 @@ const Navbar: React.FC = () => {
       return;
     }
 
-    // ✅ Favorites - Requires login
-    if (feature === 'Favorites') {
-      if (!isAuthenticated) {
-        setSelectedFeature(feature);
-        setShowLoginPopup(true);
-        return;
-      }
-      navigate(path);
-      return;
-    }
-
-    // ✅ My Properties - Requires login (Seller only)
-    if (feature === 'My Properties') {
-      if (!isAuthenticated) {
-        setSelectedFeature(feature);
-        setShowLoginPopup(true);
-        return;
-      }
-      navigate(path);
-      return;
-    }
-
-    // For other features, check premium lock
     if (isFeatureLocked(feature)) {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
@@ -113,47 +87,29 @@ const Navbar: React.FC = () => {
     navigate(path);
   };
 
-  // ✅ NAV LINKS - ROLE BASED
+  // ✅ NAV LINKS - ROLE BASED (No admin links)
   const getNavLinks = (): NavLink[] => {
-    // ✅ Common links for all users (no badge)
     const commonLinks: NavLink[] = [
       { label: 'Home', path: '/', locked: false },
       { label: 'Properties', path: '/properties', locked: false },
     ];
 
     // ✅ Buyer specific links
-    const buyerLinks: NavLink[] = [
-      { label: 'Favorites', path: '/favorites', locked: false },
-      {
-        label: 'AI Match',
-        path: '/ai-matching',
-        locked: true,
-        badge: '🔒 Premium',
-      },
-      {
-        label: 'Map Search',
-        path: '/map-search',
-        locked: true,
-        badge: '🔒 Premium',
-      },
-    ];
+    if (!isSeller) {
+      return [
+        ...commonLinks,
+        { label: 'Favorites', path: '/favorites', locked: false },
+        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium' },
+        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium' },
+      ];
+    }
 
     // ✅ Seller specific links
-    const sellerLinks: NavLink[] = [
+    return [
+      ...commonLinks,
       { label: 'My Properties', path: '/my-properties', locked: false },
-      {
-        label: 'List Property',
-        path: '/list-property',
-        locked: false,
-        badge: '✨ Free',
-      },
+      { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free' },
     ];
-
-    // ✅ Combine based on role
-    if (isSeller) {
-      return [...commonLinks, ...sellerLinks];
-    }
-    return [...commonLinks, ...buyerLinks];
   };
 
   const finalNavLinks = getNavLinks();
@@ -164,6 +120,13 @@ const Navbar: React.FC = () => {
   // ✅ Role display in navbar
   const getRoleDisplay = () => {
     if (!isAuthenticated) return null;
+    if (isAdmin) {
+      return (
+        <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">
+          🛡️ Admin
+        </span>
+      );
+    }
     if (isSeller) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">
@@ -296,7 +259,11 @@ const Navbar: React.FC = () => {
                         <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
                         <p className="text-xs text-gray-400">{user?.email}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          {isSeller ? (
+                          {isAdmin ? (
+                            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                              🛡️ Admin
+                            </span>
+                          ) : isSeller ? (
                             <span className="text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
                               📈 Seller
                             </span>
@@ -321,7 +288,7 @@ const Navbar: React.FC = () => {
                       </Link>
 
                       {/* ✅ Buyer Only Links */}
-                      {!isSeller && (
+                      {!isSeller && !isAdmin && (
                         <>
                           <Link
                             to="/favorites"
@@ -348,7 +315,7 @@ const Navbar: React.FC = () => {
                       )}
 
                       {/* ✅ Seller Only Links */}
-                      {isSeller && (
+                      {isSeller && !isAdmin && (
                         <>
                           <Link
                             to="/my-properties"
@@ -374,6 +341,20 @@ const Navbar: React.FC = () => {
                         </>
                       )}
 
+                      {/* ✅ Admin Only Links - Only "Admin Panel" */}
+                      {isAdmin && (
+                        <>
+                          <div className="h-px bg-gray-100 my-1" />
+                          <Link
+                            to="/admin"
+                            className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors font-medium"
+                          >
+                            <span className="mr-3 text-lg">⚙️</span>
+                            Admin Panel
+                          </Link>
+                        </>
+                      )}
+
                       {/* ✅ Common Links - Messages */}
                       <Link
                         to="/messages"
@@ -382,19 +363,6 @@ const Navbar: React.FC = () => {
                         <span className="mr-3 text-lg">💬</span>
                         Messages
                       </Link>
-
-                      {user?.role === 'ADMIN' && (
-                        <>
-                          <div className="h-px bg-gray-100 my-1" />
-                          <Link
-                            to="/admin"
-                            className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors"
-                          >
-                            <span className="mr-3 text-lg">⚙️</span>
-                            Admin Panel
-                          </Link>
-                        </>
-                      )}
 
                       <div className="h-px bg-gray-100 my-1" />
 
@@ -415,7 +383,7 @@ const Navbar: React.FC = () => {
                         Refer & Earn
                       </Link>
 
-                      {!isPremium && isAuthenticated && (
+                      {!isPremium && isAuthenticated && !isAdmin && (
                         <>
                           <div className="h-px bg-gray-100 my-1" />
                           <Link
@@ -530,7 +498,7 @@ const Navbar: React.FC = () => {
                   </Link>
 
                   {/* ✅ Buyer Mobile Links */}
-                  {!isSeller && (
+                  {!isSeller && !isAdmin && (
                     <>
                       <Link
                         to="/favorites"
@@ -550,7 +518,7 @@ const Navbar: React.FC = () => {
                   )}
 
                   {/* ✅ Seller Mobile Links */}
-                  {isSeller && (
+                  {isSeller && !isAdmin && (
                     <>
                       <Link
                         to="/my-properties"
@@ -568,13 +536,27 @@ const Navbar: React.FC = () => {
                       </Link>
                     </>
                   )}
+
+                  {/* ✅ Admin Mobile Link */}
+                  {isAdmin && (
+                    <>
+                      <div className="h-px bg-gray-100 my-2" />
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
+                      >
+                        ⚙️ Admin Panel
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
 
               <div className="pt-4 border-t border-gray-100 space-y-2">
                 {isAuthenticated ? (
                   <>
-                    {!isPremium && (
+                    {!isPremium && !isAdmin && (
                       <Link
                         to="/subscription"
                         onClick={() => setIsMobileMenuOpen(false)}
