@@ -5,6 +5,7 @@ import { PropertyController } from './property.controller';
 import { PropertyService } from './property.service';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware } from '@/middleware/auth.middleware';
+import { optionalAuthMiddleware } from '@/middleware/auth.middleware'; // ✅ ADDED: Import optionalAuthMiddleware
 import { requireRole } from '@/middleware/role.middleware';
 import { validate } from '@/middleware/validation.middleware';
 import { uploadPropertyMedia } from '@/middleware/upload.middleware';
@@ -19,10 +20,26 @@ const router = Router();
 // ============================================
 // PUBLIC ROUTES
 // ============================================
-router.get('/', propertyController.getProperties);
+
+// ✅ UPDATED: Added optionalAuthMiddleware to get all properties
+router.get('/', optionalAuthMiddleware, propertyController.getProperties);
+
 router.get('/map', propertyController.getPropertiesForMap);
-router.get('/featured', propertyController.getFeaturedProperties); // ✅ NEW
-router.get('/:id', propertyController.getPropertyById);
+router.get('/featured', propertyController.getFeaturedProperties);
+
+router.get(
+  '/stats',
+  authMiddleware,
+  requireRole('ADMIN'),
+  propertyController.getPropertyStats
+);
+
+router.get(
+  '/favorites',
+  authMiddleware,
+  requireRole('BUYER'),
+  propertyController.getFavorites
+);
 
 // ============================================
 // PROTECTED ROUTES
@@ -68,15 +85,8 @@ router.post(
   propertyController.toggleFavorite
 );
 
-router.get(
-  '/favorites',
-  authMiddleware,
-  requireRole('BUYER'),
-  propertyController.getFavorites
-);
-
 // ============================================
-// ✅ FEATURED ROUTES (NEW)
+// ✅ FEATURED ROUTES
 // ============================================
 router.put(
   '/:id/toggle-featured',
@@ -87,12 +97,8 @@ router.put(
 // ============================================
 // ADMIN ROUTES
 // ============================================
-router.get(
-  '/stats',
-  authMiddleware,
-  requireRole('ADMIN'),
-  propertyController.getPropertyStats
-);
+
+router.get('/:id', propertyController.getPropertyById);
 
 router.put(
   '/:id/status',

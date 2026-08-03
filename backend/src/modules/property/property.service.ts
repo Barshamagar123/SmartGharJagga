@@ -57,7 +57,7 @@ export class PropertyService {
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
         area: data.area,
-        areaUnit: data.areaUnit, // ✅ ADDED
+        areaUnit: data.areaUnit,
         propertyType: data.propertyType,
         purpose: 'SALE',
         amenities: data.amenities || [],
@@ -69,7 +69,7 @@ export class PropertyService {
         yearBuilt: data.yearBuilt,
         userId: userId,
         status: 'PENDING',
-        isFeatured: data.isFeatured || false, // ✅ ADDED
+        isFeatured: data.isFeatured || false,
       },
     });
 
@@ -77,7 +77,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 2. GET PROPERTIES - WITH isFeatured FILTER
+  // 2. GET PROPERTIES - UPDATED WITH 'ALL' STATUS SUPPORT
   // ============================================
   async getProperties(filters: PropertyFilter) {
     const {
@@ -95,11 +95,18 @@ export class PropertyService {
       limit = 20,
       sortBy = 'createdAt',
       sortOrder = 'desc',
-      isFeatured, // ✅ ADDED
+      isFeatured,
     } = filters;
 
     const skip = (page - 1) * limit;
-    const where: any = { status };
+    const where: any = {};
+
+    // ✅ Only apply status filter if status is not 'ALL'
+    if (status && status !== 'ALL') {
+      where.status = status;
+    }
+    // If status is 'ALL' or undefined, don't apply status filter
+    // This will return all properties regardless of status
 
     if (search) {
       where.OR = [
@@ -127,7 +134,6 @@ export class PropertyService {
       where.amenities = { hasSome: amenities };
     }
     
-    // ✅ ADDED: Featured filter
     if (isFeatured !== undefined) {
       where.isFeatured = isFeatured;
     }
@@ -240,7 +246,7 @@ export class PropertyService {
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
         area: data.area,
-        areaUnit: data.areaUnit, // ✅ ADDED
+        areaUnit: data.areaUnit,
         propertyType: data.propertyType,
         amenities: data.amenities,
         parking: data.parking,
@@ -249,7 +255,7 @@ export class PropertyService {
         images: imageUrls,
         videos: videoUrls,
         mainImage: imageUrls.length > 0 ? imageUrls[0] : property.mainImage,
-        isFeatured: data.isFeatured !== undefined ? data.isFeatured : property.isFeatured, // ✅ ADDED
+        isFeatured: data.isFeatured !== undefined ? data.isFeatured : property.isFeatured,
         ...(userRole !== 'ADMIN' ? { status: 'PENDING' } : {}),
       },
     });
@@ -355,8 +361,8 @@ export class PropertyService {
         bedrooms: true,
         mainImage: true,
         area: true,
-        areaUnit: true, // ✅ ADDED
-        isFeatured: true, // ✅ ADDED
+        areaUnit: true,
+        isFeatured: true,
       },
     });
 
@@ -373,7 +379,7 @@ export class PropertyService {
       const approved = await this.prisma.property.count({ where: { status: 'APPROVED' } });
       const sold = await this.prisma.property.count({ where: { status: 'SOLD' } });
       const rejected = await this.prisma.property.count({ where: { status: 'REJECTED' } });
-      const featured = await this.prisma.property.count({ where: { isFeatured: true } }); // ✅ ADDED
+      const featured = await this.prisma.property.count({ where: { isFeatured: true } });
 
       return {
         total: total || 0,
@@ -381,7 +387,7 @@ export class PropertyService {
         approved: approved || 0,
         sold: sold || 0,
         rejected: rejected || 0,
-        featured: featured || 0, // ✅ ADDED
+        featured: featured || 0,
       };
     } catch (error) {
       console.error('Error fetching property stats:', error);
@@ -473,7 +479,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 12. TOGGLE FEATURED (NEW)
+  // 12. TOGGLE FEATURED
   // ============================================
   async toggleFeatured(id: string, userId: string, userRole: string) {
     const property = await this.prisma.property.findUnique({
@@ -502,7 +508,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 13. GET FEATURED PROPERTIES (NEW)
+  // 13. GET FEATURED PROPERTIES
   // ============================================
   async getFeaturedProperties(limit: number = 6) {
     const properties = await this.prisma.property.findMany({

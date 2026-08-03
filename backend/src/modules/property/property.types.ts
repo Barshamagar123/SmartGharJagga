@@ -1,9 +1,7 @@
 // src/modules/property/property.types.ts
 
 import { PropertyType, PropertyStatus } from '@prisma/client';
-import { Request } from 'express';
 
-// ✅ Add AreaUnit type
 export type AreaUnit = 'DHUR' | 'AANA' | 'ROPANI' | 'BISWA' | 'KATHA' | 'SQFT' | 'SQUARE_FEET' | 'SQUARE_METER' | 'HECTARE';
 
 export interface CreatePropertyRequest {
@@ -16,7 +14,7 @@ export interface CreatePropertyRequest {
   bedrooms?: number;
   bathrooms?: number;
   area?: number;
-  areaUnit?: AreaUnit; // ✅ ADDED
+  areaUnit?: AreaUnit;
   propertyType: PropertyType;
   amenities?: string[];
   parking?: boolean;
@@ -24,7 +22,7 @@ export interface CreatePropertyRequest {
   yearBuilt?: number;
   images?: string[];
   videos?: string[];
-  isFeatured?: boolean; // ✅ ADDED
+  isFeatured?: boolean;
 }
 
 export interface UpdatePropertyRequest {
@@ -37,7 +35,7 @@ export interface UpdatePropertyRequest {
   bedrooms?: number;
   bathrooms?: number;
   area?: number;
-  areaUnit?: AreaUnit; // ✅ ADDED
+  areaUnit?: AreaUnit;
   propertyType?: PropertyType;
   amenities?: string[];
   parking?: boolean;
@@ -46,7 +44,7 @@ export interface UpdatePropertyRequest {
   status?: PropertyStatus;
   images?: string[];
   videos?: string[];
-  isFeatured?: boolean; // ✅ ADDED
+  isFeatured?: boolean;
 }
 
 export interface PropertyFilter {
@@ -59,18 +57,11 @@ export interface PropertyFilter {
   bathrooms?: number;
   parking?: boolean;
   amenities?: string[];
-  status?: PropertyStatus;
+  status?: PropertyStatus | 'ALL'; // ✅ Allow 'ALL' as special value
   page?: number;
   limit?: number;
   sortBy?: 'price' | 'createdAt' | 'views';
   sortOrder?: 'asc' | 'desc';
-  isFeatured?: boolean; // ✅ ADDED
-}
-
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
+  isFeatured?: boolean;
+  userId?: string; // ✅ Added for user filtering
 }
