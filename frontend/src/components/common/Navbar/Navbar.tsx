@@ -50,10 +50,16 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  const userRole = user?.role || 'BUYER';
-  const isSeller = userRole === 'SELLER';
+  // ✅ ROLE CHECK - PROPER
+  const userRole = user?.role?.toUpperCase() || '';
   const isAdmin = userRole === 'ADMIN';
+  const isSeller = userRole === 'SELLER';
   const isBuyer = userRole === 'BUYER';
+
+  console.log('🔍 Current User Role:', userRole);
+  console.log('🔍 Is Admin:', isAdmin);
+  console.log('🔍 Is Seller:', isSeller);
+  console.log('🔍 Is Buyer:', isBuyer);
 
   const isFeatureLocked = (feature: string) => {
     if (feature === 'AI Match') return true;
@@ -62,15 +68,13 @@ const Navbar: React.FC = () => {
   };
 
   const handleFeatureClick = (feature: string, path: string, requiresAuth: boolean = false) => {
-    // If feature requires auth and user is not authenticated -> show login popup
     if (requiresAuth && !isAuthenticated) {
       setSelectedFeature(feature);
       setShowLoginPopup(true);
       return;
     }
 
-    // List Property - check auth
-    if (feature === 'List Property') {
+    if (feature === 'List Property' || feature === 'Favorites' || feature === 'My Properties') {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
         setShowLoginPopup(true);
@@ -80,29 +84,6 @@ const Navbar: React.FC = () => {
       return;
     }
 
-    // Favorites - check auth
-    if (feature === 'Favorites') {
-      if (!isAuthenticated) {
-        setSelectedFeature(feature);
-        setShowLoginPopup(true);
-        return;
-      }
-      navigate(path);
-      return;
-    }
-
-    // My Properties - check auth
-    if (feature === 'My Properties') {
-      if (!isAuthenticated) {
-        setSelectedFeature(feature);
-        setShowLoginPopup(true);
-        return;
-      }
-      navigate(path);
-      return;
-    }
-
-    // Premium features - AI Match, Map Search
     if (isFeatureLocked(feature)) {
       if (!isAuthenticated) {
         setSelectedFeature(feature);
@@ -119,15 +100,14 @@ const Navbar: React.FC = () => {
     navigate(path);
   };
 
-  // ✅ NAV LINKS - ROLE BASED
+  // ✅ NAV LINKS - ROLE BASED PROPERLY
   const getNavLinks = (): NavLink[] => {
-    // ✅ Common links for everyone
     const commonLinks: NavLink[] = [
       { label: 'Home', path: '/', locked: false },
       { label: 'Properties', path: '/properties', locked: false },
     ];
 
-    // ✅ NON-AUTHENTICATED USERS - Sabai links dekhcha (List Property, AI Match, Map Search)
+    // ❌ NOT LOGGED IN
     if (!isAuthenticated) {
       return [
         ...commonLinks,
@@ -137,37 +117,45 @@ const Navbar: React.FC = () => {
       ];
     }
 
-    // ✅ AUTHENTICATED BUYER - List Property HATAYO, tara AI Match ra Map Search dekhcha
-    if (isBuyer && !isSeller && !isAdmin) {
-      return [
-        ...commonLinks,
-        { label: 'Favorites', path: '/favorites', locked: false, requiresAuth: true },
-        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
-        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
-      ];
-    }
-
-    // ✅ AUTHENTICATED SELLER - List Property dekhcha
-    if (isSeller && isAuthenticated) {
-      return [
-        ...commonLinks,
-        { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
-        { label: 'My Properties', path: '/my-properties', locked: false, requiresAuth: true },
-      ];
-    }
-
-    // ✅ ADMIN
+    // ✅ ADMIN - ONLY Home, Properties, Admin Panel
     if (isAdmin) {
-      return commonLinks;
+      console.log('✅ Admin links active');
+      return [
+        ...commonLinks,
+        { label: 'Admin Panel', path: '/admin', locked: false },
+      ];
     }
 
+    // ✅ SELLER - Home, Properties, List Property, My Properties
+    if (isSeller) {
+      console.log('✅ Seller links active');
+      return [
+        ...commonLinks,
+        { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free' },
+        { label: 'My Properties', path: '/my-properties', locked: false },
+      ];
+    }
+
+    // ✅ BUYER - Home, Properties, Favorites, AI Match, Map Search
+    if (isBuyer) {
+      console.log('✅ Buyer links active');
+      return [
+        ...commonLinks,
+        { label: 'Favorites', path: '/favorites', locked: false },
+        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium' },
+        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium' },
+      ];
+    }
+
+    // FALLBACK
+    console.log('⚠️ Fallback links active');
     return commonLinks;
   };
 
   const finalNavLinks = getNavLinks();
 
   const showPremiumBadge = isAuthenticated && isPremium;
-  const showUpgradeButton = isAuthenticated && !isPremium;
+  const showUpgradeButton = isAuthenticated && !isPremium && !isAdmin;
 
   const getRoleDisplay = () => {
     if (!isAuthenticated) return null;
@@ -185,11 +173,14 @@ const Navbar: React.FC = () => {
         </span>
       );
     }
-    return (
-      <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
-        🏠 Buyer
-      </span>
-    );
+    if (isBuyer) {
+      return (
+        <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
+          🏠 Buyer
+        </span>
+      );
+    }
+    return null;
   };
 
   return (
@@ -292,7 +283,7 @@ const Navbar: React.FC = () => {
                         name={user?.name || 'User'}
                         size="sm"
                         variant="primary"
-                        src={user?.avatarUrl}
+                        src={user?.avatarUrl || undefined}
                       />
                       <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -312,11 +303,11 @@ const Navbar: React.FC = () => {
                             <span className="text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
                               📈 Seller
                             </span>
-                          ) : (
+                          ) : isBuyer ? (
                             <span className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
                               🏠 Buyer
                             </span>
-                          )}
+                          ) : null}
                           {showPremiumBadge && (
                             <Badge variant="gold" size="sm">👑 Premium</Badge>
                           )}
@@ -331,19 +322,46 @@ const Navbar: React.FC = () => {
                         Dashboard
                       </Link>
 
-                      {/* ✅ List Property - Only for Seller (not for buyer) */}
-                      {!isBuyer && !isAdmin && (
+                      {/* ✅ ADMIN - Only Admin Panel */}
+                      {isAdmin && (
                         <Link
-                          to="/list-property"
-                          className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          to="/admin"
+                          className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors font-medium"
                         >
-                          <span className="mr-3 text-lg">➕</span>
-                          List Property
+                          <span className="mr-3 text-lg">⚙️</span>
+                          Admin Panel
                         </Link>
                       )}
 
-                      {/* ✅ Buyer links */}
-                      {!isSeller && !isAdmin && (
+                      {/* ✅ SELLER - List Property, My Properties */}
+                      {isSeller && (
+                        <>
+                          <Link
+                            to="/list-property"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">➕</span>
+                            List Property
+                          </Link>
+                          <Link
+                            to="/my-properties"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">📋</span>
+                            My Properties
+                          </Link>
+                          <Link
+                            to="/analytics"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
+                          >
+                            <span className="mr-3 text-lg">📊</span>
+                            Analytics
+                          </Link>
+                        </>
+                      )}
+
+                      {/* ✅ BUYER - Favorites, AI Match, Map Search */}
+                      {isBuyer && (
                         <>
                           <Link
                             to="/favorites"
@@ -367,40 +385,6 @@ const Navbar: React.FC = () => {
                             <span className="mr-3 text-lg">🗺️</span>
                             Map Search
                             {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
-                          </Link>
-                        </>
-                      )}
-
-                      {/* ✅ Seller links */}
-                      {isSeller && !isAdmin && (
-                        <>
-                          <Link
-                            to="/my-properties"
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
-                          >
-                            <span className="mr-3 text-lg">📋</span>
-                            My Properties
-                          </Link>
-                          <Link
-                            to="/analytics"
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
-                          >
-                            <span className="mr-3 text-lg">📊</span>
-                            Analytics
-                          </Link>
-                        </>
-                      )}
-
-                      {/* ✅ Admin links */}
-                      {isAdmin && (
-                        <>
-                          <div className="h-px bg-gray-100 my-1" />
-                          <Link
-                            to="/admin"
-                            className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors font-medium"
-                          >
-                            <span className="mr-3 text-lg">⚙️</span>
-                            Admin Panel
                           </Link>
                         </>
                       )}
@@ -551,19 +535,39 @@ const Navbar: React.FC = () => {
                     📊 Dashboard
                   </Link>
 
-                  {/* ✅ List Property - Only for Seller, NOT for Buyer */}
-                  {!isBuyer && !isAdmin && (
+                  {/* ✅ ADMIN - Admin Panel */}
+                  {isAdmin && (
                     <Link
-                      to="/list-property"
+                      to="/admin"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      className="flex items-center w-full px-4 py-3 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
                     >
-                      ➕ List Property
+                      ⚙️ Admin Panel
                     </Link>
                   )}
 
-                  {/* ✅ Buyer mobile links */}
-                  {!isSeller && !isAdmin && (
+                  {/* ✅ SELLER - List Property, My Properties */}
+                  {isSeller && (
+                    <>
+                      <Link
+                        to="/list-property"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        ➕ List Property
+                      </Link>
+                      <Link
+                        to="/my-properties"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
+                      >
+                        📋 My Properties
+                      </Link>
+                    </>
+                  )}
+
+                  {/* ✅ BUYER - Favorites, AI Match, Map Search */}
+                  {isBuyer && (
                     <>
                       <Link
                         to="/favorites"
@@ -587,33 +591,6 @@ const Navbar: React.FC = () => {
                       >
                         🗺️ Map Search
                         {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
-                      </Link>
-                    </>
-                  )}
-
-                  {/* ✅ Seller mobile links */}
-                  {isSeller && !isAdmin && (
-                    <>
-                      <Link
-                        to="/my-properties"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
-                      >
-                        📋 My Properties
-                      </Link>
-                    </>
-                  )}
-
-                  {/* ✅ Admin mobile link */}
-                  {isAdmin && (
-                    <>
-                      <div className="h-px bg-gray-100 my-2" />
-                      <Link
-                        to="/admin"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center w-full px-4 py-3 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
-                      >
-                        ⚙️ Admin Panel
                       </Link>
                     </>
                   )}
