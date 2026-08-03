@@ -15,9 +15,18 @@ import {
 import type { Property } from '../../types/property';
 import { formatArea } from '../../utils/areaUtils';
 
+// ✅ Same helper - simple
+const API_URL = 'http://localhost:5001';
+
+const getImageUrl = (path: string | undefined | null): string => {
+  if (!path) return '/placeholder-property.jpg';
+  if (path.startsWith('http')) return path;
+  return `${API_URL}${path}`;
+};
+
 interface PropertyGridProps {
   properties: Property[];
-  loading?: boolean; // ✅ Add loading prop
+  loading?: boolean;
   onFavoriteToggle?: (id: string) => void;
 }
 
@@ -43,7 +52,6 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
   loading = false,
   onFavoriteToggle 
 }) => {
-  // ✅ Loading state
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -68,11 +76,12 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
     );
   }
 
-  // ✅ Empty state
   if (!properties || properties.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">No properties found</p>
+        <div className="text-6xl mb-4">🏠</div>
+        <h3 className="text-xl font-semibold text-gray-900">No Properties Found</h3>
+        <p className="text-gray-500 mt-2">Try adjusting your filters or search criteria.</p>
       </div>
     );
   }
@@ -99,12 +108,16 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
             interactive
           >
             {/* Image */}
-            <div className="relative h-48 flex-shrink-0 overflow-hidden">
+            <div className="relative h-48 flex-shrink-0 overflow-hidden bg-gray-100">
               <img
-                src={property.mainImage || property.images?.[0] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80'}
+                src={getImageUrl(property.mainImage || property.images?.[0])}
                 alt={property.title}
                 loading="lazy"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  console.error('❌ Image load failed:', getImageUrl(property.mainImage || property.images?.[0]));
+                  (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                }}
               />
               
               {property.isFeatured && (
@@ -125,6 +138,19 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
               >
                 {property.propertyType || 'Property'}
               </CardBadge>
+
+              {onFavoriteToggle && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onFavoriteToggle(property.id);
+                  }}
+                  className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-all duration-200"
+                >
+                  <Heart className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors" />
+                </button>
+              )}
             </div>
 
             {/* Content */}

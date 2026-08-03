@@ -19,6 +19,17 @@ import {
 } from 'lucide-react';
 import { formatArea } from '../../utils/areaUtils';
 
+// ✅ Image helper
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+const getImageUrl = (path: string | undefined | null): string => {
+  if (!path) return '/placeholder-property.jpg';
+  if (path.startsWith('http')) return path;
+  if (path.startsWith('//')) return `http:${path}`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_URL}${cleanPath}`;
+};
+
 export interface PropertyCardProps {
   id: string;
   title: string;
@@ -43,10 +54,8 @@ export interface PropertyCardProps {
     email?: string;
     avatarUrl?: string;
   };
-  // ✅ For favorite toggle
   isFavorited?: boolean;
   onFavoriteToggle?: (id: string) => void;
-  // ✅ Card variant
   variant?: 'default' | 'compact' | 'featured' | 'horizontal';
   className?: string;
 }
@@ -77,6 +86,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   // ✅ Format price
   const formatPrice = (price: number) => {
+    if (price >= 10000000) {
+      return `Rs ${(price / 10000000).toFixed(1)} Cr`;
+    }
     return `Rs ${price.toLocaleString()}`;
   };
 
@@ -97,11 +109,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     }
   };
 
-  // ✅ Get image
+  // ✅ Get image - FIXED: Use getImageUrl helper
   const getImage = () => {
-    if (mainImage) return mainImage;
-    if (images && images.length > 0) return images[0];
-    return 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80';
+    if (mainImage) return getImageUrl(mainImage);
+    if (images && images.length > 0) return getImageUrl(images[0]);
+    return '/placeholder-property.jpg';
   };
 
   // ✅ Handle favorite toggle
@@ -122,6 +134,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             src={getImage()}
             alt={title}
             className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+            }}
           />
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-gray-900 truncate">{title}</h4>
@@ -153,6 +168,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               src={getImage()}
               alt={title}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+              }}
             />
             {isFeatured && (
               <span className="absolute top-3 left-3 bg-[#D4AF37] text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
@@ -226,11 +244,16 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     >
       <Link to={`/property/${id}`} className="block">
         {/* Image */}
-        <div className="relative h-52 overflow-hidden">
+        <div className="relative h-52 overflow-hidden bg-gray-100">
           <img
             src={getImage()}
             alt={title}
             className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+            loading="lazy"
+            onError={(e) => {
+              console.error('❌ Image failed to load:', getImage());
+              (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+            }}
           />
           
           {/* Badges */}

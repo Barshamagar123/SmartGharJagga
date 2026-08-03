@@ -10,6 +10,18 @@ import PropertySort from '../../components/properties/PropertySort';
 import { propertyApi } from '../../services/api/property';
 import type { Property, PropertyType } from '../../types/property';
 
+// ✅ FIXED: Direct URL without any extra logic
+const API_URL = 'http://localhost:5001';
+
+const getImageUrl = (path: string | undefined | null): string => {
+  if (!path) return '/placeholder-property.jpg';
+  if (path.startsWith('http')) return path;
+  
+  // ✅ Simple: Just add API_URL before the path
+  // Path already starts with /uploads/...
+  return `${API_URL}${path}`;
+};
+
 const PropertiesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -17,7 +29,6 @@ const PropertiesPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   
-  // ✅ Filters with correct types
   const [filters, setFilters] = useState({
     propertyType: (searchParams.get('propertyType') as PropertyType) || '',
     maxPrice: parseInt(searchParams.get('maxPrice') || '500'),
@@ -29,13 +40,11 @@ const PropertiesPage: React.FC = () => {
   const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
 
-  // Fetch properties
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         setLoading(true);
         
-        // ✅ Build filter object with correct types
         const filterParams: any = {
           minPrice: 0,
           maxPrice: filters.maxPrice * 100000,
@@ -45,7 +54,6 @@ const PropertiesPage: React.FC = () => {
           sortOrder: sort === 'price_low' ? 'asc' : 'desc',
         };
 
-        // ✅ Only add if value exists
         if (filters.propertyType) {
           filterParams.propertyType = filters.propertyType as PropertyType;
         }
@@ -61,7 +69,28 @@ const PropertiesPage: React.FC = () => {
 
         const result = await propertyApi.getAll(filterParams);
 
-        setProperties(result.properties);
+        console.log('📊 Properties from API:', result.properties);
+        console.log('📸 First property images:', result.properties[0]?.images);
+
+        // ✅ Process properties - Add full URL to images
+        const processedProperties = result.properties.map((property: Property) => {
+          // ✅ Process each image
+          const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
+          
+          // ✅ Process main image
+          const processedMainImage = getImageUrl(property.mainImage || property.images?.[0]);
+          
+          console.log('🖼️ Image path:', property.mainImage || property.images?.[0]);
+          console.log('🖼️ Full URL:', processedMainImage);
+          
+          return {
+            ...property,
+            images: processedImages,
+            mainImage: processedMainImage,
+          };
+        });
+
+        setProperties(processedProperties);
         setTotal(result.total);
         setTotalPages(result.totalPages);
       } catch (error) {
