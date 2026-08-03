@@ -24,6 +24,16 @@ interface User {
   avatarUrl?: string;
 }
 
+interface ApiResponse {
+  users: User[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +44,12 @@ const UserManagement: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -42,8 +58,26 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await adminApi.getUsers();
-      setUsers(data);
+      const response = await adminApi.getUsers({
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+      
+      // ✅ Handle both array and object response
+      if (Array.isArray(response)) {
+        setUsers(response);
+      } else if (response && typeof response === 'object') {
+        // If response has users array and pagination
+        if (response.users) {
+          setUsers(response.users);
+          if (response.pagination) {
+            setPagination(response.pagination);
+          }
+        } else {
+          // If response is the users array directly
+          setUsers(response as any);
+        }
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -53,29 +87,49 @@ const UserManagement: React.FC = () => {
 
   const handleBlockUser = async (id: string) => {
     if (window.confirm('Are you sure you want to block this user?')) {
-      await adminApi.blockUser(id);
-      fetchUsers();
+      try {
+        await adminApi.blockUser(id);
+        await fetchUsers();
+      } catch (error) {
+        console.error('Error blocking user:', error);
+        alert('Failed to block user. Please try again.');
+      }
     }
   };
 
   const handleUnblockUser = async (id: string) => {
     if (window.confirm('Are you sure you want to unblock this user?')) {
-      await adminApi.unblockUser(id);
-      fetchUsers();
+      try {
+        await adminApi.unblockUser(id);
+        await fetchUsers();
+      } catch (error) {
+        console.error('Error unblocking user:', error);
+        alert('Failed to unblock user. Please try again.');
+      }
     }
   };
 
   const handleDeleteUser = async (id: string) => {
     if (window.confirm('Are you sure you want to permanently delete this user?')) {
-      await adminApi.deleteUser(id);
-      fetchUsers();
+      try {
+        await adminApi.deleteUser(id);
+        await fetchUsers();
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Failed to delete user. Please try again.');
+      }
     }
   };
 
   const handleRoleChange = async (id: string, role: string) => {
-    await adminApi.updateUserRole(id, role);
-    setShowRoleModal(false);
-    fetchUsers();
+    try {
+      await adminApi.updateUserRole(id, role);
+      setShowRoleModal(false);
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating role:', error);
+      alert('Failed to update role. Please try again.');
+    }
   };
 
   const handleViewDetails = (user: User) => {
@@ -89,7 +143,7 @@ const UserManagement: React.FC = () => {
     setShowRoleModal(true);
   };
 
-  // ✅ Stats
+  // ✅ Stats - calculated from fetched users
   const stats = {
     total: users.length,
     active: users.filter(u => u.isActive).length,
@@ -294,9 +348,18 @@ const UserManagement: React.FC = () => {
           <option value="active">Active</option>
           <option value="blocked">Blocked</option>
         </select>
-        <Button variant="outline" size="sm">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+            setSearchTerm('');
+            setFilterRole('all');
+            setFilterStatus('all');
+            fetchUsers();
+          }}
+        >
           <Filter className="w-4 h-4 mr-2" />
-          Apply Filters
+          Reset Filters
         </Button>
       </div>
 
@@ -308,6 +371,35 @@ const UserManagement: React.FC = () => {
           loading={loading}
         />
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl shadow-sm border border-gray-100">
+          <div className="text-sm text-gray-500">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+            {pagination.total} users
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+              disabled={pagination.page === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+              disabled={pagination.page === pagination.totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ✅ Detail Modal */}
       {showDetailModal && selectedUser && (
