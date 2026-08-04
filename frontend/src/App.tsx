@@ -34,7 +34,7 @@ function App() {
             <Route path="/properties" element={<PropertiesPage />} />
             <Route path="/list-property" element={<AddProperty />} />
             <Route path="/property/:id/edit" element={<EditProperty />} />
-            <Route path="/property/:slug" element={<PropertyDetail />} />
+            <Route path="/property/:id" element={<PropertyDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<GoogleCallback />} />

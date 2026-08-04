@@ -10,7 +10,7 @@ import {
   QrCode, Copy, Download, ExternalLink,
   User, ChevronLeft, ChevronRight, X,
   Maximize, Shield, MessageCircle,
-  Send,
+  Send, Play, Video, Images, Share2,
 } from 'lucide-react';
 import { propertyApi } from '../../services/api/property';
 import { reviewApi } from '../../services/api/review';
@@ -23,7 +23,63 @@ import ReviewForm from '../../components/Review/ReviewForm';
 import RatingStars from '../../components/Review/RatingStars';
 import { useAuth } from '../../hooks/useAuth';
 
+// ✅ Image Helper
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+const getImageUrl = (path: string | undefined | null): string => {
+  if (!path) return '/placeholder-property.jpg';
+  if (path.startsWith('http')) return path;
+  if (path.startsWith('//')) return `http:${path}`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_URL}${cleanPath}`;
+};
+
+// ✅ Video Helper
+const getVideoUrl = (path: string | undefined | null): string => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  if (path.startsWith('//')) return `http:${path}`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_URL}${cleanPath}`;
+};
+
 const formatPrice = (price: number) => `Rs ${price.toLocaleString()}`;
+
+// ✅ Shape this component's UI actually renders (distribution keyed 1-5)
+interface RatingStatsUI {
+  average: number;
+  total: number;
+  distribution: { 1: number; 2: number; 3: number; 4: number; 5: number };
+}
+
+const DEFAULT_RATING_STATS: RatingStatsUI = {
+  average: 0,
+  total: 0,
+  distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+};
+
+// ✅ Converts the backend's actual PropertyRatingResponse shape
+// ({ averageRating, totalReviews, ratingDistribution: [{stars,count,percentage}] })
+// into the { average, total, distribution: {1:n,...,5:n} } shape this UI expects.
+const normalizeRatingStats = (raw: any): RatingStatsUI => {
+  if (!raw) return DEFAULT_RATING_STATS;
+
+  const distribution: RatingStatsUI['distribution'] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+  if (Array.isArray(raw.ratingDistribution)) {
+    raw.ratingDistribution.forEach((entry: { stars: number; count: number }) => {
+      if (entry?.stars >= 1 && entry?.stars <= 5) {
+        distribution[entry.stars as 1 | 2 | 3 | 4 | 5] = entry.count ?? 0;
+      }
+    });
+  }
+
+  return {
+    average: Number(raw.averageRating ?? raw.average ?? 0) || 0,
+    total: Number(raw.totalReviews ?? raw.total ?? 0) || 0,
+    distribution,
+  };
+};
 
 const PropertyDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +90,7 @@ const PropertyDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ Image states
   const [currentImage, setCurrentImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -41,6 +98,7 @@ const PropertyDetail: React.FC = () => {
   const [isQRExpanded, setIsQRExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: '',
     phoneNumber: '',
@@ -50,11 +108,7 @@ const PropertyDetail: React.FC = () => {
 
   // ✅ Review States
   const [reviews, setReviews] = useState([]);
-  const [ratingStats, setRatingStats] = useState({
-    average: 0,
-    total: 0,
-    distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-  });
+  const [ratingStats, setRatingStats] = useState<RatingStatsUI>(DEFAULT_RATING_STATS);
   const [userReview, setUserReview] = useState(null);
   const [loadingReviews, setLoadingReviews] = useState(true);
 
@@ -69,46 +123,70 @@ const PropertyDetail: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [data, reviewsData, statsData] = await Promise.all([
-        propertyApi.getById(id!),
-        reviewApi.getByProperty(id!),
-        reviewApi.getStats(id!)
-      ]);
+      const data = await propertyApi.getById(id!);
 
       setProperty(data);
       setFavoritesCount(data.favoritesCount || 0);
-      setReviews(reviewsData);
-      setRatingStats(statsData);
 
-      // ✅ Check if user already reviewed
-      if (isAuthenticated && reviewsData.length > 0) {
-        const userReviewData = reviewsData.find((r: any) => r.reviewer?.id === user?.id);
-        setUserReview(userReviewData);
+      try {
+        const [reviewsData, statsData] = await Promise.all([
+          reviewApi.getByProperty(id!),
+          reviewApi.getStats(id!),
+        ]);
+
+        setReviews(reviewsData || []);
+        setRatingStats(normalizeRatingStats(statsData));
+
+        if (isAuthenticated && reviewsData && reviewsData.length > 0) {
+          const userReviewData = reviewsData.find((r: any) => r.reviewer?.id === user?.id);
+          setUserReview(userReviewData);
+        }
+      } catch (reviewError) {
+        console.warn('⚠️ Reviews not available:', reviewError);
+        setReviews([]);
+        setRatingStats(DEFAULT_RATING_STATS);
       }
 
       setFormData((prev) => ({
         ...prev,
         message: `Hi, I am interested in this ${data.propertyType?.replace('_', ' ') || 'property'} at ${data.location}`,
       }));
+
+      setLoadingReviews(false);
+
     } catch (err: any) {
-      console.error('Error fetching property:', err);
+      console.error('❌ Error fetching property:', err);
       setError(err.response?.data?.message || 'Failed to load property');
     } finally {
       setLoading(false);
-      setLoadingReviews(false);
     }
   };
 
-  // Build the gallery from real images
-  const images: string[] =
-    property?.images && property.images.length > 0
-      ? property.images
-      : property?.mainImage
-      ? [property.mainImage]
-      : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80'];
+  // ✅ Build gallery from real images with full URLs
+  const images: string[] = property?.images && property.images.length > 0
+    ? property.images.map(img => getImageUrl(img))
+    : property?.mainImage
+    ? [getImageUrl(property.mainImage)]
+    : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80'];
 
-  const nextImage = () => setCurrentImage((prev) => (prev + 1) % images.length);
-  const prevImage = () => setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+  // ✅ Videos with full URLs
+  const videos: string[] = property?.videos && property.videos.length > 0
+    ? property.videos.map(vid => getVideoUrl(vid))
+    : [];
+
+  // ✅ Combined media items (images + videos) — used for the lightbox/thumbnail strip
+  const allMedia = [
+    ...images.map((img) => ({ type: 'image' as const, url: img })),
+    ...videos.map((vid) => ({ type: 'video' as const, url: vid })),
+  ];
+
+  const openLightboxAt = (index: number) => {
+    setCurrentImage(index);
+    setIsLightboxOpen(true);
+  };
+
+  const nextImage = () => setCurrentImage((prev) => (prev + 1) % allMedia.length);
+  const prevImage = () => setCurrentImage((prev) => (prev - 1 + allMedia.length) % allMedia.length);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -134,6 +212,7 @@ const PropertyDetail: React.FC = () => {
     setTimeout(() => setIsSubmitted(false), 3000);
   };
 
+  // ✅ If still loading, show loader
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -142,6 +221,7 @@ const PropertyDetail: React.FC = () => {
     );
   }
 
+  // ✅ If error or no property
   if (error || !property) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
@@ -160,21 +240,15 @@ const PropertyDetail: React.FC = () => {
 
   const agent = property.user;
 
+  // ✅ Hero grid layout: 1 large tile + up to 4 small tiles, Airbnb/Zillow-style.
+  // If there's a video, it always occupies whichever grid slot it falls into
+  // with a play badge overlay; the remainder count ("+N more") appears on the
+  // final visible tile when there's more media than fits in the grid.
+  const heroTiles = allMedia.slice(0, 5);
+  const remainingCount = allMedia.length - heroTiles.length;
+
   return (
     <div className="pt-16 md:pt-20 bg-[#F8FAFC] min-h-screen">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 md:top-20 z-10">
-        <div className="max-w-[1440px] mx-auto px-6 py-3">
-          <nav className="flex items-center gap-2 text-sm">
-            <Link to="/" className="text-[#475569] hover:text-[#2D5A27]">Home</Link>
-            <span className="text-[#94A3B8]">/</span>
-            <Link to="/properties" className="text-[#475569] hover:text-[#2D5A27]">Properties</Link>
-            <span className="text-[#94A3B8]">/</span>
-            <span className="text-[#0F172A] font-medium truncate">{property.title}</span>
-          </nav>
-        </div>
-      </div>
-
       <div className="max-w-[1440px] mx-auto px-6 py-6">
         {/* Back Button */}
         <button
@@ -182,77 +256,103 @@ const PropertyDetail: React.FC = () => {
           className="flex items-center gap-2 text-[#475569] hover:text-[#2D5A27] transition-colors mb-6 group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Properties</span>
+          <span className="text-sm font-medium">Back to Properties</span>
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* LEFT COLUMN - 8 Columns */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Gallery */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-              <div className="relative rounded-xl overflow-hidden bg-gray-100">
-                <img
-                  src={images[currentImage]}
-                  alt={property.title}
-                  className="w-full h-[400px] md:h-[500px] object-cover cursor-pointer"
-                  onClick={() => setIsLightboxOpen(true)}
-                />
 
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all duration-200"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all duration-200"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </>
-                )}
+            {/* ============================================ */}
+            {/* HERO MEDIA GRID — professional listing gallery */}
+            {/* ============================================ */}
+            <div className="relative">
+              <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden h-[280px] sm:h-[380px] md:h-[460px] shadow-sm">
+                {heroTiles.map((media, index) => {
+                  const isLarge = index === 0;
+                  const isLastVisible = index === heroTiles.length - 1 && remainingCount > 0;
 
-                <div className="absolute bottom-4 right-4 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full">
-                  {currentImage + 1} / {images.length}
-                </div>
-
-                <button
-                  onClick={() => setIsLightboxOpen(true)}
-                  className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white p-2 rounded-lg transition-all duration-200"
-                >
-                  <Maximize size={18} />
-                </button>
-
-                {property.isFeatured && (
-                  <div className="absolute top-4 left-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    FEATURED
-                  </div>
-                )}
-              </div>
-
-              {images.length > 1 && (
-                <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                  {images.map((image, index) => (
+                  return (
                     <button
                       key={index}
-                      onClick={() => setCurrentImage(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                        index === currentImage
-                          ? 'border-[#2D5A27] shadow-md'
-                          : 'border-transparent hover:border-gray-300'
-                      }`}
+                      onClick={() => openLightboxAt(index)}
+                      className={`relative group overflow-hidden bg-gray-100 focus:outline-none ${
+                        isLarge ? 'col-span-2 row-span-2' : 'col-span-1 row-span-1'
+                      } ${heroTiles.length === 1 ? 'col-span-4 row-span-2' : ''}`}
                     >
-                      <img src={image} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                      {media.type === 'video' ? (
+                        <>
+                          <video
+                            src={media.url}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                            <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                              <Play size={18} className="text-[#2D5A27] ml-0.5" fill="currentColor" />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={property.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                          }}
+                        />
+                      )}
+
+                      {isLastVisible && (
+                        <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                          <span className="text-white text-sm font-semibold">
+                            +{remainingCount} more
+                          </span>
+                        </div>
+                      )}
                     </button>
-                  ))}
+                  );
+                })}
+              </div>
+
+              {/* Floating badges */}
+              {property.isFeatured && (
+                <div className="absolute top-4 left-4 bg-[#D4AF37] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1">
+                  <Star size={12} fill="currentColor" /> Featured
                 </div>
               )}
+
+              {/* Floating action buttons */}
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                <button
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 bg-white/95 hover:bg-white text-[#0F172A] text-xs font-medium px-3 py-2 rounded-full shadow-md transition-colors"
+                >
+                  {copied ? <CheckCircle size={14} className="text-green-600" /> : <Share2 size={14} />}
+                  {copied ? 'Copied' : 'Share'}
+                </button>
+                <button
+                  onClick={handleFavoriteToggle}
+                  className="flex items-center justify-center w-9 h-9 bg-white/95 hover:bg-white rounded-full shadow-md transition-colors"
+                >
+                  <Heart size={16} className={isFavorited ? 'fill-red-500 text-red-500' : 'text-[#0F172A]'} />
+                </button>
+              </div>
+
+              {/* Show all photos button (bottom-right, Airbnb-style) */}
+              <button
+                onClick={() => openLightboxAt(0)}
+                className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white/95 hover:bg-white text-[#0F172A] text-xs font-semibold px-3.5 py-2 rounded-lg shadow-md transition-colors"
+              >
+                <Images size={14} />
+                Show all {allMedia.length} {allMedia.length === 1 ? 'photo' : 'photos'}
+              </button>
             </div>
 
-            {/* Lightbox Modal */}
+            {/* Lightbox Modal - Supports both images and videos */}
             {isLightboxOpen && (
               <div
                 className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
@@ -265,12 +365,27 @@ const PropertyDetail: React.FC = () => {
                   >
                     <X size={32} />
                   </button>
-                  <img
-                    src={images[currentImage]}
-                    alt={property.title}
-                    className="w-full max-h-[80vh] object-contain rounded-lg"
-                  />
-                  {images.length > 1 && (
+
+                  {allMedia[currentImage]?.type === 'video' ? (
+                    <video
+                      key={allMedia[currentImage].url}
+                      src={allMedia[currentImage].url}
+                      controls
+                      autoPlay
+                      className="w-full max-h-[80vh] rounded-lg bg-black"
+                    />
+                  ) : (
+                    <img
+                      src={allMedia[currentImage]?.url}
+                      alt={property.title}
+                      className="w-full max-h-[80vh] object-contain rounded-lg"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                      }}
+                    />
+                  )}
+
+                  {allMedia.length > 1 && (
                     <>
                       <button
                         onClick={prevImage}
@@ -286,8 +401,31 @@ const PropertyDetail: React.FC = () => {
                       </button>
                     </>
                   )}
+
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
-                    {currentImage + 1} of {images.length}
+                    {allMedia[currentImage]?.type === 'video' ? '🎬 Video' : `${currentImage + 1} of ${allMedia.length}`}
+                  </div>
+
+                  {/* Thumbnail strip inside lightbox for quick jumping */}
+                  <div className="flex gap-2 mt-4 overflow-x-auto pb-1 justify-center">
+                    {allMedia.map((media, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImage(index)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                          index === currentImage ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        {media.type === 'video' ? (
+                          <div className="w-full h-full bg-gray-800 flex items-center justify-center relative">
+                            <video src={media.url} className="w-full h-full object-cover" muted />
+                            <Play size={16} className="absolute text-white" fill="currentColor" />
+                          </div>
+                        ) : (
+                          <img src={media.url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -362,7 +500,7 @@ const PropertyDetail: React.FC = () => {
 
                 <div className="w-full h-[300px] rounded-xl overflow-hidden bg-[#EDF5EC] relative">
                   <iframe
-                    src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${property.latitude},${property.longitude}&zoom=15&maptype=roadmap`}
+                    src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&q=${property.latitude},${property.longitude}&zoom=15&maptype=roadmap`}
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
@@ -376,9 +514,7 @@ const PropertyDetail: React.FC = () => {
               </div>
             )}
 
-            {/* ============================================
-            ✅ REVIEWS SECTION - ADDED HERE
-            ============================================ */}
+            {/* Reviews Section */}
             <div id="reviews-section" className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -386,12 +522,12 @@ const PropertyDetail: React.FC = () => {
                   <div className="flex items-center gap-4 mt-1">
                     <div className="flex items-center gap-2">
                       <span className="text-3xl font-bold text-[#2D5A27]">
-                        {ratingStats.average.toFixed(1)}
+                        {(ratingStats.average ?? 0).toFixed(1)}
                       </span>
-                      <RatingStars rating={ratingStats.average} size="lg" />
+                      <RatingStars rating={ratingStats.average ?? 0} size="lg" />
                     </div>
                     <span className="text-sm text-[#475569]">
-                      ({ratingStats.total} reviews)
+                      ({ratingStats.total ?? 0} reviews)
                     </span>
                   </div>
                 </div>
@@ -419,13 +555,13 @@ const PropertyDetail: React.FC = () => {
                               className="h-full bg-[#D4AF37] rounded-full transition-all duration-500"
                               style={{
                                 width: ratingStats.total > 0
-                                  ? `${(ratingStats.distribution[star as keyof typeof ratingStats.distribution] / ratingStats.total) * 100}%`
+                                  ? `${((ratingStats.distribution[star as 1 | 2 | 3 | 4 | 5] ?? 0) / ratingStats.total) * 100}%`
                                   : '0%'
                               }}
                             />
                           </div>
                           <span className="text-sm text-[#475569] w-12">
-                            {ratingStats.distribution[star as keyof typeof ratingStats.distribution]}
+                            {ratingStats.distribution[star as 1 | 2 | 3 | 4 | 5] ?? 0}
                           </span>
                         </div>
                       ))}
@@ -433,11 +569,11 @@ const PropertyDetail: React.FC = () => {
                     <div className="flex items-center justify-center bg-white rounded-lg p-6">
                       <div className="text-center">
                         <div className="text-5xl font-bold text-[#2D5A27]">
-                          {ratingStats.average.toFixed(1)}
+                          {(ratingStats.average ?? 0).toFixed(1)}
                         </div>
-                        <RatingStars rating={ratingStats.average} size="lg" className="mt-2" />
+                        <RatingStars rating={ratingStats.average ?? 0} size="lg" className="mt-2" />
                         <p className="text-sm text-[#475569] mt-2">
-                          Based on {ratingStats.total} reviews
+                          Based on {ratingStats.total ?? 0} reviews
                         </p>
                       </div>
                     </div>
@@ -494,12 +630,21 @@ const PropertyDetail: React.FC = () => {
           {/* RIGHT COLUMN - 4 Columns */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 sticky top-24">
+              {/* Property title inside sidebar since breadcrumb is gone */}
+              <div className="mb-4 pb-4 border-b border-gray-100">
+                <h1 className="text-lg font-bold text-[#0F172A] leading-snug">{property.title}</h1>
+                <p className="text-sm text-[#475569] flex items-center gap-1 mt-1">
+                  <MapPin size={14} className="text-[#2D5A27]" />
+                  {property.location}
+                </p>
+              </div>
+
               {/* Seller details */}
               <div className="mb-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 bg-[#EDF5EC] rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {agent?.avatarUrl ? (
-                      <img src={agent.avatarUrl} alt={agent.name} className="w-full h-full object-cover" />
+                      <img src={getImageUrl(agent.avatarUrl)} alt={agent.name} className="w-full h-full object-cover" />
                     ) : (
                       <User size={24} className="text-[#2D5A27]" />
                     )}
