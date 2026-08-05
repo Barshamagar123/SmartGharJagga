@@ -23,24 +23,50 @@ import ReviewForm from '../../components/Review/ReviewForm';
 import RatingStars from '../../components/Review/RatingStars';
 import { useAuth } from '../../hooks/useAuth';
 
-// ✅ Image Helper
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// ✅ FIXED: Hardcode API URL for now
+const API_URL = 'http://localhost:5001';
 
+// ✅ FIXED: Image Helper - Simple and clean
 const getImageUrl = (path: string | undefined | null): string => {
   if (!path) return '/placeholder-property.jpg';
-  if (path.startsWith('http')) return path;
-  if (path.startsWith('//')) return `http:${path}`;
+  
+  // If already has http, return as is
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  
+  // If path starts with //, add http:
+  if (path.startsWith('//')) {
+    return `http:${path}`;
+  }
+  
+  // Ensure path starts with /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_URL}${cleanPath}`;
+  
+  // Full URL
+  const fullUrl = `${API_URL}${cleanPath}`;
+  
+  console.log('🖼️ Generated Image URL:', fullUrl); // Debug
+  return fullUrl;
 };
 
-// ✅ Video Helper
+// ✅ FIXED: Video Helper
 const getVideoUrl = (path: string | undefined | null): string => {
   if (!path) return '';
-  if (path.startsWith('http')) return path;
-  if (path.startsWith('//')) return `http:${path}`;
+  
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  
+  if (path.startsWith('//')) {
+    return `http:${path}`;
+  }
+  
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_URL}${cleanPath}`;
+  const fullUrl = `${API_URL}${cleanPath}`;
+  
+  console.log('🎬 Generated Video URL:', fullUrl); // Debug
+  return fullUrl;
 };
 
 const formatPrice = (price: number) => `Rs ${price.toLocaleString()}`;
@@ -59,8 +85,6 @@ const DEFAULT_RATING_STATS: RatingStatsUI = {
 };
 
 // ✅ Converts the backend's actual PropertyRatingResponse shape
-// ({ averageRating, totalReviews, ratingDistribution: [{stars,count,percentage}] })
-// into the { average, total, distribution: {1:n,...,5:n} } shape this UI expects.
 const normalizeRatingStats = (raw: any): RatingStatsUI => {
   if (!raw) return DEFAULT_RATING_STATS;
 
@@ -125,6 +149,11 @@ const PropertyDetail: React.FC = () => {
 
       const data = await propertyApi.getById(id!);
 
+      console.log('📊 Full Property Data:', data);
+      console.log('📸 Images raw:', data.images);
+      console.log('🎬 Videos raw:', data.videos);
+      console.log('🖼️ Main Image raw:', data.mainImage);
+
       setProperty(data);
       setFavoritesCount(data.favoritesCount || 0);
 
@@ -162,23 +191,34 @@ const PropertyDetail: React.FC = () => {
     }
   };
 
-  // ✅ Build gallery from real images with full URLs
-  const images: string[] = property?.images && property.images.length > 0
-    ? property.images.map(img => getImageUrl(img))
-    : property?.mainImage
-    ? [getImageUrl(property.mainImage)]
-    : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80'];
+  // ✅ FIXED: Build gallery from real images with full URLs
+  const images: string[] = React.useMemo(() => {
+    if (property?.images && property.images.length > 0) {
+      return property.images.map(img => getImageUrl(img));
+    }
+    if (property?.mainImage) {
+      return [getImageUrl(property.mainImage)];
+    }
+    return ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80'];
+  }, [property]);
 
-  // ✅ Videos with full URLs
-  const videos: string[] = property?.videos && property.videos.length > 0
-    ? property.videos.map(vid => getVideoUrl(vid))
-    : [];
+  // ✅ FIXED: Videos with full URLs
+  const videos: string[] = React.useMemo(() => {
+    if (property?.videos && property.videos.length > 0) {
+      return property.videos.map(vid => getVideoUrl(vid));
+    }
+    return [];
+  }, [property]);
 
-  // ✅ Combined media items (images + videos) — used for the lightbox/thumbnail strip
-  const allMedia = [
-    ...images.map((img) => ({ type: 'image' as const, url: img })),
-    ...videos.map((vid) => ({ type: 'video' as const, url: vid })),
-  ];
+  // ✅ Combined media items (images + videos)
+  const allMedia = React.useMemo(() => {
+    const media = [
+      ...images.map((img) => ({ type: 'image' as const, url: img })),
+      ...videos.map((vid) => ({ type: 'video' as const, url: vid })),
+    ];
+    console.log('📺 All Media:', media);
+    return media;
+  }, [images, videos]);
 
   const openLightboxAt = (index: number) => {
     setCurrentImage(index);
@@ -240,10 +280,7 @@ const PropertyDetail: React.FC = () => {
 
   const agent = property.user;
 
-  // ✅ Hero grid layout: 1 large tile + up to 4 small tiles, Airbnb/Zillow-style.
-  // If there's a video, it always occupies whichever grid slot it falls into
-  // with a play badge overlay; the remainder count ("+N more") appears on the
-  // final visible tile when there's more media than fits in the grid.
+  // ✅ Hero grid layout: 1 large tile + up to 4 small tiles
   const heroTiles = allMedia.slice(0, 5);
   const remainingCount = allMedia.length - heroTiles.length;
 
@@ -264,64 +301,75 @@ const PropertyDetail: React.FC = () => {
           <div className="lg:col-span-8 space-y-6">
 
             {/* ============================================ */}
-            {/* HERO MEDIA GRID — professional listing gallery */}
+            {/* HERO MEDIA GRID */}
             {/* ============================================ */}
             <div className="relative">
               <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-2xl overflow-hidden h-[280px] sm:h-[380px] md:h-[460px] shadow-sm">
-                {heroTiles.map((media, index) => {
-                  const isLarge = index === 0;
-                  const isLastVisible = index === heroTiles.length - 1 && remainingCount > 0;
+                {heroTiles.length > 0 ? (
+                  heroTiles.map((media, index) => {
+                    const isLarge = index === 0;
+                    const isLastVisible = index === heroTiles.length - 1 && remainingCount > 0;
 
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => openLightboxAt(index)}
-                      className={`relative group overflow-hidden bg-gray-100 focus:outline-none ${
-                        isLarge ? 'col-span-2 row-span-2' : 'col-span-1 row-span-1'
-                      } ${heroTiles.length === 1 ? 'col-span-4 row-span-2' : ''}`}
-                    >
-                      {media.type === 'video' ? (
-                        <>
-                          <video
-                            src={media.url}
-                            className="w-full h-full object-cover"
-                            muted
-                            playsInline
-                            preload="metadata"
-                          />
-                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                            <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                              <Play size={18} className="text-[#2D5A27] ml-0.5" fill="currentColor" />
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => openLightboxAt(index)}
+                        className={`relative group overflow-hidden bg-gray-100 focus:outline-none ${
+                          isLarge ? 'col-span-2 row-span-2' : 'col-span-1 row-span-1'
+                        } ${heroTiles.length === 1 ? 'col-span-4 row-span-2' : ''}`}
+                      >
+                        {media.type === 'video' ? (
+                          <>
+                            <video
+                              src={media.url}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                              onError={(e) => {
+                                console.error('❌ Video failed:', media.url);
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
+                              <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                                <Play size={18} className="text-[#2D5A27] ml-0.5" />
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      ) : (
-                        <img
-                          src={media.url}
-                          alt={property.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-                          }}
-                        />
-                      )}
+                          </>
+                        ) : (
+                          <img
+                            src={media.url}
+                            alt={property.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={(e) => {
+                              console.error('❌ Image failed:', media.url);
+                              (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                            }}
+                          />
+                        )}
 
-                      {isLastVisible && (
-                        <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                          <span className="text-white text-sm font-semibold">
-                            +{remainingCount} more
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+                        {isLastVisible && (
+                          <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                            <span className="text-white text-sm font-semibold">
+                              +{remainingCount} more
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  // ✅ Fallback if no images
+                  <div className="col-span-4 row-span-2 bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400">No images available</span>
+                  </div>
+                )}
               </div>
 
               {/* Floating badges */}
               {property.isFeatured && (
                 <div className="absolute top-4 left-4 bg-[#D4AF37] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1">
-                  <Star size={12} fill="currentColor" /> Featured
+                  <Star size={12} /> Featured
                 </div>
               )}
 
@@ -342,18 +390,20 @@ const PropertyDetail: React.FC = () => {
                 </button>
               </div>
 
-              {/* Show all photos button (bottom-right, Airbnb-style) */}
-              <button
-                onClick={() => openLightboxAt(0)}
-                className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white/95 hover:bg-white text-[#0F172A] text-xs font-semibold px-3.5 py-2 rounded-lg shadow-md transition-colors"
-              >
-                <Images size={14} />
-                Show all {allMedia.length} {allMedia.length === 1 ? 'photo' : 'photos'}
-              </button>
+              {/* Show all photos button */}
+              {allMedia.length > 0 && (
+                <button
+                  onClick={() => openLightboxAt(0)}
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white/95 hover:bg-white text-[#0F172A] text-xs font-semibold px-3.5 py-2 rounded-lg shadow-md transition-colors"
+                >
+                  <Images size={14} />
+                  Show all {allMedia.length} {allMedia.length === 1 ? 'photo' : 'photos'}
+                </button>
+              )}
             </div>
 
-            {/* Lightbox Modal - Supports both images and videos */}
-            {isLightboxOpen && (
+            {/* Lightbox Modal */}
+            {isLightboxOpen && allMedia.length > 0 && (
               <div
                 className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
                 onClick={() => setIsLightboxOpen(false)}
@@ -373,6 +423,9 @@ const PropertyDetail: React.FC = () => {
                       controls
                       autoPlay
                       className="w-full max-h-[80vh] rounded-lg bg-black"
+                      onError={(e) => {
+                        console.error('❌ Video failed in lightbox:', allMedia[currentImage].url);
+                      }}
                     />
                   ) : (
                     <img
@@ -380,6 +433,7 @@ const PropertyDetail: React.FC = () => {
                       alt={property.title}
                       className="w-full max-h-[80vh] object-contain rounded-lg"
                       onError={(e) => {
+                        console.error('❌ Image failed in lightbox:', allMedia[currentImage]?.url);
                         (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
                       }}
                     />
@@ -406,7 +460,7 @@ const PropertyDetail: React.FC = () => {
                     {allMedia[currentImage]?.type === 'video' ? '🎬 Video' : `${currentImage + 1} of ${allMedia.length}`}
                   </div>
 
-                  {/* Thumbnail strip inside lightbox for quick jumping */}
+                  {/* Thumbnail strip */}
                   <div className="flex gap-2 mt-4 overflow-x-auto pb-1 justify-center">
                     {allMedia.map((media, index) => (
                       <button
@@ -419,10 +473,17 @@ const PropertyDetail: React.FC = () => {
                         {media.type === 'video' ? (
                           <div className="w-full h-full bg-gray-800 flex items-center justify-center relative">
                             <video src={media.url} className="w-full h-full object-cover" muted />
-                            <Play size={16} className="absolute text-white" fill="currentColor" />
+                            <Play size={16} className="absolute text-white" />
                           </div>
                         ) : (
-                          <img src={media.url} alt="" className="w-full h-full object-cover" />
+                          <img 
+                            src={media.url} 
+                            alt="" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                            }}
+                          />
                         )}
                       </button>
                     ))}
@@ -431,6 +492,7 @@ const PropertyDetail: React.FC = () => {
               </div>
             )}
 
+            {/* Rest of the component remains same */}
             {/* Property Description */}
             {property.description && (
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
@@ -630,7 +692,7 @@ const PropertyDetail: React.FC = () => {
           {/* RIGHT COLUMN - 4 Columns */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 sticky top-24">
-              {/* Property title inside sidebar since breadcrumb is gone */}
+              {/* Property title */}
               <div className="mb-4 pb-4 border-b border-gray-100">
                 <h1 className="text-lg font-bold text-[#0F172A] leading-snug">{property.title}</h1>
                 <p className="text-sm text-[#475569] flex items-center gap-1 mt-1">
