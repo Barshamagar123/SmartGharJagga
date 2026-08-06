@@ -10,15 +10,12 @@ import PropertySort from '../../components/properties/PropertySort';
 import { propertyApi } from '../../services/api/property';
 import type { Property, PropertyType } from '../../types/property';
 
-// ✅ FIXED: Direct URL without any extra logic
+// ✅ Image helper - Same as PropertyDetail
 const API_URL = 'http://localhost:5001';
 
 const getImageUrl = (path: string | undefined | null): string => {
   if (!path) return '/placeholder-property.jpg';
   if (path.startsWith('http')) return path;
-  
-  // ✅ Simple: Just add API_URL before the path
-  // Path already starts with /uploads/...
   return `${API_URL}${path}`;
 };
 
@@ -69,19 +66,9 @@ const PropertiesPage: React.FC = () => {
 
         const result = await propertyApi.getAll(filterParams);
 
-        console.log('📊 Properties from API:', result.properties);
-        console.log('📸 First property images:', result.properties[0]?.images);
-
-        // ✅ Process properties - Add full URL to images
         const processedProperties = result.properties.map((property: Property) => {
-          // ✅ Process each image
           const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
-          
-          // ✅ Process main image
           const processedMainImage = getImageUrl(property.mainImage || property.images?.[0]);
-          
-          console.log('🖼️ Image path:', property.mainImage || property.images?.[0]);
-          console.log('🖼️ Full URL:', processedMainImage);
           
           return {
             ...property,
@@ -131,11 +118,14 @@ const PropertiesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-primary)]">
+    <div className="min-h-screen bg-[#F8FAFC]">
       <PropertyHeader totalProperties={total} />
 
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 py-8">
+      {/* ✅ FIXED: Padding same as PropertyDetail - px-8 */}
+      <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Filters - Width same as before */}
           <aside className="lg:w-72 xl:w-80 flex-shrink-0">
             <PropertyFilters
               propertyType={filters.propertyType}
