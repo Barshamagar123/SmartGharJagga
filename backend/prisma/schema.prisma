@@ -82,7 +82,7 @@ model Property {
   bedrooms        Int?
   bathrooms       Int?
   area            Float?
-    areaUnit        AreaUnit?      // ✅ ADD THIS - DHUR, AANA, SQFT, etc.
+ areaUnit        AreaUnit?      // ✅ ADD THIS - DHUR, AANA, SQFT, etc.
    
   propertyType    PropertyType
   purpose         Purpose

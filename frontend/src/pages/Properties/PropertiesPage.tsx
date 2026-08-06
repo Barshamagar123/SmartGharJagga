@@ -121,12 +121,12 @@ const PropertiesPage: React.FC = () => {
     <div className="min-h-screen bg-[#F8FAFC]">
       <PropertyHeader totalProperties={total} />
 
-      {/* ✅ FIXED: Padding same as PropertyDetail - px-8 */}
+      {/* ✅ Main Content - max-w-7xl with px-8 padding (matches PropertyDetail) */}
       <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* Filters - Width same as before */}
-          <aside className="lg:w-72 xl:w-80 flex-shrink-0">
+          {/* ✅ Filters - Reduced width to match PropertyDetail layout */}
+          <aside className="lg:w-60 xl:w-64 flex-shrink-0">
             <PropertyFilters
               propertyType={filters.propertyType}
               setPropertyType={(value) => setFilters({ ...filters, propertyType: value as PropertyType })}
@@ -143,14 +143,17 @@ const PropertiesPage: React.FC = () => {
           </aside>
 
           <main className="flex-1">
+            {/* Sort */}
             <PropertySort value={sort} onChange={setSort} />
             
+            {/* Property Grid - Now cards will be larger */}
             <PropertyGrid 
               properties={properties} 
               loading={loading}
               onFavoriteToggle={handleFavoriteToggle}
             />
 
+            {/* Pagination */}
             {totalPages > 1 && (
               <PropertyPagination
                 currentPage={currentPage}

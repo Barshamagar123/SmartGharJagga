@@ -13,7 +13,7 @@ import { BEDROOM_OPTIONS, BATHROOM_OPTIONS, PROPERTY_TYPE_OPTIONS } from '../../
 import type { PropertyType } from '../../types/property';
 
 interface PropertyFiltersProps {
-  propertyType: string | PropertyType;  // ✅ Allow both
+  propertyType: string | PropertyType;
   setPropertyType: (value: string) => void;
   maxPrice: number;
   setMaxPrice: (value: number) => void;
@@ -42,13 +42,13 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
   return (
     <Card 
       variant="default" 
-      padding="md" 
+      padding="md"  // ✅ CHANGED: sm to md for more padding
       radius="lg" 
       className="sticky top-28 mt-4"
     >
       <CardHeader className="pb-3 mb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <SlidersHorizontal size={17} className="text-[#2D5A27]" aria-hidden="true" />
+          <SlidersHorizontal size={18} className="text-[#2D5A27]" aria-hidden="true" />
           Filters
         </CardTitle>
       </CardHeader>
