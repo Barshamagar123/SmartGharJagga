@@ -82,12 +82,12 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-const limiter = rateLimit({
-  windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW || '15') || 15) * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX || '100') || 100,
-  message: 'Too many requests, please try again later.',
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: (parseInt(process.env.RATE_LIMIT_WINDOW || '15') || 15) * 60 * 1000,
+//   max: parseInt(process.env.RATE_LIMIT_MAX || '100') || 100,
+//   message: 'Too many requests, please try again later.',
+// });
+// app.use(limiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
