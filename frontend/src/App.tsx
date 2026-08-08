@@ -23,6 +23,7 @@ import ReviewManagement from './pages/Admin/Review/ReviewManagement.tsx';
 import UserManagement from './pages/Admin/Users/UserManagement.tsx';
 import SubscriptionManagement from './pages/Admin/Subscriptions/SubscriptionManagement.tsx';
 import PropertyListingHeader from './components/properties/PropertyListingHeader.tsx';
+import MyProperties from './pages/Properties/MyProperties.tsx';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
             <Route path="/ai-matching" element={<AIMatching />} />
             <Route path="/map-search" element={<MapSearch />} />
             <Route path='/listing' element={<PropertyListingHeader />} />
+            <Route path='/my-properties' element={<MyProperties />} />
           </Route>
 
           {/* ✅ Admin Routes - Without Layout */}

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import {
   Star,
@@ -16,8 +14,7 @@ import {
   Ruler,
   Building2,
   Tag,
-  Hash,
-  ArrowLeft
+  Hash
 } from 'lucide-react';
 
 import {
@@ -27,8 +24,6 @@ import {
 
 import { AREA_UNIT_OPTIONS } from '../../utils/areaUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import PropertyListingHeader from './PropertyListingHeader';
 
 interface Step1Props {
   formData: any;
@@ -37,12 +32,16 @@ interface Step1Props {
 }
 
 const PropertyFormStep1: React.FC<Step1Props> = ({
-  formData,
+  formData = {},
   updateField,
   onValidationChange
 }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+
+  // Defensive fallback: if a parent ever passes formData as
+  // undefined/null explicitly (default params don't catch null),
+  // fall back to an empty object so safeFormData.title etc. never throws.
+  const safeFormData = formData || {};
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -94,15 +93,15 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
   useEffect(() => {
     const newErrors: Record<string, string> = {
-      title: validate('title', formData.title),
-      price: validate('price', formData.price),
+      title: validate('title', safeFormData.title),
+      price: validate('price', safeFormData.price),
       propertyType: validate(
         'propertyType',
-        formData.propertyType
+        safeFormData.propertyType
       ),
       location: validate(
         'location',
-        formData.location
+        safeFormData.location
       )
     };
 
@@ -113,7 +112,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
     );
 
     onValidationChange?.(isValid);
-  }, [formData, onValidationChange]);
+  }, [safeFormData, onValidationChange]);
 
   const handleBlur = (field: string) => {
     setTouched((prev) => ({
@@ -174,39 +173,15 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
     </div>
   );
 
+  // PropertyFormStep1 renders ONLY its form fields. The page header
+  // (title + "Step X of 4" badge) and the full-page layout are owned by
+  // the parent <PropertyForm /> component, which renders this header
+  // once for all 4 steps (Basic Info, Location, Media, Review). Adding
+  // a header or page wrapper back here would recreate the duplicate
+  // "List Your Property" banner seen in earlier screenshots.
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-
-      {/* ========================================== */}
-      {/* BACK TO PROPERTIES */}
-      {/* ========================================== */}
-
-      <div className="max-w-7xl mx-auto px-8 py-4">
-        <button
-          onClick={() => navigate('/properties')}
-          className="flex items-center gap-2 text-[#475569] hover:text-[#2D5A27] transition-colors group text-sm"
-        >
-          <ArrowLeft
-            size={16}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
-
-          <span>Back to Properties</span>
-        </button>
-      </div>
-
-      {/* ========================================== */}
-      {/* ONLY PROPERTY LISTING HEADER */}
-      {/* ========================================== */}
-
-      <PropertyListingHeader />
-
-      {/* ========================================== */}
-      {/* FORM CONTENT */}
-      {/* ========================================== */}
-
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8">
 
           {/* ========================================== */}
           {/* 1. TITLE & DESCRIPTION */}
@@ -245,12 +220,12 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 icon={Hash}
                 error={errors.title}
                 touched={touched.title}
-                hint={`${formData.title?.length || 0}/100`}
+                hint={`${safeFormData.title?.length || 0}/100`}
               >
                 <input
                   type="text"
                   placeholder="e.g. Modern 4BHK Villa with Private Pool"
-                  value={formData.title || ''}
+                  value={safeFormData.title || ''}
                   onChange={(e) =>
                     updateField('title', e.target.value)
                   }
@@ -280,7 +255,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
                 <textarea
                   rows={4}
-                  value={formData.description || ''}
+                  value={safeFormData.description || ''}
                   onChange={(e) =>
                     updateField(
                       'description',
@@ -294,7 +269,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 <div className="flex justify-end mt-1">
 
                   <span className="text-[10px] text-gray-400">
-                    {formData.description?.length || 0} characters
+                    {safeFormData.description?.length || 0} characters
                   </span>
 
                 </div>
@@ -353,7 +328,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
                   <input
                     type="number"
-                    value={formData.price || ''}
+                    value={safeFormData.price || ''}
                     onChange={(e) =>
                       updateField(
                         'price',
@@ -380,7 +355,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               >
 
                 <select
-                  value={formData.propertyType || ''}
+                  value={safeFormData.propertyType || ''}
                   onChange={(e) =>
                     updateField(
                       'propertyType',
@@ -431,7 +406,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                         )
                       }
                       className={`py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                        formData.purpose === opt.value
+                        safeFormData.purpose === opt.value
                           ? 'bg-white text-emerald-700 shadow-sm border border-gray-200'
                           : 'text-gray-400 hover:text-gray-600'
                       }`}
@@ -486,7 +461,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               >
                 <input
                   type="number"
-                  value={formData.bedrooms || ''}
+                  value={safeFormData.bedrooms || ''}
                   onChange={(e) =>
                     updateField(
                       'bedrooms',
@@ -506,7 +481,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               >
                 <input
                   type="number"
-                  value={formData.bathrooms || ''}
+                  value={safeFormData.bathrooms || ''}
                   onChange={(e) =>
                     updateField(
                       'bathrooms',
@@ -526,7 +501,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               >
                 <input
                   type="number"
-                  value={formData.floor || ''}
+                  value={safeFormData.floor || ''}
                   onChange={(e) =>
                     updateField(
                       'floor',
@@ -546,7 +521,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               >
                 <input
                   type="number"
-                  value={formData.yearBuilt || ''}
+                  value={safeFormData.yearBuilt || ''}
                   onChange={(e) =>
                     updateField(
                       'yearBuilt',
@@ -572,7 +547,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                     >
                       <input
                         type="number"
-                        value={formData.area || ''}
+                        value={safeFormData.area || ''}
                         onChange={(e) =>
                           updateField(
                             'area',
@@ -599,7 +574,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
                       <select
                         value={
-                          formData.areaUnit || 'SQFT'
+                          safeFormData.areaUnit || 'SQFT'
                         }
                         onChange={(e) =>
                           updateField(
@@ -638,11 +613,11 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                   onClick={() =>
                     updateField(
                       'parking',
-                      !formData.parking
+                      !safeFormData.parking
                     )
                   }
                   className={`w-full py-2.5 px-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all duration-200 ${
-                    formData.parking
+                    safeFormData.parking
                       ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
                       : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'
                   }`}
@@ -650,12 +625,12 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
                   <div
                     className={`w-5 h-5 rounded-lg flex items-center justify-center border-2 transition-all ${
-                      formData.parking
+                      safeFormData.parking
                         ? 'bg-emerald-500 border-emerald-500'
                         : 'bg-white border-gray-300'
                     }`}
                   >
-                    {formData.parking && (
+                    {safeFormData.parking && (
                       <Check
                         size={12}
                         className="text-white"
@@ -684,11 +659,11 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               onClick={() =>
                 updateField(
                   'isFeatured',
-                  !formData.isFeatured
+                  !safeFormData.isFeatured
                 )
               }
               className={`group cursor-pointer rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
-                formData.isFeatured
+                safeFormData.isFeatured
                   ? 'border-amber-400 bg-gradient-to-br from-amber-50/80 to-white shadow-lg shadow-amber-100/50'
                   : 'border-gray-200 bg-white hover:border-amber-200 hover:bg-amber-50/30'
               }`}
@@ -698,7 +673,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
-                    formData.isFeatured
+                    safeFormData.isFeatured
                       ? 'bg-amber-400 text-white shadow-lg shadow-amber-200'
                       : 'bg-gray-100 text-gray-400'
                   }`}
@@ -706,7 +681,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                   <Star
                     size={22}
                     fill={
-                      formData.isFeatured
+                      safeFormData.isFeatured
                         ? 'currentColor'
                         : 'none'
                     }
@@ -729,14 +704,14 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 <div className="flex items-center gap-3 flex-shrink-0">
 
                   <span className="text-[10px] font-semibold text-gray-400">
-                    {formData.isFeatured
+                    {safeFormData.isFeatured
                       ? 'Active'
                       : 'Inactive'}
                   </span>
 
                   <div
                     className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${
-                      formData.isFeatured
+                      safeFormData.isFeatured
                         ? 'bg-amber-400'
                         : 'bg-gray-300'
                     }`}
@@ -744,7 +719,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
                     <div
                       className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${
-                        formData.isFeatured
+                        safeFormData.isFeatured
                           ? 'left-5'
                           : 'left-0.5'
                       }`}
@@ -775,17 +750,13 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
             </div>
 
             <p className="text-xs text-blue-700 font-medium">
-              Step 1 of 3: Provide accurate information to help buyers find your property faster.
+              Step 1 of 4: Provide accurate information to help buyers find your property faster.
             </p>
 
           </div>
-
-        </div>
-      </div>
 
     </div>
   );
 };
 
 export default PropertyFormStep1;
-
