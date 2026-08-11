@@ -7,7 +7,7 @@ import {
   MapPin, Bed, Bath, Maximize2, Car,
   CheckCircle, XCircle, Clock, AlertCircle,
   RefreshCw, ChevronDown, ChevronUp,
-  Filter, Search, Loader2
+  Filter, Search, Loader2, Calendar
 } from 'lucide-react';
 import { propertyApi } from '../../services/api/property';
 import { formatArea } from '../../utils/areaUtils';
@@ -15,15 +15,30 @@ import type { Property } from '../../types/property';
 import StatusBadge from '../../components/admin/StatusBadge';
 import { Button } from '../../components/common/Button/Button';
 
-// Image helper
+// ✅ Image helper - FIXED for upload middleware
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 const getImageUrl = (path: string | undefined | null): string => {
   if (!path) return '/placeholder-property.jpg';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  if (path.startsWith('//')) return `http:${path}`;
+  
+  // If already has http, return as is
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  
+  // If path starts with //, add http:
+  if (path.startsWith('//')) {
+    return `http:${path}`;
+  }
+  
+  // ✅ Ensure path starts with /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_URL}${cleanPath}`;
+  
+  // ✅ Full URL
+  const fullUrl = `${API_URL}${cleanPath}`;
+  
+  console.log('🖼️ Image URL:', fullUrl);
+  return fullUrl;
 };
 
 const formatPrice = (price: number) => {
@@ -56,7 +71,6 @@ const MyProperties: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -72,18 +86,40 @@ const MyProperties: React.FC = () => {
       
       const data = await propertyApi.getMyProperties();
       
-      console.log('📊 My Properties:', data);
+      console.log('📊 My Properties Data:', data);
       
-      // Process images
-      const processedProperties = data.map((property: Property) => ({
-        ...property,
-        images: property.images?.map((img: string) => getImageUrl(img)) || [],
-        mainImage: getImageUrl(property.mainImage || property.images?.[0]),
-      }));
+      // ✅ Process images - FIXED
+      const processedProperties = data.map((property: Property) => {
+        // Log raw image data for debugging
+        console.log(`📸 Property: ${property.title}`);
+        console.log('  - Raw images:', property.images);
+        console.log('  - Raw mainImage:', property.mainImage);
+        
+        // Process main image - use mainImage or first image from array
+        let mainImage = '/placeholder-property.jpg';
+        
+        if (property.mainImage) {
+          mainImage = getImageUrl(property.mainImage);
+        } else if (property.images && property.images.length > 0) {
+          mainImage = getImageUrl(property.images[0]);
+        }
+        
+        // Process all images
+        const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
+        
+        console.log('  - Processed mainImage:', mainImage);
+        console.log('  - Processed images:', processedImages);
+        
+        return {
+          ...property,
+          images: processedImages,
+          mainImage: mainImage,
+        };
+      });
       
       setProperties(processedProperties);
     } catch (error: any) {
-      console.error('Error fetching properties:', error);
+      console.error('❌ Error fetching properties:', error);
       setError(error.response?.data?.message || 'Failed to fetch properties');
     } finally {
       setLoading(false);
@@ -277,10 +313,12 @@ const MyProperties: React.FC = () => {
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden bg-gray-100">
                   <img
-                    src={property.mainImage || property.images?.[0] || '/placeholder-property.jpg'}
+                    src={property.mainImage || '/placeholder-property.jpg'}
                     alt={property.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
                     onError={(e) => {
+                      console.error('❌ Image failed to load:', property.mainImage);
                       (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
                     }}
                   />
@@ -359,12 +397,10 @@ const MyProperties: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                    <span className="text-xs text-gray-400">
-                      Listed: {new Date(property.createdAt).toLocaleDateString()}
-                    </span>
+                  <div className="flex items-center justify-start mt-3 pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      👁️ {property.views || 0} views
+                      <Calendar className="w-3 h-3" />
+                      Listed: {new Date(property.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>

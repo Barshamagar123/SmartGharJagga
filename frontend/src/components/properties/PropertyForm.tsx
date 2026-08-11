@@ -31,8 +31,6 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
   onCancel,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  // ✅ isEdit is now passed through to the hook so submitForm() knows
-  // whether to call propertyApi.create() or propertyApi.update().
   const { formData, loading, error, updateField, submitForm } = usePropertyForm(
     initialData,
     isEdit
@@ -69,15 +67,9 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
+      
       {/* ========================================== */}
-      {/* PAGE HEADER — full-width, directly under    */}
-      {/* the navbar, rendered ONCE for all 4 steps.  */}
-      {/* This replaces the old gradient/rounded      */}
-      {/* "Header" block that used to live inside the */}
-      {/* max-w-4xl card below — that block was both  */}
-      {/* the cause of the duplicate title AND why it */}
-      {/* never stretched full width (it inherited    */}
-      {/* the card's max-w-4xl + rounded-2xl).        */}
+      {/* HEADER - Full Width */}
       {/* ========================================== */}
       <PropertyListingHeader
         title={isEdit ? 'Edit Your' : 'List Your'}
@@ -91,58 +83,62 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         totalSteps={steps.length}
       />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          {/* Steps */}
-          <div className="px-8 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              {steps.map((step, index) => (
-                <React.Fragment key={step.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-all ${
-                        index === currentStep
-                          ? 'bg-[#2D5A27] text-white'
-                          : index < currentStep
-                          ? 'bg-green-100 text-green-600'
-                          : 'bg-gray-100 text-gray-400'
-                      }`}
-                    >
-                      {index < currentStep ? <Check className="w-4 h-4" /> : step.icon}
-                    </div>
-                    <span
-                      className={`text-sm font-medium hidden sm:block ${
-                        index === currentStep
-                          ? 'text-[#2D5A27]'
-                          : index < currentStep
-                          ? 'text-green-600'
-                          : 'text-gray-400'
-                      }`}
-                    >
-                      {step.label}
-                    </span>
+      {/* ========================================== */}
+      {/* FORM - FULL WIDTH (max-w-7xl) */}
+      {/* ========================================== */}
+      <div className="max-w-7xl mx-auto px-8 py-6">
+        
+        {/* Steps - Horizontal */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+          <div className="flex items-center gap-6">
+            {steps.map((step, index) => (
+              <React.Fragment key={step.id}>
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-all ${
+                      index === currentStep
+                        ? 'bg-[#2D5A27] text-white shadow-sm shadow-[#2D5A27]/30'
+                        : index < currentStep
+                        ? 'bg-green-100 text-green-600'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {index < currentStep ? <Check className="w-4 h-4" /> : step.icon}
                   </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 w-8 sm:w-12 ${
-                        index < currentStep ? 'bg-green-500' : 'bg-gray-200'
-                      }`}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+                  <span
+                    className={`text-sm font-medium ${
+                      index === currentStep
+                        ? 'text-[#2D5A27]'
+                        : index < currentStep
+                        ? 'text-green-600'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`flex-1 h-0.5 max-w-16 ${
+                      index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            ))}
           </div>
+        </div>
 
-          {/* Error */}
-          {error && (
-            <div className="mx-8 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600 whitespace-pre-line">{error}</p>
-            </div>
-          )}
+        {/* Error */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600 whitespace-pre-line">{error}</p>
+          </div>
+        )}
 
-          {/* Content */}
+        {/* Content */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
@@ -150,39 +146,38 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
-              className="p-8"
             >
               {renderStep()}
             </motion.div>
           </AnimatePresence>
+        </div>
 
-          {/* Footer */}
-          <div className="px-8 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+        {/* Footer */}
+        <div className="mt-6 flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <button
+            onClick={currentStep === 0 ? onCancel : handlePrev}
+            className="px-6 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors text-sm"
+          >
+            {currentStep === 0 ? 'Cancel' : 'Back'}
+          </button>
+
+          {currentStep === steps.length - 1 ? (
             <button
-              onClick={currentStep === 0 ? onCancel : handlePrev}
-              className="px-6 py-2.5 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="px-8 py-2.5 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all disabled:opacity-50 flex items-center gap-2 text-sm"
             >
-              {currentStep === 0 ? 'Cancel' : 'Back'}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              {loading ? 'Submitting...' : isEdit ? 'Update Property' : 'List Property'}
             </button>
-
-            {currentStep === steps.length - 1 ? (
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="px-8 py-2.5 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                {loading ? 'Submitting...' : isEdit ? 'Update Property' : 'List Property'}
-              </button>
-            ) : (
-              <button
-                onClick={handleNext}
-                className="px-8 py-2.5 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all flex items-center gap-2"
-              >
-                Next <ChevronRight className="w-5 h-5" />
-              </button>
-            )}
-          </div>
+          ) : (
+            <button
+              onClick={handleNext}
+              className="px-8 py-2.5 bg-[#2D5A27] text-white font-semibold rounded-xl hover:bg-[#23461E] transition-all flex items-center gap-2 text-sm"
+            >
+              Next <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </div>
