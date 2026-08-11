@@ -14,31 +14,16 @@ import { formatArea } from '../../utils/areaUtils';
 import type { Property } from '../../types/property';
 import StatusBadge from '../../components/admin/StatusBadge';
 import { Button } from '../../components/common/Button/Button';
+import PropertyCard from '../../components/properties/PropertyCard';
 
-// ✅ Image helper - FIXED for upload middleware
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+// ✅ SAME AS PropertiesPage - Image helper
+const API_URL = 'http://localhost:5001';
 
 const getImageUrl = (path: string | undefined | null): string => {
   if (!path) return '/placeholder-property.jpg';
-  
-  // If already has http, return as is
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
-  }
-  
-  // If path starts with //, add http:
-  if (path.startsWith('//')) {
-    return `http:${path}`;
-  }
-  
-  // ✅ Ensure path starts with /
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  
-  // ✅ Full URL
-  const fullUrl = `${API_URL}${cleanPath}`;
-  
-  console.log('🖼️ Image URL:', fullUrl);
-  return fullUrl;
+  if (path.startsWith('http')) return path;
+  return `${API_URL}${path}`;
 };
 
 const formatPrice = (price: number) => {
@@ -88,32 +73,15 @@ const MyProperties: React.FC = () => {
       
       console.log('📊 My Properties Data:', data);
       
-      // ✅ Process images - FIXED
+      // ✅ SAME AS PropertiesPage - Process images
       const processedProperties = data.map((property: Property) => {
-        // Log raw image data for debugging
-        console.log(`📸 Property: ${property.title}`);
-        console.log('  - Raw images:', property.images);
-        console.log('  - Raw mainImage:', property.mainImage);
-        
-        // Process main image - use mainImage or first image from array
-        let mainImage = '/placeholder-property.jpg';
-        
-        if (property.mainImage) {
-          mainImage = getImageUrl(property.mainImage);
-        } else if (property.images && property.images.length > 0) {
-          mainImage = getImageUrl(property.images[0]);
-        }
-        
-        // Process all images
         const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
-        
-        console.log('  - Processed mainImage:', mainImage);
-        console.log('  - Processed images:', processedImages);
+        const processedMainImage = getImageUrl(property.mainImage || property.images?.[0]);
         
         return {
           ...property,
           images: processedImages,
-          mainImage: mainImage,
+          mainImage: processedMainImage,
         };
       });
       
@@ -272,7 +240,7 @@ const MyProperties: React.FC = () => {
           </Button>
         </div>
 
-        {/* Properties Grid */}
+        {/* Properties Grid - Uses PropertyCard */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 mb-6">
             <div className="flex items-center gap-2">
@@ -306,103 +274,63 @@ const MyProperties: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProperties.map((property) => (
-              <div
-                key={property.id}
-                className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group"
-              >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden bg-gray-100">
-                  <img
-                    src={property.mainImage || '/placeholder-property.jpg'}
-                    alt={property.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    onError={(e) => {
-                      console.error('❌ Image failed to load:', property.mainImage);
-                      (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-                    }}
-                  />
-                  <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                    <StatusBadge status={property.status} size="sm" />
-                    {property.isFeatured && (
-                      <span className="bg-[#D4AF37] text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-white" /> Featured
-                      </span>
-                    )}
-                  </div>
-                  <div className="absolute bottom-3 right-3 flex gap-1">
-                    <Link
-                      to={`/property/${property.id}`}
-                      className="p-1.5 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
-                      title="View Property"
-                    >
-                      <Eye className="w-4 h-4 text-gray-600" />
-                    </Link>
-                    <Link
-                      to={`/edit-property/${property.id}`}
-                      className="p-1.5 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
-                      title="Edit Property"
-                    >
-                      <Edit className="w-4 h-4 text-blue-600" />
-                    </Link>
-                    <button
-                      onClick={() => handleToggleFeatured(property.id)}
-                      className={`p-1.5 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors ${
-                        property.isFeatured ? 'text-yellow-600' : 'text-gray-400'
-                      }`}
-                      title={property.isFeatured ? 'Remove Featured' : 'Make Featured'}
-                      disabled={actionLoading}
-                    >
-                      <Star className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => openDeleteModal(property.id)}
-                      className="p-1.5 bg-white/90 hover:bg-red-50 rounded-lg shadow-md transition-colors text-red-500 hover:text-red-600"
-                      title="Delete Property"
-                      disabled={actionLoading}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+              <div key={property.id} className="relative">
+                {/* ✅ PropertyCard - Uses same image handling */}
+                <PropertyCard
+                  id={property.id}
+                  title={property.title}
+                  price={property.price}
+                  location={property.location}
+                  area={property.area}
+                  areaUnit={property.areaUnit}
+                  mainImage={property.mainImage}
+                  images={property.images}
+                  isFeatured={property.isFeatured}
+                  isVerified={property.isVerified}
+                  views={property.views}
+                  favoritesCount={property.favoritesCount}
+                  propertyType={property.propertyType}
+                />
+                
+                {/* Status Overlay */}
+                <div className="absolute top-2 left-2 z-10">
+                  <StatusBadge status={property.status} size="sm" />
                 </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 truncate">{property.title}</h3>
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                    <MapPin className="w-4 h-4" />
-                    {property.location}
-                  </p>
-                  
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-lg font-bold text-[#2D5A27]">
-                      {formatPrice(property.price)}
-                    </span>
-                    <div className="flex items-center gap-3 text-xs text-gray-400">
-                      {property.bedrooms && (
-                        <span className="flex items-center gap-1">
-                          <Bed className="w-3 h-3" /> {property.bedrooms}
-                        </span>
-                      )}
-                      {property.bathrooms && (
-                        <span className="flex items-center gap-1">
-                          <Bath className="w-3 h-3" /> {property.bathrooms}
-                        </span>
-                      )}
-                      {property.area && property.areaUnit && (
-                        <span className="flex items-center gap-1">
-                          <Maximize2 className="w-3 h-3" /> {formatArea(property.area, property.areaUnit)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-start mt-3 pt-3 border-t border-gray-100">
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Listed: {new Date(property.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
+                
+                {/* Action Buttons */}
+                <div className="absolute bottom-2 right-2 z-10 flex gap-1">
+                  <Link
+                    to={`/property/${property.id}`}
+                    className="p-1.5 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
+                    title="View Property"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-gray-600" />
+                  </Link>
+                  <Link
+                    to={`/edit-property/${property.id}`}
+                    className="p-1.5 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors"
+                    title="Edit Property"
+                  >
+                    <Edit className="w-3.5 h-3.5 text-blue-600" />
+                  </Link>
+                  <button
+                    onClick={() => handleToggleFeatured(property.id)}
+                    className={`p-1.5 bg-white/90 hover:bg-white rounded-lg shadow-md transition-colors ${
+                      property.isFeatured ? 'text-yellow-600' : 'text-gray-400'
+                    }`}
+                    title={property.isFeatured ? 'Remove Featured' : 'Make Featured'}
+                    disabled={actionLoading}
+                  >
+                    <Star className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => openDeleteModal(property.id)}
+                    className="p-1.5 bg-white/90 hover:bg-red-50 rounded-lg shadow-md transition-colors text-red-500 hover:text-red-600"
+                    title="Delete Property"
+                    disabled={actionLoading}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}

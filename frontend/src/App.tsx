@@ -21,9 +21,9 @@ import AdminDashboard from './pages/Admin/AdminDashboard.tsx';
 import PropertyManagement from './pages/Admin/Properties/PropertyManagement.tsx';
 import ReviewManagement from './pages/Admin/Review/ReviewManagement.tsx';
 import UserManagement from './pages/Admin/Users/UserManagement.tsx';
-import SubscriptionManagement from './pages/Admin/Subscriptions/SubscriptionManagement.tsx';
 import PropertyListingHeader from './components/properties/PropertyListingHeader.tsx';
 import MyProperties from './pages/Properties/MyProperties.tsx';
+import SubscriptionPlans from './pages/Subscription/SubscriptionPlans.tsx';
 
 function App() {
   return (
@@ -46,6 +46,7 @@ function App() {
             <Route path="/map-search" element={<MapSearch />} />
             <Route path='/listing' element={<PropertyListingHeader />} />
             <Route path='/my-properties' element={<MyProperties />} />
+            <Route path='/subscription' element={<SubscriptionPlans />} />
           </Route>
 
           {/* ✅ Admin Routes - Without Layout */}
@@ -61,7 +62,6 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="properties" element={<PropertyManagement />} />
             <Route path="reviews" element={<ReviewManagement />} />
-            <Route path="subscriptions" element={<SubscriptionManagement />} />
           </Route>
         </Routes>
       </AuthProvider>
