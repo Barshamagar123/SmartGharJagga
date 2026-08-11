@@ -1,4 +1,4 @@
-// src/pages/Home/HomePage.tsx - Fixed Image Helper
+// src/pages/Home/HomePage.tsx - Clean Version (Debug Removed)
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -12,38 +12,16 @@ import PropertyGrid from '../../components/properties/PropertyGrid';
 import { propertyApi } from '../../services/api/property';
 import type { Property } from '../../types/property';
 
-// ✅ FIXED - Image helper with correct path
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// ✅ API_URL for API calls, BASE_URL for images
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+const BASE_URL = API_URL.replace('/api/v1', '');
 
 const getImageUrl = (path: string | undefined | null): string => {
   if (!path) return '/placeholder-property.jpg';
-  
-  // If it's already a full URL, return it
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  
-  // If it starts with 'uploads/', keep it as is
-  if (path.startsWith('uploads/')) {
-    return `${API_URL}/${path}`;
-  }
-  
-  // If it starts with '/uploads/', remove the leading slash
-  if (path.startsWith('/uploads/')) {
-    return `${API_URL}${path}`;
-  }
-  
-  // If it starts with '/' and is not uploads, add uploads prefix
-  if (path.startsWith('/')) {
-    return `${API_URL}/uploads/properties/images${path}`;
-  }
-  
-  // Default: assume it's just the filename or relative path
-  // Check if it already has 'uploads/properties/images' in the path
-  if (path.includes('uploads/properties/images')) {
-    return `${API_URL}/${path}`;
-  }
-  
-  // Default: add the full uploads path
-  return `${API_URL}/uploads/properties/images/${path}`;
+  if (path.startsWith('//')) return `http:${path}`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${BASE_URL}${cleanPath}`;
 };
 
 const HomePage: React.FC = () => {
@@ -57,26 +35,17 @@ const HomePage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🔄 Fetching properties...');
-      
+      // Fetch all properties (limit to 6)
       const allResult = await propertyApi.getAll({
         limit: 6,
         sortBy: 'createdAt',
         sortOrder: 'desc'
       });
 
-      console.log('📦 All properties data:', allResult);
-
-      // ✅ FIXED - Process images with correct path
+      // Process images
       const processedProperties = allResult.properties.map((property: Property) => {
-        // Log the image paths to debug
-        console.log('📸 Property images:', property.images);
-        console.log('📸 Property mainImage:', property.mainImage);
-        
         const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
         const processedMainImage = getImageUrl(property.mainImage || property.images?.[0]);
-        
-        console.log('✅ Processed mainImage:', processedMainImage);
         
         return {
           ...property,
@@ -87,6 +56,7 @@ const HomePage: React.FC = () => {
       });
       setProperties(processedProperties);
 
+      // Fetch featured properties (limit to 3)
       const featuredResult = await propertyApi.getAll({
         isFeatured: true,
         limit: 3,
@@ -94,6 +64,7 @@ const HomePage: React.FC = () => {
         sortOrder: 'desc'
       });
 
+      // Process images for featured
       const processedFeatured = featuredResult.properties.map((property: Property) => {
         const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
         const processedMainImage = getImageUrl(property.mainImage || property.images?.[0]);
@@ -121,6 +92,7 @@ const HomePage: React.FC = () => {
 
   const handleFavoriteToggle = async (propertyId: string) => {
     try {
+      // Optimistic update
       setProperties(prev =>
         prev.map(p =>
           p.id === propertyId
@@ -180,6 +152,7 @@ const HomePage: React.FC = () => {
       <FeaturedCarousel />
       <PropertyCategories />
       
+      {/* Featured Properties Section */}
       {!loading && featuredProperties.length > 0 && (
         <section className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex justify-between items-center mb-6">
@@ -196,6 +169,7 @@ const HomePage: React.FC = () => {
         </section>
       )}
 
+      {/* Latest Properties Section */}
       {!loading && properties.length > 0 && (
         <section className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex justify-between items-center mb-6">
@@ -212,6 +186,7 @@ const HomePage: React.FC = () => {
         </section>
       )}
 
+      {/* Error State */}
       {error && (
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700">
