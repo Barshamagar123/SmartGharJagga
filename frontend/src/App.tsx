@@ -24,6 +24,7 @@ import UserManagement from './pages/Admin/Users/UserManagement.tsx';
 import PropertyListingHeader from './components/properties/PropertyListingHeader.tsx';
 import MyProperties from './pages/Properties/MyProperties.tsx';
 import SubscriptionPlans from './pages/Subscription/SubscriptionPlans.tsx';
+import PropertyDetailPremium from './pages/PropertyDetail/PropertyDetail';
 
 function App() {
   return (
@@ -36,7 +37,7 @@ function App() {
             <Route path="/properties" element={<PropertiesPage />} />
             <Route path="/list-property" element={<AddProperty />} />
             <Route path="/property/:id/edit" element={<EditProperty />} />
-            <Route path="/property/:id" element={<PropertyDetail />} />
+            <Route path="/property/:id" element={<PropertyDetailPremium />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<GoogleCallback />} />

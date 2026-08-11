@@ -6,7 +6,6 @@ import FeaturedPropertiesSection from '../../components/Home/FeaturedPropertiesS
 import HeroSection from '../../components/Home/HeroSection';
 import FeaturedCarousel from '../../components/Home/FeaturedCarousel';
 import PropertyCategories from '../../components/Home/ProperetyCategories';
-import PricingSection from '../../components/Home/PricingSection';
 import CTASection from '../../components/Home/CTASection';
 
 const HomePage: React.FC = () => {
@@ -15,8 +14,7 @@ const HomePage: React.FC = () => {
       <HeroSection />
       <FeaturedCarousel />
       <PropertyCategories />
-      <FeaturedPropertiesSection />
-      <PricingSection />
+      
       <CTASection />
     </div>
   );
