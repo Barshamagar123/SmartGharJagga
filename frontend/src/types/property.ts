@@ -71,6 +71,8 @@ export interface Property {
   amenities: string[];
   features?: string[];
   images: string[];
+    isFavorited?: boolean; // ✅ Add this
+
   mainImage?: string;
   videos?: string[];
   status: PropertyStatus;
