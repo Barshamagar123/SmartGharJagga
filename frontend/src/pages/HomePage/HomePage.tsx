@@ -1,4 +1,4 @@
-// src/pages/Home/HomePage.tsx - Clean Version (Debug Removed)
+// src/pages/Home/HomePage.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -12,7 +12,7 @@ import PropertyGrid from '../../components/properties/PropertyGrid';
 import { propertyApi } from '../../services/api/property';
 import type { Property } from '../../types/property';
 
-// ✅ API_URL for API calls, BASE_URL for images
+// ✅ Image helper
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
 const BASE_URL = API_URL.replace('/api/v1', '');
 
@@ -26,7 +26,6 @@ const getImageUrl = (path: string | undefined | null): string => {
 
 const HomePage: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);
-  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,28 +55,6 @@ const HomePage: React.FC = () => {
       });
       setProperties(processedProperties);
 
-      // Fetch featured properties (limit to 3)
-      const featuredResult = await propertyApi.getAll({
-        isFeatured: true,
-        limit: 3,
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-      });
-
-      // Process images for featured
-      const processedFeatured = featuredResult.properties.map((property: Property) => {
-        const processedImages = property.images?.map((img: string) => getImageUrl(img)) || [];
-        const processedMainImage = getImageUrl(property.mainImage || property.images?.[0]);
-        
-        return {
-          ...property,
-          images: processedImages,
-          mainImage: processedMainImage,
-          isFavorited: false,
-        };
-      });
-      setFeaturedProperties(processedFeatured);
-
     } catch (err: any) {
       console.error('❌ Error fetching properties:', err);
       setError(err.response?.data?.message || 'Failed to load properties. Please try again.');
@@ -92,15 +69,7 @@ const HomePage: React.FC = () => {
 
   const handleFavoriteToggle = async (propertyId: string) => {
     try {
-      // Optimistic update
       setProperties(prev =>
-        prev.map(p =>
-          p.id === propertyId
-            ? { ...p, isFavorited: !p.isFavorited }
-            : p
-        )
-      );
-      setFeaturedProperties(prev =>
         prev.map(p =>
           p.id === propertyId
             ? { ...p, isFavorited: !p.isFavorited }
@@ -149,27 +118,13 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--color-primary)]">
       <HeroSection />
+      
+      {/* ✅ Featured Carousel - Shows featured properties */}
       <FeaturedCarousel />
+      
       <PropertyCategories />
       
-      {/* Featured Properties Section */}
-      {!loading && featuredProperties.length > 0 && (
-        <section className="max-w-7xl mx-auto px-8 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Featured Properties</h2>
-            <Link to="/properties?featured=true" className="text-[#2D5A27] font-semibold hover:underline">
-              View All →
-            </Link>
-          </div>
-          <PropertyGrid
-            properties={featuredProperties}
-            loading={loading}
-            onFavoriteToggle={handleFavoriteToggle}
-          />
-        </section>
-      )}
-
-      {/* Latest Properties Section */}
+      {/* ✅ Latest Properties Section */}
       {!loading && properties.length > 0 && (
         <section className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex justify-between items-center mb-6">
@@ -186,7 +141,7 @@ const HomePage: React.FC = () => {
         </section>
       )}
 
-      {/* Error State */}
+      {/* ✅ Error State */}
       {error && (
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700">

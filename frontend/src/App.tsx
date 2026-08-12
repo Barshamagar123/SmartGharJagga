@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/common/Layout/Layout.tsx';
 import Home from './pages/HomePage/HomePage.tsx';
-import PropertyDetail from './pages/PropertyDetail/PropertyDetail';
+
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import AIMatching from './pages/AIMatching/AIMatching';
@@ -25,6 +25,7 @@ import PropertyListingHeader from './components/properties/PropertyListingHeader
 import MyProperties from './pages/Properties/MyProperties.tsx';
 import SubscriptionPlans from './pages/Subscription/SubscriptionPlans.tsx';
 import PropertyDetailPremium from './pages/PropertyDetail/PropertyDetail';
+import FindMyMatch from './pages/FindMyMatch/FindMyMatch.tsx';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
             <Route path='/listing' element={<PropertyListingHeader />} />
             <Route path='/my-properties' element={<MyProperties />} />
             <Route path='/subscription' element={<SubscriptionPlans />} />
+            <Route path='/findmymatch' element={<FindMyMatch />} />
           </Route>
 
           {/* ✅ Admin Routes - Without Layout */}
