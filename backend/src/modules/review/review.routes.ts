@@ -33,6 +33,13 @@ router.get('/property/:propertyId', reviewController.getPropertyReviews);
  */
 router.get('/property/:propertyId/rating', reviewController.getPropertyRating);
 
+/**
+ * @route GET /api/v1/reviews/public
+ * @desc Get public reviews for homepage
+ * @access Public
+ */
+router.get('/public', reviewController.getPublicReviews);
+
 // ============================================
 // PROTECTED ROUTES
 // ============================================

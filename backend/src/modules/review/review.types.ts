@@ -37,3 +37,21 @@ export interface PropertyRatingResponse {
     percentage: number;
   }[];
 }
+
+export interface PublicReviewResponse {
+  id: string;
+  rating: number;
+  comment?: string;
+  createdAt: Date;
+  reviewer: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+  };
+  property: {
+    id: string;
+    title: string;
+    location: string;
+    mainImage?: string;
+  };
+}

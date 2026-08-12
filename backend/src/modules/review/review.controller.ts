@@ -34,7 +34,6 @@ export class ReviewController {
   // 2. GET PROPERTY REVIEWS
   // ============================================
   getPropertyReviews = asyncHandler(async (req: Request, res: Response) => {
-    // ✅ FIX: Cast propertyId to string
     const propertyId = req.params.propertyId as string;
     if (!propertyId) {
       throw new ApiError(400, 'Property ID is required');
@@ -48,7 +47,6 @@ export class ReviewController {
   // 3. GET PROPERTY RATING SUMMARY
   // ============================================
   getPropertyRating = asyncHandler(async (req: Request, res: Response) => {
-    // ✅ FIX: Cast propertyId to string
     const propertyId = req.params.propertyId as string;
     if (!propertyId) {
       throw new ApiError(400, 'Property ID is required');
@@ -80,7 +78,6 @@ export class ReviewController {
       throw new ApiError(401, 'Authentication required');
     }
 
-    // ✅ FIX: Cast reviewId to string
     const reviewId = req.params.reviewId as string;
     if (!reviewId) {
       throw new ApiError(400, 'Review ID is required');
@@ -99,7 +96,6 @@ export class ReviewController {
       throw new ApiError(401, 'Authentication required');
     }
 
-    // ✅ FIX: Cast reviewId to string
     const reviewId = req.params.reviewId as string;
     if (!reviewId) {
       throw new ApiError(400, 'Review ID is required');
@@ -113,7 +109,6 @@ export class ReviewController {
   // 7. ADMIN: APPROVE REVIEW
   // ============================================
   approveReview = asyncHandler(async (req: AuthRequest, res: Response) => {
-    // ✅ FIX: Cast reviewId to string
     const reviewId = req.params.reviewId as string;
     if (!reviewId) {
       throw new ApiError(400, 'Review ID is required');
@@ -127,7 +122,6 @@ export class ReviewController {
   // 8. ADMIN: REJECT REVIEW
   // ============================================
   rejectReview = asyncHandler(async (req: AuthRequest, res: Response) => {
-    // ✅ FIX: Cast reviewId to string
     const reviewId = req.params.reviewId as string;
     if (!reviewId) {
       throw new ApiError(400, 'Review ID is required');
@@ -143,5 +137,14 @@ export class ReviewController {
   getAllReviews = asyncHandler(async (req: AuthRequest, res: Response) => {
     const reviews = await this.reviewService.getAllReviews();
     ApiResponse.success(res, 200, 'All reviews fetched successfully', reviews);
+  });
+
+  // ============================================
+  // ✅ 10. GET PUBLIC REVIEWS (For Homepage)
+  // ============================================
+  getPublicReviews = asyncHandler(async (req: Request, res: Response) => {
+    const limit = req.query.limit ? Number(req.query.limit) : 6;
+    const reviews = await this.reviewService.getPublicReviews(limit);
+    ApiResponse.success(res, 200, 'Public reviews fetched successfully', reviews);
   });
 }

@@ -317,6 +317,40 @@ export class ReviewService {
   }
 
   // ============================================
+  // ✅ 10. GET PUBLIC REVIEWS (For Homepage)
+  // ============================================
+  async getPublicReviews(limit: number = 6) {
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        isApproved: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+      include: {
+        reviewer: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            mainImage: true,
+          },
+        },
+      },
+    });
+
+    return reviews;
+  }
+
+  // ============================================
   // PRIVATE: Update Property Rating
   // ============================================
   private async updatePropertyRating(propertyId: string) {
