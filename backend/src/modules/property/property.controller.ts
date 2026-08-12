@@ -63,13 +63,12 @@ export class PropertyController {
   });
 
   // ============================================
-  // 2. GET ALL PROPERTIES (UPDATED)
+  // 2. GET ALL PROPERTIES
   // ============================================
   getProperties = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userRole = req.user?.role;
     const isAdmin = userRole === 'ADMIN';
 
-    // ✅ Build filters from query params
     const filters: any = {
       search: req.query.search as string,
       location: req.query.location as string,
@@ -85,38 +84,23 @@ export class PropertyController {
       sortBy: req.query.sortBy as any,
       sortOrder: req.query.sortOrder as any,
       isFeatured: req.query.isFeatured === 'true' ? true : req.query.isFeatured === 'false' ? false : undefined,
-      // ✅ Get status from query params
       status: req.query.status as any,
-      // ✅ Get userId from query (for sellers to see their own properties)
       userId: req.query.userId as string,
     };
 
-    // ✅ ADMIN CHECK: If user is NOT admin, only show APPROVED properties
-    // unless they are viewing their own properties
     if (!isAdmin) {
-      // If user is authenticated and has a userId filter, allow them to see their own properties
       if (filters.userId && req.user?.id === filters.userId) {
-        // Allow user to see their own properties (all statuses)
-        // But we need to add a condition to only show their properties
-        // This will be handled in the service
+        // Allow user to see their own properties
       } else {
-        // For non-admin users, only show APPROVED properties
-        // If status is explicitly requested, check if it's valid for non-admin
         if (filters.status) {
-          // Non-admin users can only filter by their own status if they are viewing their own properties
           if (!filters.userId || req.user?.id !== filters.userId) {
-            // If not viewing own properties, only allow APPROVED
             filters.status = 'APPROVED';
           }
         } else {
-          // Default: only show APPROVED properties to non-admin users
           filters.status = 'APPROVED';
         }
       }
     }
-
-    // ✅ If admin, they can see all statuses (no restriction)
-    // If admin requests a specific status, use that, otherwise show all
 
     console.log('🔍 GetProperties Filters:', {
       isAdmin,
@@ -321,5 +305,37 @@ export class PropertyController {
     const limit = req.query.limit ? Number(req.query.limit) : 6;
     const properties = await this.propertyService.getFeaturedProperties(limit);
     ApiResponse.success(res, 200, 'Featured properties fetched successfully', properties);
+  });
+
+  // ============================================
+  // ✅ 14. GET ALL UNIQUE LOCATIONS
+  // ============================================
+  getAllLocations = asyncHandler(async (req: Request, res: Response) => {
+    const locations = await this.propertyService.getAllLocations();
+    ApiResponse.success(res, 200, 'Locations fetched successfully', locations);
+  });
+
+  // ============================================
+  // ✅ 15. SEARCH LOCATIONS
+  // ============================================
+  searchLocations = asyncHandler(async (req: Request, res: Response) => {
+    const { q } = req.query;
+    
+    if (!q || typeof q !== 'string' || q.length < 2) {
+      const locations = await this.propertyService.getAllLocations();
+      return ApiResponse.success(res, 200, 'Locations fetched successfully', locations);
+    }
+
+    const locations = await this.propertyService.searchLocations(q);
+    ApiResponse.success(res, 200, 'Locations fetched successfully', locations);
+  });
+
+  // ============================================
+  // ✅ 16. GET POPULAR LOCATIONS
+  // ============================================
+  getPopularLocations = asyncHandler(async (req: Request, res: Response) => {
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const locations = await this.propertyService.getPopularLocations(limit);
+    ApiResponse.success(res, 200, 'Popular locations fetched successfully', locations);
   });
 }

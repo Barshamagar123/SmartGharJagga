@@ -23,7 +23,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 1. CREATE PROPERTY - WITH areaUnit & isFeatured
+  // 1. CREATE PROPERTY
   // ============================================
   async createProperty(
     userId: string,
@@ -38,10 +38,6 @@ export class PropertyService {
 
     const imageUrls = this.getFileUrls(imageFiles || [], 'images');
     const videoUrls = this.getFileUrls(videoFiles || [], 'videos');
-
-    console.log('📦 Data:', data);
-    console.log('📸 Images:', imageUrls);
-    console.log('📹 Videos:', videoUrls);
 
     const propertyId = `PROP-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
@@ -77,7 +73,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 2. GET PROPERTIES - UPDATED WITH 'ALL' STATUS SUPPORT
+  // 2. GET PROPERTIES
   // ============================================
   async getProperties(filters: PropertyFilter) {
     const {
@@ -101,12 +97,9 @@ export class PropertyService {
     const skip = (page - 1) * limit;
     const where: any = {};
 
-    // ✅ Only apply status filter if status is not 'ALL'
     if (status && status !== 'ALL') {
       where.status = status;
     }
-    // If status is 'ALL' or undefined, don't apply status filter
-    // This will return all properties regardless of status
 
     if (search) {
       where.OR = [
@@ -199,7 +192,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 4. UPDATE PROPERTY - WITH areaUnit & isFeatured
+  // 4. UPDATE PROPERTY
   // ============================================
   async updateProperty(
     id: string,
@@ -531,8 +524,119 @@ export class PropertyService {
           },
         },
       },
+      
     });
 
     return properties;
+  }
+
+  // ============================================
+  // ✅ 14. GET ALL UNIQUE LOCATIONS - FIXED
+  // ============================================
+  async getAllLocations(): Promise<string[]> {
+    try {
+      const properties = await this.prisma.property.findMany({
+        where: {
+          status: 'APPROVED',
+        },
+        select: {
+          location: true,
+        },
+        distinct: ['location'],
+        orderBy: {
+          location: 'asc',
+        },
+      });
+
+      const locations = properties
+        .map(p => p.location)
+        .filter((loc): loc is string => 
+          loc !== null && 
+          loc !== undefined && 
+          typeof loc === 'string' && 
+          loc.trim() !== ''
+        );
+
+      return locations;
+    } catch (error) {
+      console.error('❌ Error fetching locations:', error);
+      return [];
+    }
+  }
+
+  // ============================================
+  // ✅ 15. SEARCH LOCATIONS - FIXED
+  // ============================================
+  async searchLocations(query: string): Promise<string[]> {
+    try {
+      if (!query || query.trim().length === 0) {
+        return this.getAllLocations();
+      }
+
+      const properties = await this.prisma.property.findMany({
+        where: {
+          status: 'APPROVED',
+          location: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+        select: {
+          location: true,
+        },
+        distinct: ['location'],
+        take: 20,
+        orderBy: {
+          location: 'asc',
+        },
+      });
+
+      return properties
+        .map(p => p.location)
+        .filter((loc): loc is string => 
+          loc !== null && 
+          loc !== undefined && 
+          typeof loc === 'string' && 
+          loc.trim() !== ''
+        );
+    } catch (error) {
+      console.error(`❌ Error searching locations for "${query}":`, error);
+      return [];
+    }
+  }
+
+  // ============================================
+  // ✅ 16. GET POPULAR LOCATIONS - FIXED
+  // ============================================
+  async getPopularLocations(limit: number = 10): Promise<string[]> {
+    try {
+      const popular = await this.prisma.property.groupBy({
+        by: ['location'],
+        where: {
+          status: 'APPROVED',
+        },
+        _count: {
+          location: true,
+        },
+        orderBy: {
+          _count: {
+            location: 'desc',
+          },
+        },
+        take: limit,
+      });
+
+      return popular
+        .map(p => p.location)
+        .filter((loc): loc is string => 
+          loc !== null && 
+          loc !== undefined && 
+          typeof loc === 'string' && 
+          loc.trim() !== ''
+        );
+    } catch (error) {
+      console.error('❌ Error fetching popular locations:', error);
+      return [];
+    }
   }
 }

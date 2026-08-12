@@ -5,7 +5,7 @@ import { PropertyController } from './property.controller';
 import { PropertyService } from './property.service';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware } from '@/middleware/auth.middleware';
-import { optionalAuthMiddleware } from '@/middleware/auth.middleware'; // ✅ ADDED: Import optionalAuthMiddleware
+import { optionalAuthMiddleware } from '@/middleware/auth.middleware';
 import { requireRole } from '@/middleware/role.middleware';
 import { validate } from '@/middleware/validation.middleware';
 import { uploadPropertyMedia } from '@/middleware/upload.middleware';
@@ -21,11 +21,14 @@ const router = Router();
 // PUBLIC ROUTES
 // ============================================
 
-// ✅ UPDATED: Added optionalAuthMiddleware to get all properties
 router.get('/', optionalAuthMiddleware, propertyController.getProperties);
-
 router.get('/map', propertyController.getPropertiesForMap);
 router.get('/featured', propertyController.getFeaturedProperties);
+
+// ✅ LOCATION ROUTES (Public)
+router.get('/locations', propertyController.getAllLocations);
+router.get('/locations/search', propertyController.searchLocations);
+router.get('/locations/popular', propertyController.getPopularLocations);
 
 router.get(
   '/stats',
@@ -45,7 +48,6 @@ router.get(
 // PROTECTED ROUTES
 // ============================================
 
-// ✅ CREATE PROPERTY
 router.post(
   '/',
   authMiddleware,
@@ -86,7 +88,7 @@ router.post(
 );
 
 // ============================================
-// ✅ FEATURED ROUTES
+// FEATURED ROUTES
 // ============================================
 router.put(
   '/:id/toggle-featured',
