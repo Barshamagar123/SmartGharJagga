@@ -1,7 +1,8 @@
 // src/hooks/useMatching.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { matchingApi, UserPreferences, MatchResult } from '../services/api/matching';
+import { matchingApi } from '../services/api/matching';
+import type { UserPreferences, MatchResult } from '../services/api/matching';
 
 export const useMatching = () => {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);

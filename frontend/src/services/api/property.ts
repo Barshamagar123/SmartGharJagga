@@ -1,6 +1,8 @@
 // src/services/api/property.ts
 
 import apiClient from './client';
+export type Purpose = 'SALE' | 'RENT' | 'LEASE';
+
 import type {
   Property,
   PropertyType,

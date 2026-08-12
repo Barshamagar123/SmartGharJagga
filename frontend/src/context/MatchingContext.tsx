@@ -1,6 +1,8 @@
 // src/context/MatchingContext.tsx
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext} from 'react';
+import type { ReactNode } from 'react';
+
 import { useMatching } from '../hooks/useMatching';
 import type { UserPreferences, MatchResult } from '../services/api/matching';
 
