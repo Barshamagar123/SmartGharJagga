@@ -1,4 +1,4 @@
-// src/pages/FindMyMatch/components/MatchResults.tsx
+// src/components/Matching/MatchResults.tsx
 
 import React from 'react';
 import MatchCard from './MatchCard';
@@ -11,6 +11,14 @@ interface MatchResult {
   mainImage?: string;
   matchScore: number;
   matchPercentage: string;
+  isVerified?: boolean;
+  isFeatured?: boolean;
+  bedrooms?: number;
+  bathrooms?: number;
+  area?: number;
+  areaUnit?: string;
+  propertyType?: string;
+  views?: number;
 }
 
 interface MatchResultsProps {
@@ -18,6 +26,7 @@ interface MatchResultsProps {
   matchCount: number;
   loading: boolean;
   onLearn?: (id: string) => void;
+  onFavorite?: (id: string) => void;
 }
 
 const MatchResults: React.FC<MatchResultsProps> = ({
@@ -25,17 +34,19 @@ const MatchResults: React.FC<MatchResultsProps> = ({
   matchCount,
   loading,
   onLearn,
+  onFavorite,
 }) => {
   if (loading) {
     return (
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="animate-pulse flex items-center gap-3 p-3 rounded-lg border">
-            <div className="w-11 h-11 rounded-full bg-gray-200" />
-            <div className="w-14 h-14 rounded bg-gray-200" />
+            <div className="w-12 h-12 rounded-full bg-gray-200" />
+            <div className="w-16 h-16 rounded bg-gray-200" />
             <div className="flex-1 space-y-2">
               <div className="h-4 bg-gray-200 rounded w-24" />
               <div className="h-3 bg-gray-200 rounded w-32" />
+              <div className="h-3 bg-gray-200 rounded w-20" />
             </div>
           </div>
         ))}
@@ -46,7 +57,9 @@ const MatchResults: React.FC<MatchResultsProps> = ({
   if (matches.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        <p>No matches found. Try adjusting your preferences.</p>
+        <div className="text-4xl mb-3">🔍</div>
+        <p className="font-medium">No matches found</p>
+        <p className="text-sm mt-1">Try adjusting your preferences</p>
       </div>
     );
   }
@@ -63,7 +76,16 @@ const MatchResults: React.FC<MatchResultsProps> = ({
           image={match.mainImage || '/placeholder-property.jpg'}
           matchScore={Math.round(match.matchScore * 100)}
           matchPercentage={match.matchPercentage}
+          isVerified={match.isVerified}
+          isFeatured={match.isFeatured}
+          bedrooms={match.bedrooms}
+          bathrooms={match.bathrooms}
+          area={match.area}
+          areaUnit={match.areaUnit}
+          propertyType={match.propertyType}
+          views={match.views}
           onLearn={onLearn}
+          onFavorite={onFavorite}
         />
       ))}
 

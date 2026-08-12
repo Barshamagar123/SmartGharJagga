@@ -1,4 +1,4 @@
-// src/pages/FindMyMatch/components/SizeTypeStep.tsx
+// src/components/Matching/SizeTypeStep.tsx
 
 import React from 'react';
 
@@ -38,7 +38,7 @@ const SizeTypeStep: React.FC<SizeTypeStepProps> = ({
               <button
                 key={option}
                 onClick={() => onTypeToggle(option)}
-                className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+                className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all hover:scale-105"
                 style={{
                   minHeight: 44,
                   background: isActive ? '#2D5A27' : '#FFFFFF',
@@ -63,7 +63,7 @@ const SizeTypeStep: React.FC<SizeTypeStepProps> = ({
             <button
               key={option}
               onClick={() => onSizeChange(option)}
-              className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+              className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all hover:scale-105"
               style={{
                 minHeight: 44,
                 background: selectedSize === option ? '#2D5A27' : '#FFFFFF',

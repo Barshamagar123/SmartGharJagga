@@ -1,4 +1,4 @@
-// src/pages/FindMyMatch/components/MustHavesStep.tsx
+// src/components/Matching/MustHavesStep.tsx
 
 import React from 'react';
 
@@ -35,7 +35,7 @@ const MustHavesStep: React.FC<MustHavesStepProps> = ({
             <button
               key={option}
               onClick={() => onRoadWidthChange(option)}
-              className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+              className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all hover:scale-105"
               style={{
                 minHeight: 44,
                 background: roadWidth === option ? '#2D5A27' : '#FFFFFF',
@@ -57,7 +57,7 @@ const MustHavesStep: React.FC<MustHavesStepProps> = ({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onParkingChange(true)}
-            className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+            className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all hover:scale-105"
             style={{
               minHeight: 44,
               background: parking ? '#2D5A27' : '#FFFFFF',
@@ -70,7 +70,7 @@ const MustHavesStep: React.FC<MustHavesStepProps> = ({
           </button>
           <button
             onClick={() => onParkingChange(false)}
-            className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+            className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all hover:scale-105"
             style={{
               minHeight: 44,
               background: !parking ? '#2D5A27' : '#FFFFFF',

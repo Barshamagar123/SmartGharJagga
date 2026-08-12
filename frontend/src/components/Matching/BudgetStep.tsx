@@ -1,4 +1,4 @@
-// src/pages/FindMyMatch/components/BudgetStep.tsx
+// src/components/Matching/BudgetStep.tsx
 
 import React from 'react';
 
@@ -23,7 +23,7 @@ const BudgetStep: React.FC<BudgetStepProps> = ({ value, onChange }) => {
           <button
             key={option}
             onClick={() => onChange(option)}
-            className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+            className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all hover:scale-105"
             style={{
               minHeight: 44,
               background: value === option ? '#2D5A27' : '#FFFFFF',
