@@ -8,6 +8,8 @@ import FeaturedCarousel from '../../components/Home/FeaturedCarousel';
 import PropertyCategories from '../../components/Home/ProperetyCategories';
 import CTASection from '../../components/Home/CTASection';
 import PropertyGrid from '../../components/properties/PropertyGrid';
+import FindMyMatchPromo from '../../components/Home/FindMyMatchPromo';
+import ReviewsSection from '../../components/Home/ReviewsSection'; // ✅ Import ReviewsSection
 
 import { propertyApi } from '../../services/api/property';
 import type { Property } from '../../types/property';
@@ -141,6 +143,13 @@ const HomePage: React.FC = () => {
         </section>
       )}
 
+     
+      
+      {/* ✅ Find My Match Promo Section */}
+      <FindMyMatchPromo />
+       {/* ✅ Reviews Section */}
+      <ReviewsSection limit={6} title="What Our Users Say" />
+
       {/* ✅ Error State */}
       {error && (
         <div className="max-w-7xl mx-auto px-8 py-8">
@@ -160,7 +169,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       )}
-      
+      {/* ✅ CTA Section */}
       <CTASection />
     </div>
   );
