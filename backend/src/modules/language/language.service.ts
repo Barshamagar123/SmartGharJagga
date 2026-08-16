@@ -9,15 +9,9 @@ export class LanguageService {
     this.translationService = new TranslationService();
   }
 
-  // ============================================
-  // Get all translations for a language
-  // ============================================
+  // ✅ Get all translations for a language
   getTranslations(lang: string): any {
-    const availableLanguages = [
-      { code: 'en', name: 'English' },
-      { code: 'ne', name: 'नेपाली' },
-    ];
-
+    const availableLanguages = this.translationService.getAvailableLanguages();
     const translations = this.translationService.getAllTranslations(lang);
 
     return {
@@ -27,9 +21,7 @@ export class LanguageService {
     };
   }
 
-  // ============================================
-  // Get specific translation keys
-  // ============================================
+  // ✅ Get specific translation keys
   getTranslationKeys(lang: string, keys: string[]): Record<string, string> {
     const result: Record<string, string> = {};
 
@@ -40,13 +32,8 @@ export class LanguageService {
     return result;
   }
 
-  // ============================================
-  // Get available languages
-  // ============================================
+  // ✅ Get available languages
   getAvailableLanguages() {
-    return [
-      { code: 'en', name: 'English' },
-      { code: 'ne', name: 'नेपाली' },
-    ];
+    return this.translationService.getAvailableLanguages();
   }
 }
