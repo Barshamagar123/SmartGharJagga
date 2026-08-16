@@ -12,26 +12,10 @@ export class TranslationService {
   private translationsPath: string;
 
   constructor() {
-    // ✅ Log the path being used
-    this.translationsPath = path.join(__dirname, '../../locales');
-    console.log('📂 __dirname:', __dirname);
+    // ✅ Use 'locals' instead of 'locales'
+    this.translationsPath = path.join(__dirname, '../../locals');
     console.log('📂 Translations path:', this.translationsPath);
-    
-    // ✅ Check if directory exists
-    const exists = fs.existsSync(this.translationsPath);
-    console.log('📂 Directory exists:', exists);
-    
-    if (exists) {
-      const files = fs.readdirSync(this.translationsPath);
-      console.log('📂 Files in directory:', files);
-    }
-    
     this.loadTranslations();
-    
-    // ✅ Log what was loaded
-    console.log('📚 Loaded languages:', Object.keys(this.translations));
-    console.log('📚 English keys count:', Object.keys(this.translations.en || {}).length);
-    console.log('📚 Nepali keys count:', Object.keys(this.translations.ne || {}).length);
   }
 
   private loadTranslations(): void {
@@ -42,36 +26,45 @@ export class TranslationService {
         return;
       }
 
-      const files = fs.readdirSync(this.translationsPath);
+      // ✅ Get all language folders (en, ne, etc.)
+      const languageFolders = fs.readdirSync(this.translationsPath);
+      console.log('📂 Found language folders:', languageFolders);
       
-      if (files.length === 0) {
-        console.warn(`⚠️ No files found in translations directory`);
-        this.loadDefaultTranslations();
-        return;
-      }
-      
-      let loadedCount = 0;
-      files.forEach((file) => {
-        if (file.endsWith('.json')) {
-          const langCode = path.basename(file, '.json');
-          const filePath = path.join(this.translationsPath, file);
-          const content = fs.readFileSync(filePath, 'utf-8');
+      languageFolders.forEach((folder) => {
+        const folderPath = path.join(this.translationsPath, folder);
+        if (fs.statSync(folderPath).isDirectory()) {
+          // ✅ Initialize translations for this language
+          this.translations[folder] = {};
           
-          try {
-            const parsed = JSON.parse(content);
-            this.translations[langCode] = parsed;
-            loadedCount++;
-            console.log(`✅ Loaded ${Object.keys(parsed).length} keys for: ${langCode}`);
-          } catch (error) {
-            console.error(`❌ Error parsing ${file}:`, error);
-          }
+          // ✅ Read all JSON files in the language folder
+          const files = fs.readdirSync(folderPath);
+          console.log(`📂 Files in ${folder}:`, files);
+          
+          files.forEach((file) => {
+            if (file.endsWith('.json')) {
+              const filePath = path.join(folderPath, file);
+              try {
+                const content = fs.readFileSync(filePath, 'utf-8');
+                const parsed = JSON.parse(content);
+                // ✅ Merge into translations
+                this.translations[folder] = {
+                  ...this.translations[folder],
+                  ...parsed,
+                };
+                console.log(`✅ Loaded ${Object.keys(parsed).length} keys from ${file} for ${folder}`);
+              } catch (error) {
+                console.error(`❌ Error parsing ${file}:`, error);
+              }
+            }
+          });
         }
       });
-      
-      if (loadedCount === 0) {
-        console.warn('⚠️ No translation files loaded, using defaults');
-        this.loadDefaultTranslations();
-      }
+
+      // ✅ Log summary
+      Object.keys(this.translations).forEach((lang) => {
+        console.log(`📚 ${lang}: ${Object.keys(this.translations[lang]).length} total keys`);
+      });
+
     } catch (error) {
       console.error('❌ Error loading translations:', error);
       this.loadDefaultTranslations();
@@ -82,16 +75,13 @@ export class TranslationService {
   getAllTranslations(lang: string): Record<string, string> {
     const cleanLang = lang.trim();
     console.log(`🔍 Getting translations for: "${cleanLang}"`);
-    console.log(`🔍 Available languages:`, Object.keys(this.translations));
     
     if (!this.translations[cleanLang]) {
       console.warn(`⚠️ Language "${cleanLang}" not found, falling back to English`);
       return this.translations.en || {};
     }
     
-    const translations = this.translations[cleanLang];
-    console.log(`✅ Found ${Object.keys(translations).length} keys for ${cleanLang}`);
-    return translations;
+    return this.translations[cleanLang];
   }
 
   // ✅ Translate a single key
@@ -149,6 +139,21 @@ export class TranslationService {
         'nav.real_estate_platform': 'Real Estate Platform',
         'nav.menu': 'Menu',
         'nav.language': 'Language',
+        'nav.login_required': 'Login Required',
+        'nav.login_to_access': 'You need to sign in to access',
+        'nav.why_signin': 'Why sign in?',
+        'nav.why_signin_desc': 'Save favorites, get AI matches, and more!',
+        'nav.sign_in_now': 'Sign In Now',
+        'nav.or': 'or',
+        'nav.create_account': 'Create New Account',
+        'nav.maybe_later': 'Maybe later',
+        'nav.premium_feature': 'Premium Feature',
+        'nav.upgrade_to_access': 'Upgrade to access',
+        'nav.premium_plan': 'Premium Plan',
+        'nav.all_features_unlocked': 'All features unlocked',
+        'nav.per_month': '/ month',
+        'nav.upgrade_now': 'Upgrade Now',
+        'nav.upgrade': 'Upgrade',
       },
       ne: {
         'nav.home': 'गृहपृष्ठ',
@@ -178,6 +183,21 @@ export class TranslationService {
         'nav.real_estate_platform': 'घरजग्गा प्लेटफर्म',
         'nav.menu': 'मेनु',
         'nav.language': 'भाषा',
+        'nav.login_required': 'लगइन आवश्यक',
+        'nav.login_to_access': 'तपाईंले पहुँच गर्न साइन इन गर्नुपर्छ',
+        'nav.why_signin': 'किन साइन इन गर्ने?',
+        'nav.why_signin_desc': 'मनपर्नेहरू सुरक्षित गर्नुहोस्, एआई मिलान पाउनुहोस्, र थप!',
+        'nav.sign_in_now': 'अहिले साइन इन गर्नुहोस्',
+        'nav.or': 'वा',
+        'nav.create_account': 'नयाँ खाता सिर्जना गर्नुहोस्',
+        'nav.maybe_later': 'पछि',
+        'nav.premium_feature': 'प्रिमियम सुविधा',
+        'nav.upgrade_to_access': 'पहुँच गर्न अपग्रेड गर्नुहोस्',
+        'nav.premium_plan': 'प्रिमियम योजना',
+        'nav.all_features_unlocked': 'सबै सुविधाहरू अनलक गरियो',
+        'nav.per_month': '/ महिना',
+        'nav.upgrade_now': 'अहिले अपग्रेड गर्नुहोस्',
+        'nav.upgrade': 'अपग्रेड',
       },
     };
   }
