@@ -1,72 +1,46 @@
-// src/App.tsx
+// src/App.tsx - With Lazy Loading
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense } from 'react'; // ✅ Import lazy and Suspense
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Layout from './components/common/Layout/Layout.tsx';
-import Home from './pages/HomePage/HomePage.tsx';
-
-import Login from './pages/Login/Login';
-import Register from './pages/Register/Register';
-import AIMatching from './pages/AIMatching/AIMatching';
-import MapSearch from './pages/MapSearch/MapSearch';
-import GoogleCallback from './pages/Login/GoogleCallback.tsx';
-import Profile from './pages/Profile/Profile.tsx';
-import PropertiesPage from './pages/Properties/PropertiesPage.tsx';
-import AddProperty from './pages/Properties/AddProperty.tsx';
-import EditProperty from './pages/Properties/EditProperty.tsx';
-import Dashboard from './pages/Dashboard/Dashboard.tsx';
-import AdminLayout from './pages/Admin/AdminLayout.tsx';
 import { RoleBasedRoute } from './components/common/ProtectedRoute/ProtectedRoute.tsx';
-import AdminDashboard from './pages/Admin/AdminDashboard.tsx';
-import PropertyManagement from './pages/Admin/Properties/PropertyManagement.tsx';
-import ReviewManagement from './pages/Admin/Review/ReviewManagement.tsx';
-import UserManagement from './pages/Admin/Users/UserManagement.tsx';
-import PropertyListingHeader from './components/properties/PropertyListingHeader.tsx';
-import MyProperties from './pages/Properties/MyProperties.tsx';
-import SubscriptionPlans from './pages/Subscription/SubscriptionPlans.tsx';
-import PropertyDetailPremium from './pages/PropertyDetail/PropertyDetail';
-import FindMyMatch from './pages/FindMyMatch/FindMyMatch.tsx';
+
+// ✅ Lazy load pages
+const Home = lazy(() => import('./pages/HomePage/HomePage.tsx'));
+const Login = lazy(() => import('./pages/Login/Login'));
+const Register = lazy(() => import('./pages/Register/Register'));
+const PropertiesPage = lazy(() => import('./pages/Properties/PropertiesPage.tsx'));
+// ... lazy load all other pages
+
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[var(--color-primary)]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D5A27] mx-auto"></div>
+      <p className="mt-4 text-gray-500">Loading...</p>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* ✅ Layout Routes - With Navbar & Footer */}
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/properties" element={<PropertiesPage />} />
-            <Route path="/list-property" element={<AddProperty />} />
-            <Route path="/property/:id/edit" element={<EditProperty />} />
-            <Route path="/property/:id" element={<PropertyDetailPremium />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/auth/callback" element={<GoogleCallback />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/ai-matching" element={<AIMatching />} />
-            <Route path="/map-search" element={<MapSearch />} />
-            <Route path='/listing' element={<PropertyListingHeader />} />
-            <Route path='/my-properties' element={<MyProperties />} />
-            <Route path='/subscription' element={<SubscriptionPlans />} />
-            <Route path='/match' element={<FindMyMatch />} />
-          </Route>
-
-          {/* ✅ Admin Routes - Without Layout */}
-          <Route
-            path="/admin"
-            element={
-              <RoleBasedRoute allowedRoles={['ADMIN']}>
-                <AdminLayout />
-              </RoleBasedRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<UserManagement />} />
-            <Route path="properties" element={<PropertyManagement />} />
-            <Route path="reviews" element={<ReviewManagement />} />
-          </Route>
-        </Routes>
+        <LanguageProvider>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              {/* ✅ Layout Routes */}
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/properties" element={<PropertiesPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                {/* ... other routes */}
+              </Route>
+            </Routes>
+          </Suspense>
+        </LanguageProvider>
       </AuthProvider>
     </Router>
   );

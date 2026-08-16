@@ -7,6 +7,8 @@ import { Badge } from '../Badge/Badge';
 import { Button } from '../Button/Button';
 import { Avatar } from '../Avatar/Avatar';
 import { useAuth } from '../../../hooks/useAuth';
+import { useLanguage } from '../../../context/LanguageContext';
+import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 
 interface NavLink {
   label: string;
@@ -19,7 +21,6 @@ interface NavLink {
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [language, setLanguage] = useState('EN');
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState('');
@@ -27,6 +28,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
 
   const { user, isAuthenticated, logout } = useAuth();
+  const { t, currentLang, switchLanguage } = useLanguage();
   const isPremium = false;
 
   if (location.pathname.startsWith('/admin')) {
@@ -41,16 +43,12 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'EN' ? 'NE' : 'EN');
-  };
-
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  // ✅ ROLE CHECK - PROPER
+  // ✅ ROLE CHECK
   const userRole = user?.role?.toUpperCase() || '';
   const isAdmin = userRole === 'ADMIN';
   const isSeller = userRole === 'SELLER';
@@ -100,55 +98,46 @@ const Navbar: React.FC = () => {
     navigate(path);
   };
 
-  // ✅ NAV LINKS - ROLE BASED PROPERLY
+  // ✅ NAV LINKS WITH TRANSLATIONS
   const getNavLinks = (): NavLink[] => {
     const commonLinks: NavLink[] = [
-      { label: 'Home', path: '/', locked: false },
-      { label: 'Properties', path: '/properties', locked: false },
+      { label: t('nav.home'), path: '/', locked: false },
+      { label: t('nav.properties'), path: '/properties', locked: false },
     ];
 
-    // ❌ NOT LOGGED IN
     if (!isAuthenticated) {
       return [
         ...commonLinks,
-        { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
-        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
-        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: t('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
+        { label: t('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: t('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
       ];
     }
 
-    // ✅ ADMIN - ONLY Home, Properties, Admin Panel
     if (isAdmin) {
-      console.log('✅ Admin links active');
       return [
         ...commonLinks,
-        { label: 'Admin Panel', path: '/admin', locked: false },
+        { label: t('nav.admin_panel'), path: '/admin', locked: false },
       ];
     }
 
-    // ✅ SELLER - Home, Properties, List Property, My Properties
     if (isSeller) {
-      console.log('✅ Seller links active');
       return [
         ...commonLinks,
-        { label: 'List Property', path: '/list-property', locked: false, badge: '✨ Free' },
-        { label: 'My Properties', path: '/my-properties', locked: false },
+        { label: t('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free' },
+        { label: t('nav.my_properties'), path: '/my-properties', locked: false },
       ];
     }
 
-    // ✅ BUYER - Home, Properties, Favorites, AI Match, Map Search
     if (isBuyer) {
-      console.log('✅ Buyer links active');
       return [
         ...commonLinks,
-        { label: 'Favorites', path: '/favorites', locked: false },
-        { label: 'AI Match', path: '/ai-matching', locked: true, badge: '🔒 Premium' },
-        { label: 'Map Search', path: '/map-search', locked: true, badge: '🔒 Premium' },
+        { label: t('nav.favorites'), path: '/favorites', locked: false },
+        { label: t('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium' },
+        { label: t('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium' },
       ];
     }
 
-    // FALLBACK
-    console.log('⚠️ Fallback links active');
     return commonLinks;
   };
 
@@ -162,21 +151,21 @@ const Navbar: React.FC = () => {
     if (isAdmin) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">
-          🛡️ Admin
+          🛡️ {t('nav.admin')}
         </span>
       );
     }
     if (isSeller) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">
-          📈 Seller
+          📈 {t('nav.seller')}
         </span>
       );
     }
     if (isBuyer) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
-          🏠 Buyer
+          🏠 {t('nav.buyer')}
         </span>
       );
     }
@@ -208,7 +197,7 @@ const Navbar: React.FC = () => {
                   <span className="text-gray-800">GharJagga</span>
                 </span>
                 <p className="text-[10px] font-medium text-gray-400 tracking-wider uppercase">
-                  Real Estate Platform
+                  {t('nav.real_estate_platform')}
                 </p>
               </div>
             </Link>
@@ -240,12 +229,8 @@ const Navbar: React.FC = () => {
 
             {/* RIGHT ACTIONS */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={toggleLanguage}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-[#2D5A27] rounded-lg hover:bg-[#2D5A27]/5 transition-all duration-200 cursor-pointer"
-              >
-                {language === 'EN' ? '🇳🇵' : '🇬🇧'}
-              </button>
+              {/* ✅ Language Switcher - Integrated */}
+              <LanguageSwitcher />
 
               {getRoleDisplay()}
 
@@ -254,7 +239,7 @@ const Navbar: React.FC = () => {
                   to="/login"
                   className="px-5 py-2.5 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                 >
-                  Sign In
+                  {t('nav.login')}
                 </Link>
               ) : (
                 <>
@@ -263,7 +248,7 @@ const Navbar: React.FC = () => {
                       to="/subscription"
                       className="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      <span>Upgrade</span>
+                      <span>{t('nav.upgrade')}</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -273,7 +258,7 @@ const Navbar: React.FC = () => {
                   {showPremiumBadge && (
                     <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4AF37] rounded-full shadow-sm">
                       <span>👑</span>
-                      Premium
+                      {t('nav.premium')}
                     </span>
                   )}
 
@@ -297,19 +282,19 @@ const Navbar: React.FC = () => {
                         <div className="flex items-center gap-2 mt-1">
                           {isAdmin ? (
                             <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                              🛡️ Admin
+                              🛡️ {t('nav.admin')}
                             </span>
                           ) : isSeller ? (
                             <span className="text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                              📈 Seller
+                              📈 {t('nav.seller')}
                             </span>
                           ) : isBuyer ? (
                             <span className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                              🏠 Buyer
+                              🏠 {t('nav.buyer')}
                             </span>
                           ) : null}
                           {showPremiumBadge && (
-                            <Badge variant="gold" size="sm">👑 Premium</Badge>
+                            <Badge variant="gold" size="sm">👑 {t('nav.premium')}</Badge>
                           )}
                         </div>
                       </div>
@@ -319,21 +304,19 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">📊</span>
-                        Dashboard
+                        {t('nav.dashboard')}
                       </Link>
 
-                      {/* ✅ ADMIN - Only Admin Panel */}
                       {isAdmin && (
                         <Link
                           to="/admin"
                           className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors font-medium"
                         >
                           <span className="mr-3 text-lg">⚙️</span>
-                          Admin Panel
+                          {t('nav.admin_panel')}
                         </Link>
                       )}
 
-                      {/* ✅ SELLER - List Property, My Properties */}
                       {isSeller && (
                         <>
                           <Link
@@ -341,26 +324,25 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">➕</span>
-                            List Property
+                            {t('nav.list_property')}
                           </Link>
                           <Link
                             to="/my-properties"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">📋</span>
-                            My Properties
+                            {t('nav.my_properties')}
                           </Link>
                           <Link
                             to="/analytics"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">📊</span>
-                            Analytics
+                            {t('nav.analytics')}
                           </Link>
                         </>
                       )}
 
-                      {/* ✅ BUYER - Favorites, AI Match, Map Search */}
                       {isBuyer && (
                         <>
                           <Link
@@ -368,14 +350,14 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">❤️</span>
-                            Favorites
+                            {t('nav.favorites')}
                           </Link>
                           <Link
                             to="/ai-matching"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">🤖</span>
-                            AI Match
+                            {t('nav.ai_match')}
                             {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                           </Link>
                           <Link
@@ -383,7 +365,7 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">🗺️</span>
-                            Map Search
+                            {t('nav.map_search')}
                             {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                           </Link>
                         </>
@@ -394,7 +376,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">💬</span>
-                        Messages
+                        {t('nav.messages')}
                       </Link>
 
                       <div className="h-px bg-gray-100 my-1" />
@@ -404,7 +386,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">👤</span>
-                        Profile Settings
+                        {t('nav.profile_settings')}
                       </Link>
 
                       <Link
@@ -412,7 +394,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">🔗</span>
-                        Refer & Earn
+                        {t('nav.refer_earn')}
                       </Link>
 
                       {!isPremium && isAuthenticated && !isAdmin && (
@@ -423,7 +405,7 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-[#2D5A27] font-semibold hover:bg-[#2D5A27]/10 transition-colors"
                           >
                             <span className="mr-3 text-lg">🚀</span>
-                            Upgrade to Premium
+                            {t('nav.upgrade_premium')}
                           </Link>
                         </>
                       )}
@@ -435,7 +417,7 @@ const Navbar: React.FC = () => {
                         className="w-full text-left flex items-center px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                       >
                         <span className="mr-3 text-lg">🚪</span>
-                        Logout
+                        {t('nav.logout')}
                       </button>
                     </div>
                   </div>
@@ -463,12 +445,20 @@ const Navbar: React.FC = () => {
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
           <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl p-6 overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
-              <span className="text-xl font-bold text-[#2D5A27]">Menu</span>
+              <span className="text-xl font-bold text-[#2D5A27]">{t('nav.menu')}</span>
               <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-[#2D5A27]/5">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* ✅ Mobile Language Switcher */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">{t('nav.language')}</span>
+                <LanguageSwitcher />
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -483,7 +473,7 @@ const Navbar: React.FC = () => {
                       return;
                     }
 
-                    if (link.label === 'List Property' || link.label === 'Favorites' || link.label === 'My Properties') {
+                    if (link.label === t('nav.list_property') || link.label === t('nav.favorites') || link.label === t('nav.my_properties')) {
                       if (!isAuthenticated) {
                         setSelectedFeature(link.label);
                         setShowLoginPopup(true);
@@ -532,21 +522,19 @@ const Navbar: React.FC = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                   >
-                    📊 Dashboard
+                    📊 {t('nav.dashboard')}
                   </Link>
 
-                  {/* ✅ ADMIN - Admin Panel */}
                   {isAdmin && (
                     <Link
                       to="/admin"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center w-full px-4 py-3 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
                     >
-                      ⚙️ Admin Panel
+                      ⚙️ {t('nav.admin_panel')}
                     </Link>
                   )}
 
-                  {/* ✅ SELLER - List Property, My Properties */}
                   {isSeller && (
                     <>
                       <Link
@@ -554,19 +542,18 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        ➕ List Property
+                        ➕ {t('nav.list_property')}
                       </Link>
                       <Link
                         to="/my-properties"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        📋 My Properties
+                        📋 {t('nav.my_properties')}
                       </Link>
                     </>
                   )}
 
-                  {/* ✅ BUYER - Favorites, AI Match, Map Search */}
                   {isBuyer && (
                     <>
                       <Link
@@ -574,14 +561,14 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        ❤️ Favorites
+                        ❤️ {t('nav.favorites')}
                       </Link>
                       <Link
                         to="/ai-matching"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        🤖 AI Match
+                        🤖 {t('nav.ai_match')}
                         {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                       </Link>
                       <Link
@@ -589,7 +576,7 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        🗺️ Map Search
+                        🗺️ {t('nav.map_search')}
                         {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                       </Link>
                     </>
@@ -606,12 +593,12 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
                       >
-                        🚀 Upgrade to Premium
+                        🚀 {t('nav.upgrade_premium')}
                       </Link>
                     )}
                     {isPremium && (
                       <div className="block w-full px-4 py-3 text-center text-white bg-[#D4AF37] rounded-xl">
-                        👑 Premium Member
+                        👑 {t('nav.premium_member')}
                       </div>
                     )}
                     <button
@@ -621,7 +608,7 @@ const Navbar: React.FC = () => {
                       }}
                       className="block w-full px-4 py-3 text-center text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-200"
                     >
-                      Logout
+                      {t('nav.logout')}
                     </button>
                   </>
                 ) : (
@@ -631,14 +618,14 @@ const Navbar: React.FC = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full px-4 py-3 text-center text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                     >
-                      Sign In
+                      {t('nav.login')}
                     </Link>
                     <Link
                       to="/register"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
                     >
-                      Sign Up
+                      {t('nav.register')}
                     </Link>
                   </>
                 )}
@@ -648,7 +635,7 @@ const Navbar: React.FC = () => {
         </div>
       )}
 
-      {/* LOGIN POPUP */}
+      {/* LOGIN POPUP - With Translations */}
       <AnimatePresence>
         {showLoginPopup && (
           <>
@@ -674,9 +661,9 @@ const Navbar: React.FC = () => {
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
                   <div className="relative z-10">
                     <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🔒</div>
-                    <h3 className="text-2xl font-bold text-white mt-4">Login Required</h3>
+                    <h3 className="text-2xl font-bold text-white mt-4">{t('nav.login_required')}</h3>
                     <p className="text-white/80 text-sm mt-1">
-                      You need to sign in to access <span className="font-semibold text-white">{selectedFeature}</span>
+                      {t('nav.login_to_access')} <span className="font-semibold text-white">{selectedFeature}</span>
                     </p>
                   </div>
                 </div>
@@ -685,8 +672,8 @@ const Navbar: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">✨</span>
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">Why sign in?</p>
-                        <p className="text-xs text-gray-400">Save favorites, get AI matches, and more!</p>
+                        <p className="text-sm font-semibold text-gray-800">{t('nav.why_signin')}</p>
+                        <p className="text-xs text-gray-400">{t('nav.why_signin_desc')}</p>
                       </div>
                     </div>
                   </div>
@@ -701,13 +688,13 @@ const Navbar: React.FC = () => {
                       }}
                       className="font-semibold"
                     >
-                      Sign In Now
+                      {t('nav.sign_in_now')}
                     </Button>
                     <div className="relative flex items-center justify-center">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-200" />
                       </div>
-                      <span className="relative px-4 text-xs text-gray-400 bg-white">or</span>
+                      <span className="relative px-4 text-xs text-gray-400 bg-white">{t('nav.or')}</span>
                     </div>
                     <Button
                       variant="outline"
@@ -718,13 +705,13 @@ const Navbar: React.FC = () => {
                         navigate('/register');
                       }}
                     >
-                      Create New Account
+                      {t('nav.create_account')}
                     </Button>
                     <button
                       onClick={() => setShowLoginPopup(false)}
                       className="text-sm text-gray-400 hover:text-gray-600 transition-colors text-center py-2"
                     >
-                      Maybe later
+                      {t('nav.maybe_later')}
                     </button>
                   </div>
                 </div>
@@ -734,7 +721,7 @@ const Navbar: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* UPGRADE POPUP */}
+      {/* UPGRADE POPUP - With Translations */}
       <AnimatePresence>
         {showUpgradePopup && (
           <>
@@ -760,9 +747,9 @@ const Navbar: React.FC = () => {
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
                   <div className="relative z-10">
                     <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🚀</div>
-                    <h3 className="text-2xl font-bold text-white mt-4">Premium Feature</h3>
+                    <h3 className="text-2xl font-bold text-white mt-4">{t('nav.premium_feature')}</h3>
                     <p className="text-white/80 text-sm mt-1">
-                      Upgrade to access <span className="font-semibold text-white">{selectedFeature}</span>
+                      {t('nav.upgrade_to_access')} <span className="font-semibold text-white">{selectedFeature}</span>
                     </p>
                   </div>
                 </div>
@@ -770,12 +757,12 @@ const Navbar: React.FC = () => {
                   <div className="bg-[#E8F0E4] rounded-xl p-4 mb-6 border border-[#2D5A27]/20">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">Premium Plan</p>
-                        <p className="text-xs text-gray-400">All features unlocked</p>
+                        <p className="text-sm font-semibold text-gray-800">{t('nav.premium_plan')}</p>
+                        <p className="text-xs text-gray-400">{t('nav.all_features_unlocked')}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-[#2D5A27]">₹999</p>
-                        <p className="text-xs text-gray-400">/ month</p>
+                        <p className="text-xs text-gray-400">{t('nav.per_month')}</p>
                       </div>
                     </div>
                   </div>
@@ -790,7 +777,7 @@ const Navbar: React.FC = () => {
                       }}
                       className="font-semibold"
                     >
-                      Upgrade Now 🚀
+                      {t('nav.upgrade_now')} 🚀
                     </Button>
                     <Button
                       variant="outline"
@@ -798,7 +785,7 @@ const Navbar: React.FC = () => {
                       fullWidth
                       onClick={() => setShowUpgradePopup(false)}
                     >
-                      Maybe Later
+                      {t('nav.maybe_later')}
                     </Button>
                   </div>
                 </div>
