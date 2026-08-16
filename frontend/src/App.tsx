@@ -49,7 +49,7 @@ function App() {
             <Route path='/listing' element={<PropertyListingHeader />} />
             <Route path='/my-properties' element={<MyProperties />} />
             <Route path='/subscription' element={<SubscriptionPlans />} />
-            <Route path='/findmymatch' element={<FindMyMatch />} />
+            <Route path='/match' element={<FindMyMatch />} />
           </Route>
 
           {/* ✅ Admin Routes - Without Layout */}
