@@ -9,7 +9,7 @@ import Home from './pages/HomePage/HomePage.tsx';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import AIMatching from './pages/AIMatching/AIMatching';
-import MapSearch from './pages/MapSearch/MapSearch';
+
 import GoogleCallback from './pages/Login/GoogleCallback.tsx';
 import Profile from './pages/Profile/Profile.tsx';
 import PropertiesPage from './pages/Properties/PropertiesPage.tsx';
@@ -27,6 +27,7 @@ import MyProperties from './pages/Properties/MyProperties.tsx';
 import SubscriptionPlans from './pages/Subscription/SubscriptionPlans.tsx';
 import PropertyDetailPremium from './pages/PropertyDetail/PropertyDetail';
 import FindMyMatch from './pages/FindMyMatch/FindMyMatch.tsx';
+import MapSearchPage from './pages/MapSearch/MapSearchPage.tsx';
 
 function App() {
   return (
@@ -57,7 +58,7 @@ function App() {
               
               {/* Features */}
               <Route path="/ai-matching" element={<AIMatching />} />
-              <Route path="/map-search" element={<MapSearch />} />
+              <Route path="/map-search" element={<MapSearchPage />} />
               <Route path="/match" element={<FindMyMatch />} />
               
               {/* Other */}
