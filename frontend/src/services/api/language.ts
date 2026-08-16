@@ -72,17 +72,6 @@ export const languageApi = {
     }
   },
 
-  // ✅ Get specific translation keys
-  getTranslationKeys: async (lang: string, keys: string[]): Promise<Record<string, string>> => {
-    try {
-      const response = await apiClient.post('/language/translations', { lang, keys });
-      return response.data.data;
-    } catch (error) {
-      console.error('Error fetching translation keys:', error);
-      return {};
-    }
-  },
-
   // ✅ Get available languages
   getAvailableLanguages: async (): Promise<AvailableLanguage[]> => {
     try {
