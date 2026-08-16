@@ -1,4 +1,4 @@
-// src/components/common/LanguageSwitcher.tsx
+// src/components/common/LanguageSwitcher/LanguageSwitcher.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Globe, ChevronDown, Check } from 'lucide-react';
@@ -9,7 +9,6 @@ const LanguageSwitcher: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -23,21 +22,32 @@ const LanguageSwitcher: React.FC = () => {
   const currentLanguage = availableLanguages.find(lang => lang.code === currentLang);
 
   const handleLanguageChange = async (langCode: string) => {
-    await switchLanguage(langCode);
-    setIsOpen(false);
+    console.log('🔄 LanguageSwitcher: Changing to:', langCode);
+    try {
+      await switchLanguage(langCode);
+      console.log('✅ LanguageSwitcher: Successfully changed to:', langCode);
+      setIsOpen(false);
+      // ✅ Force page to re-render by reloading (optional)
+      // window.location.reload();
+    } catch (error) {
+      console.error('❌ LanguageSwitcher: Error changing language:', error);
+    }
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          console.log('👆 LanguageSwitcher: Button clicked');
+          setIsOpen(!isOpen);
+        }}
         className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors hover:bg-gray-50"
         style={{ borderColor: '#D3CFC5', color: '#5C6570' }}
         disabled={loading}
       >
         <Globe className="w-4 h-4" />
         <span className="text-sm font-medium">
-          {currentLanguage?.name || 'EN'}
+          {currentLanguage?.name || (currentLang === 'en' ? 'English' : 'नेपाली')}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>

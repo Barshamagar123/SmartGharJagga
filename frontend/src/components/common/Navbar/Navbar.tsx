@@ -18,6 +18,52 @@ interface NavLink {
   requiresAuth?: boolean;
 }
 
+// ✅ Fallback translations in case the API fails
+const FALLBACK_TRANSLATIONS: Record<string, string> = {
+  'nav.home': 'Home',
+  'nav.properties': 'Properties',
+  'nav.list_property': 'List Property',
+  'nav.dashboard': 'Dashboard',
+  'nav.login': 'Login',
+  'nav.register': 'Register',
+  'nav.logout': 'Logout',
+  'nav.profile': 'Profile',
+  'nav.find_match': 'Find My Match',
+  'nav.ai_match': 'AI Match',
+  'nav.map_search': 'Map Search',
+  'nav.admin_panel': 'Admin Panel',
+  'nav.my_properties': 'My Properties',
+  'nav.favorites': 'Favorites',
+  'nav.analytics': 'Analytics',
+  'nav.messages': 'Messages',
+  'nav.profile_settings': 'Profile Settings',
+  'nav.refer_earn': 'Refer & Earn',
+  'nav.upgrade_premium': 'Upgrade to Premium',
+  'nav.premium': 'Premium',
+  'nav.premium_member': 'Premium Member',
+  'nav.admin': 'Admin',
+  'nav.seller': 'Seller',
+  'nav.buyer': 'Buyer',
+  'nav.real_estate_platform': 'Real Estate Platform',
+  'nav.menu': 'Menu',
+  'nav.language': 'Language',
+  'nav.login_required': 'Login Required',
+  'nav.login_to_access': 'You need to sign in to access',
+  'nav.why_signin': 'Why sign in?',
+  'nav.why_signin_desc': 'Save favorites, get AI matches, and more!',
+  'nav.sign_in_now': 'Sign In Now',
+  'nav.or': 'or',
+  'nav.create_account': 'Create New Account',
+  'nav.maybe_later': 'Maybe later',
+  'nav.premium_feature': 'Premium Feature',
+  'nav.upgrade_to_access': 'Upgrade to access',
+  'nav.premium_plan': 'Premium Plan',
+  'nav.all_features_unlocked': 'All features unlocked',
+  'nav.per_month': '/ month',
+  'nav.upgrade_now': 'Upgrade Now',
+  'nav.upgrade': 'Upgrade',
+};
+
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -28,8 +74,21 @@ const Navbar: React.FC = () => {
   const location = useLocation();
 
   const { user, isAuthenticated, logout } = useAuth();
-  const { t, currentLang, switchLanguage } = useLanguage();
+  const { t, currentLang, switchLanguage, translations, loading } = useLanguage();
   const isPremium = false;
+
+  // ✅ Safe translation function with fallback
+  const safeT = (key: string): string => {
+    // Try to get from context first
+    const translated = t(key);
+    
+    // If translation returns the key itself (meaning not found), use fallback
+    if (translated === key) {
+      return FALLBACK_TRANSLATIONS[key] || key;
+    }
+    
+    return translated;
+  };
 
   if (location.pathname.startsWith('/admin')) {
     return null;
@@ -55,9 +114,8 @@ const Navbar: React.FC = () => {
   const isBuyer = userRole === 'BUYER';
 
   console.log('🔍 Current User Role:', userRole);
-  console.log('🔍 Is Admin:', isAdmin);
-  console.log('🔍 Is Seller:', isSeller);
-  console.log('🔍 Is Buyer:', isBuyer);
+  console.log('🔍 Current Language:', currentLang);
+  console.log('🔍 Translations loaded:', Object.keys(translations).length);
 
   const isFeatureLocked = (feature: string) => {
     if (feature === 'AI Match') return true;
@@ -98,43 +156,43 @@ const Navbar: React.FC = () => {
     navigate(path);
   };
 
-  // ✅ NAV LINKS WITH TRANSLATIONS
+  // ✅ NAV LINKS WITH TRANSLATIONS (using safeT)
   const getNavLinks = (): NavLink[] => {
     const commonLinks: NavLink[] = [
-      { label: t('nav.home'), path: '/', locked: false },
-      { label: t('nav.properties'), path: '/properties', locked: false },
+      { label: safeT('nav.home'), path: '/', locked: false },
+      { label: safeT('nav.properties'), path: '/properties', locked: false },
     ];
 
     if (!isAuthenticated) {
       return [
         ...commonLinks,
-        { label: t('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
-        { label: t('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
-        { label: t('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: safeT('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
+        { label: safeT('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: safeT('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
       ];
     }
 
     if (isAdmin) {
       return [
         ...commonLinks,
-        { label: t('nav.admin_panel'), path: '/admin', locked: false },
+        { label: safeT('nav.admin_panel'), path: '/admin', locked: false },
       ];
     }
 
     if (isSeller) {
       return [
         ...commonLinks,
-        { label: t('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free' },
-        { label: t('nav.my_properties'), path: '/my-properties', locked: false },
+        { label: safeT('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free' },
+        { label: safeT('nav.my_properties'), path: '/my-properties', locked: false },
       ];
     }
 
     if (isBuyer) {
       return [
         ...commonLinks,
-        { label: t('nav.favorites'), path: '/favorites', locked: false },
-        { label: t('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium' },
-        { label: t('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium' },
+        { label: safeT('nav.favorites'), path: '/favorites', locked: false },
+        { label: safeT('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium' },
+        { label: safeT('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium' },
       ];
     }
 
@@ -151,21 +209,21 @@ const Navbar: React.FC = () => {
     if (isAdmin) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">
-          🛡️ {t('nav.admin')}
+          🛡️ {safeT('nav.admin')}
         </span>
       );
     }
     if (isSeller) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">
-          📈 {t('nav.seller')}
+          📈 {safeT('nav.seller')}
         </span>
       );
     }
     if (isBuyer) {
       return (
         <span className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">
-          🏠 {t('nav.buyer')}
+          🏠 {safeT('nav.buyer')}
         </span>
       );
     }
@@ -197,7 +255,7 @@ const Navbar: React.FC = () => {
                   <span className="text-gray-800">GharJagga</span>
                 </span>
                 <p className="text-[10px] font-medium text-gray-400 tracking-wider uppercase">
-                  {t('nav.real_estate_platform')}
+                  {safeT('nav.real_estate_platform')}
                 </p>
               </div>
             </Link>
@@ -239,7 +297,7 @@ const Navbar: React.FC = () => {
                   to="/login"
                   className="px-5 py-2.5 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                 >
-                  {t('nav.login')}
+                  {safeT('nav.login')}
                 </Link>
               ) : (
                 <>
@@ -248,7 +306,7 @@ const Navbar: React.FC = () => {
                       to="/subscription"
                       className="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      <span>{t('nav.upgrade')}</span>
+                      <span>{safeT('nav.upgrade')}</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -258,7 +316,7 @@ const Navbar: React.FC = () => {
                   {showPremiumBadge && (
                     <span className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#D4AF37] rounded-full shadow-sm">
                       <span>👑</span>
-                      {t('nav.premium')}
+                      {safeT('nav.premium')}
                     </span>
                   )}
 
@@ -282,19 +340,19 @@ const Navbar: React.FC = () => {
                         <div className="flex items-center gap-2 mt-1">
                           {isAdmin ? (
                             <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                              🛡️ {t('nav.admin')}
+                              🛡️ {safeT('nav.admin')}
                             </span>
                           ) : isSeller ? (
                             <span className="text-xs text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                              📈 {t('nav.seller')}
+                              📈 {safeT('nav.seller')}
                             </span>
                           ) : isBuyer ? (
                             <span className="text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                              🏠 {t('nav.buyer')}
+                              🏠 {safeT('nav.buyer')}
                             </span>
                           ) : null}
                           {showPremiumBadge && (
-                            <Badge variant="gold" size="sm">👑 {t('nav.premium')}</Badge>
+                            <Badge variant="gold" size="sm">👑 {safeT('nav.premium')}</Badge>
                           )}
                         </div>
                       </div>
@@ -304,7 +362,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">📊</span>
-                        {t('nav.dashboard')}
+                        {safeT('nav.dashboard')}
                       </Link>
 
                       {isAdmin && (
@@ -313,7 +371,7 @@ const Navbar: React.FC = () => {
                           className="flex items-center px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 transition-colors font-medium"
                         >
                           <span className="mr-3 text-lg">⚙️</span>
-                          {t('nav.admin_panel')}
+                          {safeT('nav.admin_panel')}
                         </Link>
                       )}
 
@@ -324,21 +382,21 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">➕</span>
-                            {t('nav.list_property')}
+                            {safeT('nav.list_property')}
                           </Link>
                           <Link
                             to="/my-properties"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">📋</span>
-                            {t('nav.my_properties')}
+                            {safeT('nav.my_properties')}
                           </Link>
                           <Link
                             to="/analytics"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">📊</span>
-                            {t('nav.analytics')}
+                            {safeT('nav.analytics')}
                           </Link>
                         </>
                       )}
@@ -350,14 +408,14 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">❤️</span>
-                            {t('nav.favorites')}
+                            {safeT('nav.favorites')}
                           </Link>
                           <Link
                             to="/ai-matching"
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">🤖</span>
-                            {t('nav.ai_match')}
+                            {safeT('nav.ai_match')}
                             {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                           </Link>
                           <Link
@@ -365,7 +423,7 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                           >
                             <span className="mr-3 text-lg">🗺️</span>
-                            {t('nav.map_search')}
+                            {safeT('nav.map_search')}
                             {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                           </Link>
                         </>
@@ -376,7 +434,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">💬</span>
-                        {t('nav.messages')}
+                        {safeT('nav.messages')}
                       </Link>
 
                       <div className="h-px bg-gray-100 my-1" />
@@ -386,7 +444,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">👤</span>
-                        {t('nav.profile_settings')}
+                        {safeT('nav.profile_settings')}
                       </Link>
 
                       <Link
@@ -394,7 +452,7 @@ const Navbar: React.FC = () => {
                         className="flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#2D5A27]/5 hover:text-[#2D5A27] transition-colors"
                       >
                         <span className="mr-3 text-lg">🔗</span>
-                        {t('nav.refer_earn')}
+                        {safeT('nav.refer_earn')}
                       </Link>
 
                       {!isPremium && isAuthenticated && !isAdmin && (
@@ -405,7 +463,7 @@ const Navbar: React.FC = () => {
                             className="flex items-center px-4 py-2.5 text-sm text-[#2D5A27] font-semibold hover:bg-[#2D5A27]/10 transition-colors"
                           >
                             <span className="mr-3 text-lg">🚀</span>
-                            {t('nav.upgrade_premium')}
+                            {safeT('nav.upgrade_premium')}
                           </Link>
                         </>
                       )}
@@ -417,7 +475,7 @@ const Navbar: React.FC = () => {
                         className="w-full text-left flex items-center px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                       >
                         <span className="mr-3 text-lg">🚪</span>
-                        {t('nav.logout')}
+                        {safeT('nav.logout')}
                       </button>
                     </div>
                   </div>
@@ -445,7 +503,7 @@ const Navbar: React.FC = () => {
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
           <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl p-6 overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
-              <span className="text-xl font-bold text-[#2D5A27]">{t('nav.menu')}</span>
+              <span className="text-xl font-bold text-[#2D5A27]">{safeT('nav.menu')}</span>
               <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-[#2D5A27]/5">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -456,7 +514,7 @@ const Navbar: React.FC = () => {
             {/* ✅ Mobile Language Switcher */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{t('nav.language')}</span>
+                <span className="text-sm text-gray-600">{safeT('nav.language')}</span>
                 <LanguageSwitcher />
               </div>
             </div>
@@ -473,7 +531,7 @@ const Navbar: React.FC = () => {
                       return;
                     }
 
-                    if (link.label === t('nav.list_property') || link.label === t('nav.favorites') || link.label === t('nav.my_properties')) {
+                    if (link.label === safeT('nav.list_property') || link.label === safeT('nav.favorites') || link.label === safeT('nav.my_properties')) {
                       if (!isAuthenticated) {
                         setSelectedFeature(link.label);
                         setShowLoginPopup(true);
@@ -522,7 +580,7 @@ const Navbar: React.FC = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                   >
-                    📊 {t('nav.dashboard')}
+                    📊 {safeT('nav.dashboard')}
                   </Link>
 
                   {isAdmin && (
@@ -531,7 +589,7 @@ const Navbar: React.FC = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center w-full px-4 py-3 text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
                     >
-                      ⚙️ {t('nav.admin_panel')}
+                      ⚙️ {safeT('nav.admin_panel')}
                     </Link>
                   )}
 
@@ -542,14 +600,14 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        ➕ {t('nav.list_property')}
+                        ➕ {safeT('nav.list_property')}
                       </Link>
                       <Link
                         to="/my-properties"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        📋 {t('nav.my_properties')}
+                        📋 {safeT('nav.my_properties')}
                       </Link>
                     </>
                   )}
@@ -561,14 +619,14 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        ❤️ {t('nav.favorites')}
+                        ❤️ {safeT('nav.favorites')}
                       </Link>
                       <Link
                         to="/ai-matching"
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        🤖 {t('nav.ai_match')}
+                        🤖 {safeT('nav.ai_match')}
                         {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                       </Link>
                       <Link
@@ -576,7 +634,7 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="flex items-center w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                       >
-                        🗺️ {t('nav.map_search')}
+                        🗺️ {safeT('nav.map_search')}
                         {!isPremium && <span className="ml-2 text-[10px] text-yellow-600">🔒</span>}
                       </Link>
                     </>
@@ -593,12 +651,12 @@ const Navbar: React.FC = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
                       >
-                        🚀 {t('nav.upgrade_premium')}
+                        🚀 {safeT('nav.upgrade_premium')}
                       </Link>
                     )}
                     {isPremium && (
                       <div className="block w-full px-4 py-3 text-center text-white bg-[#D4AF37] rounded-xl">
-                        👑 {t('nav.premium_member')}
+                        👑 {safeT('nav.premium_member')}
                       </div>
                     )}
                     <button
@@ -608,7 +666,7 @@ const Navbar: React.FC = () => {
                       }}
                       className="block w-full px-4 py-3 text-center text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all duration-200"
                     >
-                      {t('nav.logout')}
+                      {safeT('nav.logout')}
                     </button>
                   </>
                 ) : (
@@ -618,14 +676,14 @@ const Navbar: React.FC = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full px-4 py-3 text-center text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
                     >
-                      {t('nav.login')}
+                      {safeT('nav.login')}
                     </Link>
                     <Link
                       to="/register"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full px-4 py-3 text-center text-white bg-[#2D5A27] rounded-xl hover:bg-[#23461E] transition-all duration-200"
                     >
-                      {t('nav.register')}
+                      {safeT('nav.register')}
                     </Link>
                   </>
                 )}
@@ -661,9 +719,9 @@ const Navbar: React.FC = () => {
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
                   <div className="relative z-10">
                     <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🔒</div>
-                    <h3 className="text-2xl font-bold text-white mt-4">{t('nav.login_required')}</h3>
+                    <h3 className="text-2xl font-bold text-white mt-4">{safeT('nav.login_required')}</h3>
                     <p className="text-white/80 text-sm mt-1">
-                      {t('nav.login_to_access')} <span className="font-semibold text-white">{selectedFeature}</span>
+                      {safeT('nav.login_to_access')} <span className="font-semibold text-white">{selectedFeature}</span>
                     </p>
                   </div>
                 </div>
@@ -672,8 +730,8 @@ const Navbar: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">✨</span>
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{t('nav.why_signin')}</p>
-                        <p className="text-xs text-gray-400">{t('nav.why_signin_desc')}</p>
+                        <p className="text-sm font-semibold text-gray-800">{safeT('nav.why_signin')}</p>
+                        <p className="text-xs text-gray-400">{safeT('nav.why_signin_desc')}</p>
                       </div>
                     </div>
                   </div>
@@ -688,13 +746,13 @@ const Navbar: React.FC = () => {
                       }}
                       className="font-semibold"
                     >
-                      {t('nav.sign_in_now')}
+                      {safeT('nav.sign_in_now')}
                     </Button>
                     <div className="relative flex items-center justify-center">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-200" />
                       </div>
-                      <span className="relative px-4 text-xs text-gray-400 bg-white">{t('nav.or')}</span>
+                      <span className="relative px-4 text-xs text-gray-400 bg-white">{safeT('nav.or')}</span>
                     </div>
                     <Button
                       variant="outline"
@@ -705,13 +763,13 @@ const Navbar: React.FC = () => {
                         navigate('/register');
                       }}
                     >
-                      {t('nav.create_account')}
+                      {safeT('nav.create_account')}
                     </Button>
                     <button
                       onClick={() => setShowLoginPopup(false)}
                       className="text-sm text-gray-400 hover:text-gray-600 transition-colors text-center py-2"
                     >
-                      {t('nav.maybe_later')}
+                      {safeT('nav.maybe_later')}
                     </button>
                   </div>
                 </div>
@@ -747,9 +805,9 @@ const Navbar: React.FC = () => {
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
                   <div className="relative z-10">
                     <div className="w-20 h-20 mx-auto bg-white/20 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-sm shadow-lg">🚀</div>
-                    <h3 className="text-2xl font-bold text-white mt-4">{t('nav.premium_feature')}</h3>
+                    <h3 className="text-2xl font-bold text-white mt-4">{safeT('nav.premium_feature')}</h3>
                     <p className="text-white/80 text-sm mt-1">
-                      {t('nav.upgrade_to_access')} <span className="font-semibold text-white">{selectedFeature}</span>
+                      {safeT('nav.upgrade_to_access')} <span className="font-semibold text-white">{selectedFeature}</span>
                     </p>
                   </div>
                 </div>
@@ -757,12 +815,12 @@ const Navbar: React.FC = () => {
                   <div className="bg-[#E8F0E4] rounded-xl p-4 mb-6 border border-[#2D5A27]/20">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{t('nav.premium_plan')}</p>
-                        <p className="text-xs text-gray-400">{t('nav.all_features_unlocked')}</p>
+                        <p className="text-sm font-semibold text-gray-800">{safeT('nav.premium_plan')}</p>
+                        <p className="text-xs text-gray-400">{safeT('nav.all_features_unlocked')}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-[#2D5A27]">₹999</p>
-                        <p className="text-xs text-gray-400">{t('nav.per_month')}</p>
+                        <p className="text-xs text-gray-400">{safeT('nav.per_month')}</p>
                       </div>
                     </div>
                   </div>
@@ -777,7 +835,7 @@ const Navbar: React.FC = () => {
                       }}
                       className="font-semibold"
                     >
-                      {t('nav.upgrade_now')} 🚀
+                      {safeT('nav.upgrade_now')} 🚀
                     </Button>
                     <Button
                       variant="outline"
@@ -785,7 +843,7 @@ const Navbar: React.FC = () => {
                       fullWidth
                       onClick={() => setShowUpgradePopup(false)}
                     >
-                      {t('nav.maybe_later')}
+                      {safeT('nav.maybe_later')}
                     </Button>
                   </div>
                 </div>
