@@ -1,4 +1,4 @@
-// src/components/property/PropertyCard.tsx
+// src/components/properties/PropertyCard.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -33,7 +33,7 @@ export interface PropertyCardProps {
   favoritesCount?: number;
   propertyType?: string;
   isFavorited?: boolean;
-  onFavoriteToggle?: (id: string) => void;
+  onFavoriteToggle?: (id: string, favorited: boolean) => void;
   variant?: 'default' | 'compact' | 'horizontal';
   className?: string;
 }
@@ -58,15 +58,17 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   className = '',
 }) => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [favorited, setFavorited] = useState(isFavorited);
   const [isLoading, setIsLoading] = useState(false);
   const [localFavoritesCount, setLocalFavoritesCount] = useState(favoritesCount);
 
+  // ✅ Debug: Log when component mounts or props change
   useEffect(() => {
+    console.log(`🏠 PropertyCard [${id}] - isFavorited:`, isFavorited, 'favorited:', favorited);
     setFavorited(isFavorited);
     setLocalFavoritesCount(favoritesCount);
-  }, [isFavorited, favoritesCount]);
+  }, [isFavorited, favoritesCount, id]);
 
   const formatPrice = (price: number) => {
     if (price >= 10000000) {
@@ -81,168 +83,197 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     return '/placeholder-property.jpg';
   };
 
-  // ✅ Handle favorite toggle with proper role check
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('🔍 === FAVORITE CLICK DEBUG ===');
-    console.log('🔍 Property ID:', id);
-    
-    // ✅ Check token directly
-    const token = localStorage.getItem('accessToken');
-    console.log('🔑 Token:', token ? '✅ Present' : '❌ Missing');
+    console.log(`❤️ Heart clicked for property ${id}`);
+    console.log(`   Current favorited state: ${favorited}`);
+    console.log(`   Is authenticated: ${isAuthenticated}`);
 
-    if (!token) {
-      console.log('❌ No token found');
-      const confirm = window.confirm('Please login to save favorites. Go to login?');
-      if (confirm) {
-        navigate('/login');
-      }
+    if (!isAuthenticated) {
+      console.log('❌ User not authenticated');
+      const goLogin = window.confirm('Please login to save favorites. Go to login?');
+      if (goLogin) navigate('/login');
       return;
     }
 
-    // ✅ Check user role from localStorage
-    const userStr = localStorage.getItem('user');
-    let userRole = '';
-    let userName = '';
-    if (userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        userRole = userData.role || '';
-        userName = userData.name || '';
-        console.log('👤 User from localStorage:', { name: userName, role: userRole });
-      } catch (e) {
-        console.error('Error parsing user:', e);
-      }
-    }
-
-    // ✅ Also check from auth context
-    console.log('👤 Auth context user:', user);
-    console.log('👤 Auth context role:', user?.role);
-
-    // ✅ Check if user is BUYER
-    const isBuyer = userRole === 'BUYER' || user?.role === 'BUYER';
-    
-    if (!isBuyer) {
-      console.log('❌ User is not a BUYER. Role from localStorage:', userRole, 'Role from context:', user?.role);
-      alert('Only buyers can save favorites. Please contact support if you believe this is an error.');
+    if (isLoading) {
+      console.log('⏳ Already loading, skipping...');
       return;
     }
 
-    console.log('✅ User is a BUYER');
-
-    if (isLoading) return;
-
-    const newFavorited = !favorited;
-    setFavorited(newFavorited);
-    setLocalFavoritesCount(prev => newFavorited ? prev + 1 : Math.max(0, prev - 1));
     setIsLoading(true);
 
+    const previousFavorited = favorited;
+    const previousCount = localFavoritesCount;
+    const optimisticFavorited = !favorited;
+
+    console.log(`🔄 Optimistic update: ${previousFavorited} → ${optimisticFavorited}`);
+
+    // Optimistic UI update
+    setFavorited(optimisticFavorited);
+    setLocalFavoritesCount((prev) =>
+      optimisticFavorited ? prev + 1 : Math.max(0, prev - 1)
+    );
+
     try {
-      console.log('📤 Calling toggleFavorite API...');
+      console.log(`📡 Calling API to toggle favorite for ${id}...`);
       const result = await propertyApi.toggleFavorite(id);
       console.log('✅ API Response:', result);
       
-      setFavorited(result.favorited);
-      setLocalFavoritesCount(prev => result.favorited ? prev + 1 : Math.max(0, prev - 1));
+      const serverFavorited = !!result.favorited;
+      console.log(`   Server says favorited: ${serverFavorited}`);
+
+      setFavorited(serverFavorited);
       
-      if (onFavoriteToggle) {
-        onFavoriteToggle(id);
+      if (serverFavorited !== optimisticFavorited) {
+        setLocalFavoritesCount((prev) =>
+          serverFavorited ? prev + 1 : Math.max(0, prev - 1)
+        );
       }
-    } catch (error: any) {
-      console.error('❌ Error:', error);
-      console.error('❌ Response:', error.response?.data);
+
+      // ✅ Call the callback to update parent state
+      if (onFavoriteToggle) {
+        console.log(`📤 Calling onFavoriteToggle(${id}, ${serverFavorited})`);
+        onFavoriteToggle(id, serverFavorited);
+      }
       
-      setFavorited(!newFavorited);
-      setLocalFavoritesCount(prev => !newFavorited ? prev + 1 : Math.max(0, prev - 1));
+      // ✅ Show success feedback
+      console.log(`✅ ${serverFavorited ? 'Added to' : 'Removed from'} favorites`);
+      
+    } catch (error: any) {
+      console.error('❌ Error toggling favorite:', error);
+      
+      // Rollback optimistic update
+      setFavorited(previousFavorited);
+      setLocalFavoritesCount(previousCount);
+
+      // User-friendly error messages
+      let errorMessage = 'Failed to save favorite. Please try again.';
       
       if (error.response?.status === 401) {
-        alert('Session expired. Please login again.');
-        navigate('/login');
+        errorMessage = 'Session expired. Please login again.';
+        setTimeout(() => navigate('/login'), 1000);
       } else if (error.response?.status === 403) {
-        alert('You do not have permission to save favorites. Only buyers can do this.');
-      } else {
-        alert(error.response?.data?.message || 'Failed to save favorite. Please try again.');
+        errorMessage = 'Only buyers can save favorites.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
       }
+      
+      alert(errorMessage);
+      
     } finally {
       setIsLoading(false);
     }
   };
 
+  const FavoriteButton = () => (
+    <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+      {localFavoritesCount > 0 && (
+        <span className="text-[9px] text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+          {localFavoritesCount}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={handleFavoriteClick}
+        disabled={isLoading}
+        className={`w-7 h-7 flex items-center justify-center shadow-md transition-all duration-200 rounded-full ${
+          favorited
+            ? 'bg-red-500 text-white'
+            : 'bg-white/90 backdrop-blur-sm text-gray-500 hover:bg-white'
+        } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+        aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        {isLoading ? (
+          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Heart className={`w-3.5 h-3.5 ${favorited ? 'fill-white' : ''}`} />
+        )}
+      </button>
+    </div>
+  );
+
   // ✅ Compact variant
   if (variant === 'compact') {
     return (
-      <Link to={`/property/${id}`} className={`block ${className}`}>
-        <div className="flex items-center gap-4 p-3 bg-white hover:shadow-md transition-all duration-200">
-          <img
-            src={getImage()}
-            alt={title}
-            className="w-20 h-20 object-cover flex-shrink-0"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-            }}
-          />
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 truncate">{title}</h4>
-            <p className="text-sm text-gray-500 flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              {location}
-            </p>
-            <div className="flex items-center gap-3 mt-1 text-sm">
-              <span className="font-bold text-[#2D5A27]">{formatPrice(price)}</span>
-              {area && areaUnit && (
-                <span className="text-gray-400 text-xs">
-                  {formatArea(area, areaUnit)}
-                </span>
-              )}
+      <div className={`relative ${className}`}>
+        <FavoriteButton />
+        <Link to={`/property/${id}`} className="block">
+          <div className="flex items-center gap-4 p-3 bg-white hover:shadow-md transition-all duration-200">
+            <img
+              src={getImage()}
+              alt={title}
+              className="w-20 h-20 object-cover flex-shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-gray-900 truncate pr-8">{title}</h4>
+              <p className="text-sm text-gray-500 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {location}
+              </p>
+              <div className="flex items-center gap-3 mt-1 text-sm">
+                <span className="font-bold text-[#2D5A27]">{formatPrice(price)}</span>
+                {area && areaUnit && (
+                  <span className="text-gray-400 text-xs">
+                    {formatArea(area, areaUnit)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+      </div>
     );
   }
 
   // ✅ Horizontal variant
   if (variant === 'horizontal') {
     return (
-      <Link to={`/property/${id}`} className={`block ${className}`}>
-        <div className="flex flex-col md:flex-row bg-white overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
-          <div className="md:w-72 h-48 md:h-auto relative flex-shrink-0">
-            <img
-              src={getImage()}
-              alt={title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-              }}
-            />
-            {isFeatured && (
-              <span className="absolute top-3 left-3 bg-[#D4AF37] text-white text-xs font-bold px-3 py-1 flex items-center gap-1">
-                <Star className="w-3 h-3" /> Featured
-              </span>
-            )}
-          </div>
-          <div className="flex-1 p-5">
-            <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-              <MapPin className="w-4 h-4" /> {location}
-            </p>
-            <div className="flex items-center gap-4 mt-3">
-              {area && areaUnit && (
-                <span className="text-sm text-gray-600 flex items-center gap-1">
-                  📐 {formatArea(area, areaUnit)}
+      <div className={`relative ${className}`}>
+        <FavoriteButton />
+        <Link to={`/property/${id}`} className="block">
+          <div className="flex flex-col md:flex-row bg-white overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
+            <div className="md:w-72 h-48 md:h-auto relative flex-shrink-0">
+              <img
+                src={getImage()}
+                alt={title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                }}
+              />
+              {isFeatured && (
+                <span className="absolute top-3 left-3 bg-[#D4AF37] text-white text-xs font-bold px-3 py-1 flex items-center gap-1">
+                  <Star className="w-3 h-3" /> Featured
                 </span>
               )}
             </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-              <span className="text-2xl font-bold text-[#2D5A27]">
-                {formatPrice(price)}
-              </span>
+            <div className="flex-1 p-5">
+              <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+              <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                <MapPin className="w-4 h-4" /> {location}
+              </p>
+              <div className="flex items-center gap-4 mt-3">
+                {area && areaUnit && (
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    📐 {formatArea(area, areaUnit)}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <span className="text-2xl font-bold text-[#2D5A27]">
+                  {formatPrice(price)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      </Link>
+        </Link>
+      </div>
     );
   }
 
@@ -251,8 +282,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2 }}
-      className={`bg-white overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 ${className}`}
+      className={`relative bg-white overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 ${className}`}
     >
+      <FavoriteButton />
+
       <Link to={`/property/${id}`} className="block">
         <div className="relative h-56 overflow-hidden bg-gray-100">
           <img
@@ -264,7 +297,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
             }}
           />
-          
+
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {isFeatured && (
               <span className="bg-[#D4AF37] text-white text-[9px] font-bold px-2 py-0.5 flex items-center gap-1 shadow-md">
@@ -276,30 +309,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 <CheckCircle className="w-2.5 h-2.5" /> Verified
               </span>
             )}
-          </div>
-
-          <div className="absolute top-2 right-2 flex items-center gap-1">
-            {localFavoritesCount > 0 && (
-              <span className="text-[9px] text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
-                {localFavoritesCount}
-              </span>
-            )}
-            <button
-              onClick={handleFavoriteClick}
-              disabled={isLoading}
-              className={`w-7 h-7 flex items-center justify-center shadow-md transition-all duration-200 rounded-full ${
-                favorited 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-white/90 backdrop-blur-sm text-gray-500 hover:bg-white'
-              } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
-              aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              {isLoading ? (
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Heart className={`w-3.5 h-3.5 ${favorited ? 'fill-white' : ''}`} />
-              )}
-            </button>
           </div>
 
           <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm text-white text-[9px] px-1.5 py-0.5 flex items-center gap-1">

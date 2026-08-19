@@ -2,14 +2,13 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-
 import type { Property } from '../../types/property';
 import PropertyCard from './PropertyCard';
 
 interface PropertyGridProps {
   properties: Property[];
   loading?: boolean;
-  onFavoriteToggle?: (id: string) => void;
+  onFavoriteToggle?: (id: string, favorited: boolean) => void; // ✅ FIXED signature
 }
 
 const fadeInUp = {
@@ -34,7 +33,7 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
   loading = false,
   onFavoriteToggle 
 }) => {
-  // ✅ Loading state
+  // Loading state
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -52,7 +51,7 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
     );
   }
 
-  // ✅ Empty state
+  // Empty state
   if (!properties || properties.length === 0) {
     return (
       <div className="text-center py-12">
@@ -91,6 +90,8 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
             views={property.views}
             favoritesCount={property.favoritesCount}
             propertyType={property.propertyType}
+            // ✅ FIXED: Pass isFavorited from property
+            isFavorited={property.isFavorited || false}
             onFavoriteToggle={onFavoriteToggle}
             variant="default"
           />
