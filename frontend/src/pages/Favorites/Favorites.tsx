@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Loader2, ArrowLeft, Home } from 'lucide-react';
+import { Heart, Loader2, ArrowLeft } from 'lucide-react';
 import { propertyApi } from '../../services/api/property';
 import type { Property } from '../../types/property';
 import PropertyCard from '../../components/properties/PropertyCard';
@@ -12,7 +12,6 @@ const Favorites: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch favorites
   const fetchFavorites = async () => {
     try {
       setLoading(true);
@@ -31,18 +30,14 @@ const Favorites: React.FC = () => {
     fetchFavorites();
   }, []);
 
-  // ✅ Handle favorite toggle from PropertyCard
   const handleFavoriteToggle = async (propertyId: string) => {
-    // Optimistically remove from list
     setFavorites(prev => prev.filter(p => p.id !== propertyId));
     
     try {
       await propertyApi.toggleFavorite(propertyId);
-      // Refetch to sync with server
       await fetchFavorites();
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Revert on error
       await fetchFavorites();
     }
   };
@@ -79,7 +74,6 @@ const Favorites: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--color-primary)] pt-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-3">
@@ -99,7 +93,6 @@ const Favorites: React.FC = () => {
           </Link>
         </div>
 
-        {/* Favorites Grid */}
         {favorites.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {favorites.map((property) => (

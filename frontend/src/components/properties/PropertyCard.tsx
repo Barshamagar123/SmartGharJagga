@@ -1,16 +1,13 @@
 // src/components/property/PropertyCard.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } catch (error) {
-  // Handle error
-} from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Heart, Star, CheckCircle, ArrowRight } from 'lucide-react';
 import { formatArea } from '../../utils/areaUtils';
 import { propertyApi } from '../../services/api/property';
 import { useAuth } from '../../hooks/useAuth';
 
-// ✅ Image helper
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 const getImageUrl = (path: string | undefined | null): string => {
@@ -66,13 +63,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [localFavoritesCount, setLocalFavoritesCount] = useState(favoritesCount);
 
-  // ✅ Update local state when props change
   useEffect(() => {
     setFavorited(isFavorited);
     setLocalFavoritesCount(favoritesCount);
   }, [isFavorited, favoritesCount]);
 
-  // ✅ Format price
   const formatPrice = (price: number) => {
     if (price >= 10000000) {
       return `Rs ${(price / 10000000).toFixed(1)} Cr`;
@@ -80,23 +75,26 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     return `Rs ${price.toLocaleString()}`;
   };
 
-  // ✅ Get image
   const getImage = () => {
     if (mainImage) return getImageUrl(mainImage);
     if (images && images.length > 0) return getImageUrl(images[0]);
     return '/placeholder-property.jpg';
   };
 
-  // ✅ Handle favorite toggle - DOES NOT NAVIGATE, just toggles
+  // ✅ Handle favorite toggle with proper role check
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('❤️ Favorite button clicked for property:', id);
+    console.log('🔍 === FAVORITE CLICK DEBUG ===');
+    console.log('🔍 Property ID:', id);
+    
+    // ✅ Check token directly
+    const token = localStorage.getItem('accessToken');
+    console.log('🔑 Token:', token ? '✅ Present' : '❌ Missing');
 
-    // ✅ Check if user is authenticated
-    if (!isAuthenticated) {
-      console.log('❌ User not authenticated');
+    if (!token) {
+      console.log('❌ No token found');
       const confirm = window.confirm('Please login to save favorites. Go to login?');
       if (confirm) {
         navigate('/login');
@@ -104,59 +102,68 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       return;
     }
 
-    // ✅ Check if user is a BUYER
-    if (user?.role !== 'BUYER') {
-      console.log('❌ User is not a BUYER, role:', user?.role);
-      alert('Only buyers can save favorites');
+    // ✅ Check user role from localStorage
+    const userStr = localStorage.getItem('user');
+    let userRole = '';
+    let userName = '';
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        userRole = userData.role || '';
+        userName = userData.name || '';
+        console.log('👤 User from localStorage:', { name: userName, role: userRole });
+      } catch (e) {
+        console.error('Error parsing user:', e);
+      }
+    }
+
+    // ✅ Also check from auth context
+    console.log('👤 Auth context user:', user);
+    console.log('👤 Auth context role:', user?.role);
+
+    // ✅ Check if user is BUYER
+    const isBuyer = userRole === 'BUYER' || user?.role === 'BUYER';
+    
+    if (!isBuyer) {
+      console.log('❌ User is not a BUYER. Role from localStorage:', userRole, 'Role from context:', user?.role);
+      alert('Only buyers can save favorites. Please contact support if you believe this is an error.');
       return;
     }
 
+    console.log('✅ User is a BUYER');
+
     if (isLoading) return;
 
-    // ✅ Optimistic update - Heart turns RED immediately
     const newFavorited = !favorited;
-    console.log('🔄 Toggling favorite to:', newFavorited);
     setFavorited(newFavorited);
     setLocalFavoritesCount(prev => newFavorited ? prev + 1 : Math.max(0, prev - 1));
     setIsLoading(true);
 
     try {
-      // ✅ Call the API - POST /api/v1/properties/:id/favorite
-      console.log('📤 Sending API request to toggle favorite');
+      console.log('📤 Calling toggleFavorite API...');
       const result = await propertyApi.toggleFavorite(id);
-      
       console.log('✅ API Response:', result);
       
-      // ✅ Update with actual API response
       setFavorited(result.favorited);
       setLocalFavoritesCount(prev => result.favorited ? prev + 1 : Math.max(0, prev - 1));
       
-      // ✅ Call parent callback if provided
       if (onFavoriteToggle) {
         onFavoriteToggle(id);
       }
-
-      // ✅ Show success message
-      if (result.favorited) {
-        console.log('✅ Property added to favorites');
-      } else {
-        console.log('✅ Property removed from favorites');
-      }
-      
     } catch (error: any) {
-      console.error('❌ Failed to toggle favorite:', error);
+      console.error('❌ Error:', error);
+      console.error('❌ Response:', error.response?.data);
       
-      // ✅ Revert on error
       setFavorited(!newFavorited);
       setLocalFavoritesCount(prev => !newFavorited ? prev + 1 : Math.max(0, prev - 1));
       
-      // ✅ Show error message
       if (error.response?.status === 401) {
-        alert('Please login to save favorites');
+        alert('Session expired. Please login again.');
+        navigate('/login');
       } else if (error.response?.status === 403) {
-        alert('Only buyers can save favorites');
+        alert('You do not have permission to save favorites. Only buyers can do this.');
       } else {
-        alert('Failed to save favorite. Please try again.');
+        alert(error.response?.data?.message || 'Failed to save favorite. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -239,7 +246,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     );
   }
 
-  // ✅ Default variant - With Favorite Button
+  // ✅ Default variant
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -247,7 +254,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       className={`bg-white overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 ${className}`}
     >
       <Link to={`/property/${id}`} className="block">
-        {/* ✅ Image */}
         <div className="relative h-56 overflow-hidden bg-gray-100">
           <img
             src={getImage()}
@@ -259,7 +265,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             }}
           />
           
-          {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {isFeatured && (
               <span className="bg-[#D4AF37] text-white text-[9px] font-bold px-2 py-0.5 flex items-center gap-1 shadow-md">
@@ -273,7 +278,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             )}
           </div>
 
-          {/* ✅ Favorite Button - Only toggles, no navigation */}
           <div className="absolute top-2 right-2 flex items-center gap-1">
             {localFavoritesCount > 0 && (
               <span className="text-[9px] text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
@@ -298,15 +302,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             </button>
           </div>
 
-          {/* View count */}
           <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm text-white text-[9px] px-1.5 py-0.5 flex items-center gap-1">
             👁️ {views}
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-3">
-          {/* Price & Area */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold text-[#2D5A27]">
               {formatPrice(price)}
@@ -318,13 +319,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             )}
           </div>
 
-          {/* Location */}
           <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-1">
             <MapPin className="w-2.5 h-2.5" />
             {location}
           </p>
 
-          {/* Explore Button */}
           <div className="mt-2 pt-2 border-t border-gray-100">
             <div className="flex items-center justify-between">
               <span className="text-[9px] text-gray-400">{propertyType?.replace('_', ' ') || 'Property'}</span>
