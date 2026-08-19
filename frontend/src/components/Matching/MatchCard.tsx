@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, MapPin, Star, Eye, CheckCircle } from 'lucide-react';
+import { Heart, MapPin, Star, Eye, CheckCircle, Trophy } from 'lucide-react';
 import MatchGauge from './MatchGauge';
-
 
 interface MatchCardProps {
   id: string;
@@ -22,6 +21,7 @@ interface MatchCardProps {
   areaUnit?: string;
   propertyType?: string;
   views?: number;
+  rank?: number;
   onLearn?: (id: string) => void;
   onFavorite?: (id: string) => void;
 }
@@ -41,6 +41,24 @@ const formatArea = (area: number | undefined, unit: string | undefined): string 
   return `${area} ${unit || ''}`;
 };
 
+const getRankColor = (rank: number) => {
+  switch (rank) {
+    case 1: return 'text-yellow-500';
+    case 2: return 'text-gray-400';
+    case 3: return 'text-amber-600';
+    default: return 'text-gray-400';
+  }
+};
+
+const getRankIcon = (rank: number) => {
+  switch (rank) {
+    case 1: return '🥇';
+    case 2: return '🥈';
+    case 3: return '🥉';
+    default: return `#${rank}`;
+  }
+};
+
 const MatchCard: React.FC<MatchCardProps> = ({
   id,
   title,
@@ -57,6 +75,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   areaUnit,
   propertyType,
   views = 0,
+  rank,
   onLearn,
   onFavorite,
 }) => {
@@ -84,6 +103,15 @@ const MatchCard: React.FC<MatchCardProps> = ({
       style={{ background: '#FFFFFF', borderColor: '#D3CFC5' }}
       onClick={handleLearn}
     >
+      {/* Rank Badge */}
+      {rank && (
+        <div className="flex-shrink-0 w-8 text-center">
+          <span className={`text-xl font-bold ${getRankColor(rank)}`}>
+            {getRankIcon(rank)}
+          </span>
+        </div>
+      )}
+
       {/* Match Score Gauge */}
       <div className="flex-shrink-0">
         <MatchGauge score={Math.round(matchScore)} size={48} />

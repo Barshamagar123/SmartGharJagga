@@ -11,7 +11,7 @@ import {
   SizeTypeStep,
   MustHavesStep,
   MatchResults,
-} from '../../components/Matching/index.ts';
+} from '../../components/Matching';
 
 const steps = ['01 Budget', '02 Where', '03 Size & type', '04 Must-haves'];
 
@@ -168,6 +168,16 @@ const FindMyMatch: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header Section */}
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold" style={{ fontFamily: 'Khand', color: '#14181D' }}>
+          Find My Match
+        </h1>
+        <p className="text-sm mt-1" style={{ color: '#5C6570' }}>
+          About 90 seconds. Results re-rank while you answer — nothing is hidden until the fifth result.
+        </p>
+      </div>
+
       <StepTracker
         steps={steps}
         currentStep={step}

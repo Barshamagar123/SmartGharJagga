@@ -64,9 +64,12 @@ const MatchResults: React.FC<MatchResultsProps> = ({
     );
   }
 
+  // ✅ Only show top 3 matches
+  const topMatches = matches.slice(0, 3);
+
   return (
     <div className="space-y-3">
-      {matches.slice(0, 5).map((match) => (
+      {topMatches.map((match, index) => (
         <MatchCard
           key={match.propertyId}
           id={match.propertyId}
@@ -86,13 +89,14 @@ const MatchResults: React.FC<MatchResultsProps> = ({
           views={match.views}
           onLearn={onLearn}
           onFavorite={onFavorite}
+          rank={index + 1}
         />
       ))}
 
-      {matchCount > 5 && (
+      {matchCount > 3 && (
         <div className="rounded-lg border p-5" style={{ background: '#FAF1DC', borderColor: '#D9A93F' }}>
           <div className="font-bold mb-1" style={{ fontFamily: 'Khand', fontSize: 18, color: '#14181D' }}>
-            {matchCount - 5} more properties scored above 60%
+            {matchCount - 3} more properties scored above 60%
           </div>
           <p className="text-sm mb-1" style={{ color: '#5C6570' }}>
             Verified properties ready to view

@@ -8,7 +8,6 @@ import Home from './pages/HomePage/HomePage.tsx';
 
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
-import AIMatching from './pages/AIMatching/AIMatching';
 
 import GoogleCallback from './pages/Login/GoogleCallback.tsx';
 import Profile from './pages/Profile/Profile.tsx';
@@ -56,8 +55,7 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/dashboard" element={<Dashboard />} />
               
-              {/* Features */}
-              <Route path="/ai-matching" element={<AIMatching />} />
+              
               <Route path="/map-search" element={<MapSearchPage />} />
               <Route path="/match" element={<FindMyMatch />} />
               

@@ -1,23 +1,28 @@
+
 // src/hooks/useMatching.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { matchingApi } from '../services/api/matching';
-import type { MatchResult, UserPreferences, PreferenceRequest} from '../services/api/matching';
+import { matchingApi} from '../services/api/matching';
+import type { MatchResult, UserPreferences, PreferenceRequest } from '../services/api/matching';
 import { useAuth } from './useAuth';
 
 export const useMatching = () => {
   const { isAuthenticated, user } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [matches, setMatches] = useState<MatchResult[]>([]);
-  const [allMatches, setAllMatches] = useState<MatchResult[]>([]); // Store all matches
+  const [allMatches, setAllMatches] = useState<MatchResult[]>([]);
   const [matchCount, setMatchCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false); // ✅ Add saving state
   const [error, setError] = useState<string | null>(null);
 
   // ✅ Load user preferences and matches
   const loadData = useCallback(async () => {
     if (!isAuthenticated) {
-      setError('Please login to use AI matching');
+      setMatches([]);
+      setAllMatches([]);
+      setMatchCount(0);
+      setError('Please login to see your matches');
       return;
     }
 
@@ -25,6 +30,8 @@ export const useMatching = () => {
     setError(null);
     
     try {
+      console.log('🔐 Loading data for authenticated user:', user?.email);
+      
       // Load preferences
       const prefs = await matchingApi.getUserPreferences();
       setPreferences(prefs);
@@ -41,22 +48,29 @@ export const useMatching = () => {
       const count = await matchingApi.getMatchCount();
       setMatchCount(count);
       
+      console.log('✅ Data loaded successfully:', { count, topMatches: topMatches.length });
+      
     } catch (err: any) {
       console.error('Error loading matching data:', err);
-      setError(err.message || 'Failed to load matching data');
+      if (err.response?.status === 401) {
+        setError('Please login to see your matches');
+        setMatches([]);
+      } else {
+        setError(err.message || 'Failed to load matching data');
+      }
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
-  // ✅ Save preferences
+  // ✅ Save preferences - with saving state
   const savePreferences = useCallback(async (prefs: PreferenceRequest) => {
     if (!isAuthenticated) {
       setError('Please login to save preferences');
       return null;
     }
 
-    setLoading(true);
+    setSaving(true); // ✅ Set saving to true
     setError(null);
     
     try {
@@ -79,8 +93,9 @@ export const useMatching = () => {
       return saved;
     } catch (err: any) {
       console.error('Error saving preferences:', err);
-      
-      if (err.response?.data?.message) {
+      if (err.response?.status === 401) {
+        setError('Please login to save preferences');
+      } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.data?.errors) {
         const errors = err.response.data.errors;
@@ -91,11 +106,16 @@ export const useMatching = () => {
       }
       return null;
     } finally {
-      setLoading(false);
+      setSaving(false); // ✅ Set saving to false
     }
   }, [isAuthenticated]);
 
-  // ✅ Refresh matches (only top 3)
+  // ✅ Load matches (alias for loadData)
+  const loadMatches = useCallback(async () => {
+    await loadData();
+  }, [loadData]);
+
+  // ✅ Refresh matches
   const refreshMatches = useCallback(async () => {
     if (!isAuthenticated) return;
     
@@ -120,7 +140,6 @@ export const useMatching = () => {
     
     try {
       await matchingApi.updateFromBehavior(propertyId);
-      // Reload matches after learning (only top 3)
       const matchesData = await matchingApi.getPropertyMatches();
       setAllMatches(matchesData);
       
@@ -136,18 +155,25 @@ export const useMatching = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
+    } else {
+      setMatches([]);
+      setAllMatches([]);
+      setMatchCount(0);
+      setPreferences(null);
     }
   }, [isAuthenticated, loadData]);
 
   return {
     preferences,
-    matches,          // ✅ Only top 3 matches
-    allMatches,       // ✅ All matches (if needed)
+    matches,
+    allMatches,
     matchCount,
     loading,
+    saving, // ✅ Include saving in return
     error,
     savePreferences,
     loadData,
+    loadMatches, // ✅ Include loadMatches in return
     refreshMatches,
     learnFromBehavior,
     isAuthenticated,

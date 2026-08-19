@@ -155,9 +155,9 @@ const Navbar: React.FC = () => {
     if (!isAuthenticated) {
       return [
         ...commonLinks,
-        { label: safeT('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free', requiresAuth: true },
-        { label: safeT('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium', requiresAuth: true },
-        { label: safeT('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium', requiresAuth: true },
+        { label: safeT('nav.list_property'), path: '/list-property', locked: false, requiresAuth: true },
+        { label: safeT('nav.ai_match'), path: '/ai-matching', locked: true, requiresAuth: true },
+        { label: safeT('nav.map_search'), path: '/map-search', locked: true, requiresAuth: true },
       ];
     }
 
@@ -171,7 +171,7 @@ const Navbar: React.FC = () => {
     if (isSeller) {
       return [
         ...commonLinks,
-        { label: safeT('nav.list_property'), path: '/list-property', locked: false, badge: '✨ Free' },
+        { label: safeT('nav.list_property'), path: '/list-property', locked: false },
         { label: safeT('nav.my_properties'), path: '/my-properties', locked: false },
       ];
     }
@@ -180,8 +180,8 @@ const Navbar: React.FC = () => {
       return [
         ...commonLinks,
         { label: safeT('nav.favorites'), path: '/favorites', locked: false },
-        { label: safeT('nav.ai_match'), path: '/ai-matching', locked: true, badge: '🔒 Premium' },
-        { label: safeT('nav.map_search'), path: '/map-search', locked: true, badge: '🔒 Premium' },
+        { label: safeT('nav.ai_match'), path: '/ai-matching', locked: true },
+        { label: safeT('nav.map_search'), path: '/map-search', locked: true },
       ];
     }
 
@@ -241,7 +241,6 @@ const Navbar: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100/20">
-              {/* Header with gradient */}
               <div className="relative bg-gradient-to-br from-[#2D5A27] via-[#1a3d14] to-[#0f2a0c] px-6 py-8 text-center overflow-hidden">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-24 -mt-24" />
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full -ml-20 -mb-20" />
@@ -262,7 +261,6 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
 
-              {/* Body */}
               <div className="p-6">
                 <div className="bg-gradient-to-r from-emerald-50/80 to-teal-50/80 rounded-xl p-4 mb-6 border border-emerald-100/50">
                   <div className="flex items-start gap-3">
@@ -355,7 +353,6 @@ const Navbar: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#D4AF37]/20">
-              {/* Header with gold gradient */}
               <div className="relative bg-gradient-to-br from-[#2D5A27] via-[#1a3d14] to-[#0f2a0c] px-6 py-8 text-center overflow-hidden">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-500/10 rounded-full -mr-24 -mt-24" />
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-yellow-500/10 rounded-full -ml-20 -mb-20" />
@@ -377,7 +374,6 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
 
-              {/* Body */}
               <div className="p-6">
                 <div className="bg-gradient-to-r from-yellow-50/80 to-amber-50/80 rounded-xl p-4 mb-6 border border-yellow-200/50">
                   <div className="flex items-center justify-between">
@@ -458,7 +454,7 @@ const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* NAV LINKS - Desktop */}
+            {/* NAV LINKS - Desktop (No Free/Premium Badges) */}
             <div className="hidden lg:flex items-center gap-0.5 xl:gap-1">
               {finalNavLinks.map((link) => (
                 <button
@@ -471,23 +467,12 @@ const Navbar: React.FC = () => {
                   }`}
                 >
                   {link.label}
-                  {link.locked && (
-                    <span className="ml-1.5 px-1.5 py-0.5 text-[8px] font-semibold uppercase rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">
-                      Premium
-                    </span>
-                  )}
-                  {!link.locked && link.badge === '✨ Free' && (
-                    <span className="ml-1.5 px-1.5 py-0.5 text-[8px] font-semibold uppercase rounded-full bg-green-100 text-green-700 border border-green-200">
-                      Free
-                    </span>
-                  )}
                 </button>
               ))}
             </div>
 
             {/* RIGHT ACTIONS */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* ✅ Language Switcher - Now Working */}
               <LanguageSwitcher />
 
               {getRoleDisplay()}
@@ -709,7 +694,7 @@ const Navbar: React.FC = () => {
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - No Free/Premium Badges */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
@@ -793,12 +778,6 @@ const Navbar: React.FC = () => {
                       className="flex items-center justify-between w-full px-4 py-3 text-gray-600 hover:text-[#2D5A27] hover:bg-[#2D5A27]/5 rounded-lg transition-all duration-200"
                     >
                       <span>{link.label}</span>
-                      {link.locked && (
-                        <Badge variant="gold" size="sm">🔒</Badge>
-                      )}
-                      {!link.locked && link.badge === '✨ Free' && (
-                        <Badge variant="success" size="sm">✅ Free</Badge>
-                      )}
                     </button>
                   ))}
 
