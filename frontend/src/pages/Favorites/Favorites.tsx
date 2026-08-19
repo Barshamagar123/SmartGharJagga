@@ -2,36 +2,43 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { propertyApi } from '../../services/api/property';
+import { getMainImage, processImagePaths } from '../../utils/imageUtils';
 import type { Property } from '../../types/property';
 import PropertyCard from '../../components/properties/PropertyCard';
+import FavoritesHeader from '../../components/Favorites/FavoritesHeader';
 
 const Favorites: React.FC = () => {
   const [favorites, setFavorites] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const fetchFavorites = async () => {
     try {
       setLoading(true);
       setError(null);
-      setDebugInfo('Fetching favorites...');
       
       console.log('🔍 Fetching favorites from API...');
       const data = await propertyApi.getFavorites();
       
       console.log('✅ Favorites API Response:', data);
-      setDebugInfo(`Received ${data?.length || 0} favorites`);
       
       if (Array.isArray(data)) {
-        // ✅ Ensure all properties have isFavorited = true
-        const favoritesWithFlag = data.map(prop => ({
-          ...prop,
-          isFavorited: true
-        }));
-        setFavorites(favoritesWithFlag);
+        const processedFavorites = data.map(prop => {
+          const mainImage = getMainImage(prop.mainImage, prop.images);
+          const images = processImagePaths(prop.images);
+          
+          return {
+            ...prop,
+            mainImage: mainImage,
+            images: images.length > 0 ? images : [mainImage],
+            isFavorited: true
+          };
+        });
+        
+        setFavorites(processedFavorites);
+        console.log('✅ Processed favorites:', processedFavorites);
       } else {
         console.error('❌ API did not return an array:', data);
         setError('Invalid response format from server');
@@ -40,27 +47,17 @@ const Favorites: React.FC = () => {
     } catch (err: any) {
       console.error('❌ Error fetching favorites:', err);
       
-      if (err.response) {
-        console.error('Server response:', err.response.data);
-        console.error('Status code:', err.response.status);
-        
-        if (err.response.status === 401) {
-          setError('Please login to view your favorites');
-        } else if (err.response.status === 403) {
-          setError('You need to be a buyer to save favorites');
-        } else {
-          setError(err.response.data?.message || 'Failed to load favorites');
-        }
-      } else if (err.request) {
-        setError('No response from server. Please check your connection.');
+      if (err.response?.status === 401) {
+        setError('Please login to view your favorites');
+      } else if (err.response?.status === 403) {
+        setError('You need to be a buyer to save favorites');
       } else {
-        setError(err.message || 'An unexpected error occurred');
+        setError(err.response?.data?.message || 'Failed to load favorites');
       }
       
       setFavorites([]);
     } finally {
       setLoading(false);
-      setDebugInfo('');
     }
   };
 
@@ -68,28 +65,22 @@ const Favorites: React.FC = () => {
     fetchFavorites();
   }, []);
 
-  // ✅ Handle favorite toggle - removes from list when unfavorited
   const handleFavoriteToggle = (propertyId: string, favorited: boolean) => {
-    console.log(`📝 handleFavoriteToggle called for ${propertyId}, favorited: ${favorited}`);
-    
     if (!favorited) {
-      // Remove from list if unfavorited
-      setFavorites((prev) => {
-        const updated = prev.filter((p) => p.id !== propertyId);
-        console.log(`🗑️ Removed property ${propertyId}, remaining: ${updated.length}`);
-        return updated;
-      });
+      setFavorites((prev) => prev.filter((p) => p.id !== propertyId));
     }
   };
 
   // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-20">
-        <div className="text-center">
-          <Loader2 size={48} className="animate-spin text-[#2D5A27] mx-auto" />
-          <p className="mt-4 text-gray-500">Loading your favorites...</p>
-          {debugInfo && <p className="mt-2 text-sm text-gray-400">{debugInfo}</p>}
+      <div className="min-h-screen bg-gray-50">
+        <FavoritesHeader totalFavorites={0} />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin text-[#2D5A27] mx-auto" />
+            <p className="mt-4 text-gray-500">Loading your favorites...</p>
+          </div>
         </div>
       </div>
     );
@@ -98,8 +89,9 @@ const Favorites: React.FC = () => {
   // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gray-50">
+        <FavoritesHeader totalFavorites={0} />
+        <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
@@ -131,25 +123,9 @@ const Favorites: React.FC = () => {
   // Empty State
   if (favorites.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center gap-3">
-                <Heart className="w-8 h-8 text-gray-300" />
-                <h1 className="text-3xl font-bold text-gray-900">My Favorites</h1>
-              </div>
-              <p className="text-gray-500 mt-1">No properties saved yet</p>
-            </div>
-            <Link
-              to="/properties"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Browse Properties
-            </Link>
-          </div>
-
+      <div className="min-h-screen bg-gray-50">
+        <FavoritesHeader totalFavorites={0} />
+        <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="text-center py-20 bg-white rounded-xl border border-gray-100">
             <div className="text-7xl mb-6">🏠</div>
             <h3 className="text-2xl font-semibold text-gray-900">No Favorites Yet</h3>
@@ -170,34 +146,11 @@ const Favorites: React.FC = () => {
 
   // Success State with Favorites
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <Heart className="w-8 h-8 text-red-500 fill-red-500" />
-              <h1 className="text-3xl font-bold text-gray-900">My Favorites</h1>
-              <span className="bg-[#2D5A27] text-white text-sm px-3 py-1 rounded-full">
-                {favorites.length}
-              </span>
-            </div>
-            <p className="text-gray-500 mt-1">
-              {favorites.length} {favorites.length === 1 ? 'property' : 'properties'} saved
-            </p>
-          </div>
-          
-          <div className="flex gap-3">
-            <Link
-              to="/properties"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-xl hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Browse Properties
-            </Link>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <FavoritesHeader totalFavorites={favorites.length} />
 
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-8 py-8">
         {/* Favorites Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {favorites.map((property) => (
@@ -222,14 +175,6 @@ const Favorites: React.FC = () => {
             />
           ))}
         </div>
-
-        {/* Debug Info (only in development) */}
-        {import.meta.env.DEV && (
-          <div className="mt-8 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
-            <p>🔍 Debug: {favorites.length} favorites loaded</p>
-            <p>📦 First property: {JSON.stringify(favorites[0]?.title || 'None', null, 2)}</p>
-          </div>
-        )}
       </div>
     </div>
   );

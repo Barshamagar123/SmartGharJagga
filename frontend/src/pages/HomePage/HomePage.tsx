@@ -9,7 +9,7 @@ import PropertyCategories from '../../components/Home/ProperetyCategories';
 import CTASection from '../../components/Home/CTASection';
 import PropertyGrid from '../../components/properties/PropertyGrid';
 import FindMyMatchPromo from '../../components/Home/FindMyMatchPromo';
-import ReviewsSection from '../../components/Home/ReviewsSection'; // ✅ Import ReviewsSection
+import ReviewsSection from '../../components/Home/ReviewsSection';
 
 import { propertyApi } from '../../services/api/property';
 import type { Property } from '../../types/property';
@@ -52,7 +52,8 @@ const HomePage: React.FC = () => {
           ...property,
           images: processedImages,
           mainImage: processedMainImage,
-          isFavorited: false,
+          // ✅ Keep the isFavorited from API response
+          isFavorited: property.isFavorited || false,
         };
       });
       setProperties(processedProperties);
@@ -69,21 +70,22 @@ const HomePage: React.FC = () => {
     fetchProperties();
   }, []);
 
-  const handleFavoriteToggle = async (propertyId: string) => {
-    try {
-      setProperties(prev =>
-        prev.map(p =>
-          p.id === propertyId
-            ? { ...p, isFavorited: !p.isFavorited }
-            : p
-        )
-      );
-
-      await propertyApi.toggleFavorite(propertyId);
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      fetchProperties();
-    }
+  // ✅ FIXED: Match the signature from PropertyGrid
+  const handleFavoriteToggle = (propertyId: string, favorited: boolean) => {
+    console.log(`🔄 HomePage - Property ${propertyId} ${favorited ? 'added to' : 'removed from'} favorites`);
+    
+    // ✅ Update the property in the list
+    setProperties(prev =>
+      prev.map(p =>
+        p.id === propertyId
+          ? { 
+              ...p, 
+              isFavorited: favorited,
+              favoritesCount: favorited ? (p.favoritesCount || 0) + 1 : Math.max(0, (p.favoritesCount || 0) - 1)
+            }
+          : p
+      )
+    );
   };
 
   // Loading State
@@ -121,7 +123,6 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-[var(--color-primary)]">
       <HeroSection />
       
-      {/* ✅ Featured Carousel - Shows featured properties */}
       <FeaturedCarousel />
       
       <PropertyCategories />
@@ -138,19 +139,16 @@ const HomePage: React.FC = () => {
           <PropertyGrid
             properties={properties}
             loading={loading}
-            onFavoriteToggle={handleFavoriteToggle}
+            onFavoriteToggle={handleFavoriteToggle}  // ✅ Now matches the signature
           />
         </section>
       )}
 
-     
-      
-      {/* ✅ Find My Match Promo Section */}
       <FindMyMatchPromo />
-       {/* ✅ Reviews Section */}
+      
       <ReviewsSection limit={6} title="What Our Users Say" />
 
-      {/* ✅ Error State */}
+      {/* Error State */}
       {error && (
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700">
@@ -169,7 +167,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       )}
-      {/* ✅ CTA Section */}
+      
       <CTASection />
     </div>
   );

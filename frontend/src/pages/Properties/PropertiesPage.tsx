@@ -10,7 +10,7 @@ import PropertySort from '../../components/properties/PropertySort';
 import { propertyApi } from '../../services/api/property';
 import type { Property, PropertyType } from '../../types/property';
 
-// ✅ Image helper - Same as PropertyDetail
+// ✅ Image helper
 const API_URL = 'http://localhost:5001';
 
 const getImageUrl = (path: string | undefined | null): string => {
@@ -102,30 +102,31 @@ const PropertiesPage: React.FC = () => {
     setSearchParams(params);
   };
 
-  const handleFavoriteToggle = async (propertyId: string) => {
-    try {
-      const result = await propertyApi.toggleFavorite(propertyId);
-      setProperties(prev =>
-        prev.map(p =>
-          p.id === propertyId
-            ? { ...p, favoritesCount: result.favorited ? p.favoritesCount + 1 : p.favoritesCount - 1 }
-            : p
-        )
-      );
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    }
+  // ✅ FIXED: Properly update isFavorited and favoritesCount
+  const handleFavoriteToggle = async (propertyId: string, favorited: boolean) => {
+    console.log(`🔄 Property ${propertyId} ${favorited ? 'added to' : 'removed from'} favorites`);
+    
+    // ✅ Update the property in the list
+    setProperties(prev =>
+      prev.map(p =>
+        p.id === propertyId
+          ? { 
+              ...p, 
+              isFavorited: favorited,
+              favoritesCount: favorited ? (p.favoritesCount || 0) + 1 : Math.max(0, (p.favoritesCount || 0) - 1)
+            }
+          : p
+      )
+    );
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <PropertyHeader totalProperties={total} />
 
-      {/* ✅ Main Content - max-w-7xl with px-8 padding (matches PropertyDetail) */}
       <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* ✅ Filters - Reduced width to match PropertyDetail layout */}
           <aside className="lg:w-60 xl:w-64 flex-shrink-0">
             <PropertyFilters
               propertyType={filters.propertyType}
@@ -143,17 +144,14 @@ const PropertiesPage: React.FC = () => {
           </aside>
 
           <main className="flex-1">
-            {/* Sort */}
             <PropertySort value={sort} onChange={setSort} />
             
-            {/* Property Grid - Now cards will be larger */}
             <PropertyGrid 
               properties={properties} 
               loading={loading}
               onFavoriteToggle={handleFavoriteToggle}
             />
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <PropertyPagination
                 currentPage={currentPage}

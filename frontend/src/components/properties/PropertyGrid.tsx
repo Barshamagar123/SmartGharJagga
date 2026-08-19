@@ -8,7 +8,7 @@ import PropertyCard from './PropertyCard';
 interface PropertyGridProps {
   properties: Property[];
   loading?: boolean;
-  onFavoriteToggle?: (id: string, favorited: boolean) => void; // ✅ FIXED signature
+  onFavoriteToggle?: (id: string, favorited: boolean) => void;
 }
 
 const fadeInUp = {
@@ -90,7 +90,7 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
             views={property.views}
             favoritesCount={property.favoritesCount}
             propertyType={property.propertyType}
-            // ✅ FIXED: Pass isFavorited from property
+            // ✅ Pass isFavorited from property
             isFavorited={property.isFavorited || false}
             onFavoriteToggle={onFavoriteToggle}
             variant="default"

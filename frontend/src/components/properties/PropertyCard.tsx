@@ -63,12 +63,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [localFavoritesCount, setLocalFavoritesCount] = useState(favoritesCount);
 
-  // ✅ Debug: Log when component mounts or props change
+  // Sync with props
   useEffect(() => {
-    console.log(`🏠 PropertyCard [${id}] - isFavorited:`, isFavorited, 'favorited:', favorited);
     setFavorited(isFavorited);
     setLocalFavoritesCount(favoritesCount);
-  }, [isFavorited, favoritesCount, id]);
+  }, [isFavorited, favoritesCount]);
 
   const formatPrice = (price: number) => {
     if (price >= 10000000) {
@@ -87,29 +86,18 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    console.log(`❤️ Heart clicked for property ${id}`);
-    console.log(`   Current favorited state: ${favorited}`);
-    console.log(`   Is authenticated: ${isAuthenticated}`);
-
     if (!isAuthenticated) {
-      console.log('❌ User not authenticated');
       const goLogin = window.confirm('Please login to save favorites. Go to login?');
       if (goLogin) navigate('/login');
       return;
     }
 
-    if (isLoading) {
-      console.log('⏳ Already loading, skipping...');
-      return;
-    }
-
+    if (isLoading) return;
     setIsLoading(true);
 
     const previousFavorited = favorited;
     const previousCount = localFavoritesCount;
     const optimisticFavorited = !favorited;
-
-    console.log(`🔄 Optimistic update: ${previousFavorited} → ${optimisticFavorited}`);
 
     // Optimistic UI update
     setFavorited(optimisticFavorited);
@@ -118,12 +106,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     );
 
     try {
-      console.log(`📡 Calling API to toggle favorite for ${id}...`);
       const result = await propertyApi.toggleFavorite(id);
-      console.log('✅ API Response:', result);
-      
       const serverFavorited = !!result.favorited;
-      console.log(`   Server says favorited: ${serverFavorited}`);
 
       setFavorited(serverFavorited);
       
@@ -135,21 +119,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
       // ✅ Call the callback to update parent state
       if (onFavoriteToggle) {
-        console.log(`📤 Calling onFavoriteToggle(${id}, ${serverFavorited})`);
         onFavoriteToggle(id, serverFavorited);
       }
       
-      // ✅ Show success feedback
-      console.log(`✅ ${serverFavorited ? 'Added to' : 'Removed from'} favorites`);
-      
     } catch (error: any) {
-      console.error('❌ Error toggling favorite:', error);
-      
       // Rollback optimistic update
       setFavorited(previousFavorited);
       setLocalFavoritesCount(previousCount);
 
-      // User-friendly error messages
       let errorMessage = 'Failed to save favorite. Please try again.';
       
       if (error.response?.status === 401) {
@@ -195,7 +172,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     </div>
   );
 
-  // ✅ Compact variant
+  // Compact variant
   if (variant === 'compact') {
     return (
       <div className={`relative ${className}`}>
@@ -231,7 +208,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     );
   }
 
-  // ✅ Horizontal variant
+  // Horizontal variant
   if (variant === 'horizontal') {
     return (
       <div className={`relative ${className}`}>
@@ -277,7 +254,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     );
   }
 
-  // ✅ Default variant
+  // Default variant
   return (
     <motion.div
       whileHover={{ y: -4 }}

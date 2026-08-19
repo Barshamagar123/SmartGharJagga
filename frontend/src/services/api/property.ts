@@ -164,23 +164,70 @@ export const propertyApi = {
   },
 
   /**
-   * 10. TOGGLE FAVORITE
+   * 10. TOGGLE FAVORITE - ✅ FIXED with better error handling
    * POST /api/v1/properties/:id/favorite
    * ✅ Buyer role only
    */
   toggleFavorite: async (propertyId: string): Promise<{ favorited: boolean }> => {
-    const response = await apiClient.post(`/properties/${propertyId}/favorite`);
-    return response.data.data;
+    try {
+      console.log(`📡 Toggling favorite for property ${propertyId}...`);
+      const response = await apiClient.post(`/properties/${propertyId}/favorite`);
+      console.log('✅ Toggle favorite response:', response.data);
+      
+      // ✅ Your backend returns: { success: true, data: { favorited: true } }
+      if (response.data && response.data.data) {
+        return response.data.data; // { favorited: true/false }
+      }
+      
+      // Fallback for different response formats
+      if (response.data && response.data.favorited !== undefined) {
+        return response.data;
+      }
+      
+      return { favorited: true };
+    } catch (error: any) {
+      console.error('❌ Toggle favorite error:', error);
+      throw error;
+    }
   },
 
   /**
-   * 11. GET FAVORITES
+   * 11. GET FAVORITES - ✅ FIXED with better response handling
    * GET /api/v1/properties/favorites
    * ✅ Buyer role only
    */
   getFavorites: async (): Promise<Property[]> => {
-    const response = await apiClient.get('/properties/favorites');
-    return response.data.data;
+    try {
+      console.log('📡 Fetching favorites from API...');
+      const response = await apiClient.get('/properties/favorites');
+      console.log('📦 Raw response:', response.data);
+      
+      let favorites: Property[] = [];
+      
+      // ✅ Handle different response structures
+      if (response.data && response.data.data) {
+        favorites = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        favorites = response.data;
+      } else if (response.data && response.data.favorites && Array.isArray(response.data.favorites)) {
+        favorites = response.data.favorites;
+      } else {
+        console.warn('⚠️ Unexpected response format:', response.data);
+        favorites = [];
+      }
+      
+      // ✅ Ensure each property has isFavorited = true
+      const favoritesWithFlag = favorites.map(prop => ({
+        ...prop,
+        isFavorited: true
+      }));
+      
+      console.log(`✅ Successfully fetched ${favoritesWithFlag.length} favorites`);
+      return favoritesWithFlag;
+    } catch (error: any) {
+      console.error('❌ Error fetching favorites:', error);
+      throw error;
+    }
   },
 
   /**
