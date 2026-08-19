@@ -23,7 +23,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 1. CREATE PROPERTY
+  // 1. CREATE PROPERTY - ✅ FIXED
   // ============================================
   async createProperty(
     userId: string,
@@ -55,7 +55,7 @@ export class PropertyService {
         area: data.area,
         areaUnit: data.areaUnit,
         propertyType: data.propertyType,
-        purpose: 'SALE',
+        purpose: data.purpose || 'SALE', // ✅ NOW WORKS - type has purpose
         amenities: data.amenities || [],
         images: imageUrls.length > 0 ? imageUrls : [],
         videos: videoUrls.length > 0 ? videoUrls : [],
@@ -73,9 +73,9 @@ export class PropertyService {
   }
 
   // ============================================
-  // 2. GET PROPERTIES
+  // 2. GET PROPERTIES - ✅ FIXED with favorite status
   // ============================================
-  async getProperties(filters: PropertyFilter) {
+  async getProperties(filters: PropertyFilter, userId?: string) {
     const {
       search,
       location,
@@ -151,8 +151,24 @@ export class PropertyService {
       },
     });
 
+    // ✅ Get user's favorite IDs if logged in
+    let favoriteIds: Set<string> = new Set();
+    if (userId) {
+      const favorites = await this.prisma.favorite.findMany({
+        where: { userId },
+        select: { propertyId: true },
+      });
+      favoriteIds = new Set(favorites.map(f => f.propertyId));
+    }
+
+    // ✅ Add isFavorited flag to each property
+    const propertiesWithFavorites = properties.map(property => ({
+      ...property,
+      isFavorited: favoriteIds.has(property.id),
+    }));
+
     return {
-      properties,
+      properties: propertiesWithFavorites,
       total,
       page,
       limit,
@@ -161,9 +177,9 @@ export class PropertyService {
   }
 
   // ============================================
-  // 3. GET PROPERTY BY ID
+  // 3. GET PROPERTY BY ID - ✅ FIXED with favorite status
   // ============================================
-  async getPropertyById(id: string) {
+  async getPropertyById(id: string, userId?: string) {
     const property = await this.prisma.property.findUnique({
       where: { id },
       include: {
@@ -183,16 +199,34 @@ export class PropertyService {
       throw new ApiError(404, 'Property not found');
     }
 
+    // ✅ Check if property is favorited by user
+    let isFavorited = false;
+    if (userId) {
+      const favorite = await this.prisma.favorite.findUnique({
+        where: {
+          userId_propertyId: {
+            userId,
+            propertyId: id,
+          },
+        },
+      });
+      isFavorited = !!favorite;
+    }
+
+    // Increment views
     await this.prisma.property.update({
       where: { id },
       data: { views: { increment: 1 } },
     });
 
-    return property;
+    return {
+      ...property,
+      isFavorited,
+    };
   }
 
   // ============================================
-  // 4. UPDATE PROPERTY
+  // 4. UPDATE PROPERTY - ✅ FIXED
   // ============================================
   async updateProperty(
     id: string,
@@ -241,6 +275,7 @@ export class PropertyService {
         area: data.area,
         areaUnit: data.areaUnit,
         propertyType: data.propertyType,
+        purpose: data.purpose, // ✅ NOW WORKS - type has purpose
         amenities: data.amenities,
         parking: data.parking,
         floor: data.floor,
@@ -287,7 +322,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 6. GET USER PROPERTIES
+  // 6. GET USER PROPERTIES - ✅ FIXED
   // ============================================
   async getUserProperties(userId: string) {
     const properties = await this.prisma.property.findMany({
@@ -306,7 +341,11 @@ export class PropertyService {
       },
     });
 
-    return properties;
+    // ✅ User's own properties are not favorited by themselves
+    return properties.map(property => ({
+      ...property,
+      isFavorited: false,
+    }));
   }
 
   // ============================================
@@ -334,9 +373,9 @@ export class PropertyService {
   }
 
   // ============================================
-  // 8. GET PROPERTIES FOR MAP
+  // 8. GET PROPERTIES FOR MAP - ✅ FIXED
   // ============================================
-  async getPropertiesForMap() {
+  async getPropertiesForMap(userId?: string) {
     const properties = await this.prisma.property.findMany({
       where: {
         status: 'APPROVED',
@@ -359,7 +398,20 @@ export class PropertyService {
       },
     });
 
-    return properties;
+    // ✅ Get user's favorite IDs if logged in
+    let favoriteIds: Set<string> = new Set();
+    if (userId) {
+      const favorites = await this.prisma.favorite.findMany({
+        where: { userId },
+        select: { propertyId: true },
+      });
+      favoriteIds = new Set(favorites.map(f => f.propertyId));
+    }
+
+    return properties.map(property => ({
+      ...property,
+      isFavorited: favoriteIds.has(property.id),
+    }));
   }
 
   // ============================================
@@ -396,7 +448,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 10. TOGGLE FAVORITE
+  // 10. TOGGLE FAVORITE - ✅ COMPLETE FIXED
   // ============================================
   async toggleFavorite(userId: string, propertyId: string) {
     const property = await this.prisma.property.findUnique({
@@ -445,11 +497,13 @@ export class PropertyService {
   }
 
   // ============================================
-  // 11. GET FAVORITES
+  // 11. GET FAVORITES - ✅ COMPLETE FIXED
   // ============================================
   async getFavorites(userId: string) {
     const favorites = await this.prisma.favorite.findMany({
-      where: { userId },
+      where: { 
+        userId: userId 
+      },
       include: {
         property: {
           include: {
@@ -465,10 +519,20 @@ export class PropertyService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { 
+        createdAt: 'desc' 
+      },
     });
 
-    return favorites.map((f) => f.property);
+    if (favorites.length === 0) {
+      return [];
+    }
+
+    // ✅ Map to properties with isFavorited flag = true
+    return favorites.map((favorite) => ({
+      ...favorite.property,
+      isFavorited: true, // ✅ Always true for favorites list
+    }));
   }
 
   // ============================================
@@ -501,9 +565,9 @@ export class PropertyService {
   }
 
   // ============================================
-  // 13. GET FEATURED PROPERTIES
+  // 13. GET FEATURED PROPERTIES - ✅ FIXED
   // ============================================
-  async getFeaturedProperties(limit: number = 6) {
+  async getFeaturedProperties(limit: number = 6, userId?: string) {
     const properties = await this.prisma.property.findMany({
       where: {
         isFeatured: true,
@@ -524,14 +588,26 @@ export class PropertyService {
           },
         },
       },
-      
     });
 
-    return properties;
+    // ✅ Get user's favorite IDs if logged in
+    let favoriteIds: Set<string> = new Set();
+    if (userId) {
+      const favorites = await this.prisma.favorite.findMany({
+        where: { userId },
+        select: { propertyId: true },
+      });
+      favoriteIds = new Set(favorites.map(f => f.propertyId));
+    }
+
+    return properties.map(property => ({
+      ...property,
+      isFavorited: favoriteIds.has(property.id),
+    }));
   }
 
   // ============================================
-  // ✅ 14. GET ALL UNIQUE LOCATIONS - FIXED
+  // 14. GET ALL UNIQUE LOCATIONS
   // ============================================
   async getAllLocations(): Promise<string[]> {
     try {
@@ -565,7 +641,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // ✅ 15. SEARCH LOCATIONS - FIXED
+  // 15. SEARCH LOCATIONS
   // ============================================
   async searchLocations(query: string): Promise<string[]> {
     try {
@@ -606,7 +682,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // ✅ 16. GET POPULAR LOCATIONS - FIXED
+  // 16. GET POPULAR LOCATIONS
   // ============================================
   async getPopularLocations(limit: number = 10): Promise<string[]> {
     try {

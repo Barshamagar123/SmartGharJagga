@@ -1,6 +1,6 @@
 // src/modules/property/property.types.ts
 
-import { PropertyType, PropertyStatus } from '@prisma/client';
+import { PropertyType, PropertyStatus, Purpose } from '@prisma/client'; // ✅ Import Purpose
 
 export type AreaUnit = 'DHUR' | 'AANA' | 'ROPANI' | 'BISWA' | 'KATHA' | 'SQFT' | 'SQUARE_FEET' | 'SQUARE_METER' | 'HECTARE';
 
@@ -16,6 +16,7 @@ export interface CreatePropertyRequest {
   area?: number;
   areaUnit?: AreaUnit;
   propertyType: PropertyType;
+  purpose?: Purpose; // ✅ Use Purpose enum type
   amenities?: string[];
   parking?: boolean;
   floor?: number;
@@ -37,6 +38,7 @@ export interface UpdatePropertyRequest {
   area?: number;
   areaUnit?: AreaUnit;
   propertyType?: PropertyType;
+  purpose?: Purpose; // ✅ Use Purpose enum type
   amenities?: string[];
   parking?: boolean;
   floor?: number;
@@ -57,11 +59,11 @@ export interface PropertyFilter {
   bathrooms?: number;
   parking?: boolean;
   amenities?: string[];
-  status?: PropertyStatus | 'ALL'; // ✅ Allow 'ALL' as special value
+  status?: PropertyStatus | 'ALL';
   page?: number;
   limit?: number;
   sortBy?: 'price' | 'createdAt' | 'views';
   sortOrder?: 'asc' | 'desc';
   isFeatured?: boolean;
-  userId?: string; // ✅ Added for user filtering
+  userId?: string;
 }

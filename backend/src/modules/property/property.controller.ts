@@ -63,10 +63,11 @@ export class PropertyController {
   });
 
   // ============================================
-  // 2. GET ALL PROPERTIES
+  // 2. GET ALL PROPERTIES - ✅ FIXED
   // ============================================
   getProperties = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userRole = req.user?.role;
+    const userId = req.user?.id;
     const isAdmin = userRole === 'ADMIN';
 
     const filters: any = {
@@ -109,20 +110,23 @@ export class PropertyController {
       filters,
     });
 
-    const result = await this.propertyService.getProperties(filters);
+    // ✅ Pass userId to service for favorite status
+    const result = await this.propertyService.getProperties(filters, userId);
     ApiResponse.success(res, 200, 'Properties fetched successfully', result);
   });
 
   // ============================================
-  // 3. GET PROPERTY BY ID
+  // 3. GET PROPERTY BY ID - ✅ FIXED
   // ============================================
-  getPropertyById = asyncHandler(async (req: Request, res: Response) => {
+  getPropertyById = asyncHandler(async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
     if (!id) {
       throw new ApiError(400, 'Property ID is required');
     }
 
-    const property = await this.propertyService.getPropertyById(id);
+    // ✅ Pass userId for favorite status
+    const userId = req.user?.id;
+    const property = await this.propertyService.getPropertyById(id, userId);
     ApiResponse.success(res, 200, 'Property fetched successfully', property);
   });
 
@@ -231,10 +235,11 @@ export class PropertyController {
   });
 
   // ============================================
-  // 8. GET PROPERTIES FOR MAP
+  // 8. GET PROPERTIES FOR MAP - ✅ FIXED
   // ============================================
-  getPropertiesForMap = asyncHandler(async (req: Request, res: Response) => {
-    const properties = await this.propertyService.getPropertiesForMap();
+  getPropertiesForMap = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const properties = await this.propertyService.getPropertiesForMap(userId);
     ApiResponse.success(res, 200, 'Properties for map fetched successfully', properties);
   });
 
@@ -247,7 +252,7 @@ export class PropertyController {
   });
 
   // ============================================
-  // 10. TOGGLE FAVORITE
+  // 10. TOGGLE FAVORITE - ✅ FIXED
   // ============================================
   toggleFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -261,12 +266,11 @@ export class PropertyController {
     }
 
     const result = await this.propertyService.toggleFavorite(userId, id);
-
     ApiResponse.success(res, 200, result.message, { favorited: result.favorited });
   });
 
   // ============================================
-  // 11. GET FAVORITES
+  // 11. GET FAVORITES - ✅ FIXED
   // ============================================
   getFavorites = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
@@ -299,16 +303,17 @@ export class PropertyController {
   });
 
   // ============================================
-  // 13. GET FEATURED PROPERTIES
+  // 13. GET FEATURED PROPERTIES - ✅ FIXED
   // ============================================
-  getFeaturedProperties = asyncHandler(async (req: Request, res: Response) => {
+  getFeaturedProperties = asyncHandler(async (req: AuthRequest, res: Response) => {
     const limit = req.query.limit ? Number(req.query.limit) : 6;
-    const properties = await this.propertyService.getFeaturedProperties(limit);
+    const userId = req.user?.id;
+    const properties = await this.propertyService.getFeaturedProperties(limit, userId);
     ApiResponse.success(res, 200, 'Featured properties fetched successfully', properties);
   });
 
   // ============================================
-  // ✅ 14. GET ALL UNIQUE LOCATIONS
+  // 14. GET ALL UNIQUE LOCATIONS
   // ============================================
   getAllLocations = asyncHandler(async (req: Request, res: Response) => {
     const locations = await this.propertyService.getAllLocations();
@@ -316,7 +321,7 @@ export class PropertyController {
   });
 
   // ============================================
-  // ✅ 15. SEARCH LOCATIONS
+  // 15. SEARCH LOCATIONS
   // ============================================
   searchLocations = asyncHandler(async (req: Request, res: Response) => {
     const { q } = req.query;
@@ -331,7 +336,7 @@ export class PropertyController {
   });
 
   // ============================================
-  // ✅ 16. GET POPULAR LOCATIONS
+  // 16. GET POPULAR LOCATIONS
   // ============================================
   getPopularLocations = asyncHandler(async (req: Request, res: Response) => {
     const limit = req.query.limit ? Number(req.query.limit) : 10;
