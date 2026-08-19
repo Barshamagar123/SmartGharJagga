@@ -43,31 +43,46 @@ export interface HeatMapData {
 }
 
 export const mapApi = {
-  // ✅ Get all property locations
   getLocations: async (): Promise<PropertyLocation[]> => {
-    const response = await apiClient.get('/map/locations');
-    return response.data.data.locations;
+    try {
+      const response = await apiClient.get('/map/locations');
+      return response.data.data.locations || [];
+    } catch (error) {
+      console.error('Error fetching property locations:', error);
+      return [];
+    }
   },
 
-  // ✅ Get heat map data
   getHeatMap: async (): Promise<HeatMapData[]> => {
-    const response = await apiClient.get('/map/heatmap');
-    return response.data.data.data;
+    try {
+      const response = await apiClient.get('/map/heatmap');
+      return response.data.data.data || [];
+    } catch (error) {
+      console.error('Error fetching heat map data:', error);
+      return [];
+    }
   },
 
-  // ✅ Get price heat map data
   getPriceHeatMap: async (): Promise<HeatMapData[]> => {
-    const response = await apiClient.get('/map/price-heatmap');
-    return response.data.data.data;
+    try {
+      const response = await apiClient.get('/map/price-heatmap');
+      return response.data.data.data || [];
+    } catch (error) {
+      console.error('Error fetching price heat map data:', error);
+      return [];
+    }
   },
 
-  // ✅ Search by area (Draw to Search)
   searchByArea: async (lat: number, lng: number, radius: number): Promise<PropertyLocation[]> => {
-    const response = await apiClient.post('/map/search-area', { lat, lng, radius });
-    return response.data.data.properties;
+    try {
+      const response = await apiClient.post('/map/search-area', { lat, lng, radius });
+      return response.data.data.properties || [];
+    } catch (error) {
+      console.error('Error searching by area:', error);
+      return [];
+    }
   },
 
-  // ✅ Get nearby places
   getNearbyPlaces: async (params: {
     lat: number;
     lng: number;
@@ -77,23 +92,35 @@ export const mapApi = {
     keyword?: string;
     minRating?: number;
   }): Promise<NearbyPlace[]> => {
-    const response = await apiClient.get('/map/nearby', { params });
-    return response.data.data.places;
+    try {
+      const response = await apiClient.get('/map/nearby', { params });
+      return response.data.data.places || [];
+    } catch (error) {
+      console.error('Error fetching nearby places:', error);
+      return [];
+    }
   },
 
-  // ✅ Get nearest properties
   getNearestProperties: async (lat: number, lng: number, limit: number = 10): Promise<PropertyLocation[]> => {
-    const response = await apiClient.get('/map/nearest', { params: { lat, lng, limit } });
-    return response.data.data.properties;
+    try {
+      const response = await apiClient.get('/map/nearest', { params: { lat, lng, limit } });
+      return response.data.data.properties || [];
+    } catch (error) {
+      console.error('Error fetching nearest properties:', error);
+      return [];
+    }
   },
 
-  // ✅ Get property location by ID
-  getPropertyLocation: async (id: string): Promise<PropertyLocation> => {
-    const response = await apiClient.get(`/map/property/${id}/location`);
-    return response.data.data;
+  getPropertyLocation: async (id: string): Promise<PropertyLocation | null> => {
+    try {
+      const response = await apiClient.get(`/map/property/${id}/location`);
+      return response.data.data || null;
+    } catch (error) {
+      console.error('Error fetching property location:', error);
+      return null;
+    }
   },
 
-  // ✅ Get place photo URL
   getPlacePhotoUrl: (photoReference: string, maxWidth: number = 400): string => {
     return `${import.meta.env.VITE_API_URL}/map/photo?photoReference=${photoReference}&maxWidth=${maxWidth}`;
   },
