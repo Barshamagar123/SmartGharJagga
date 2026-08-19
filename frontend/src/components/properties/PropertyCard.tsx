@@ -5,18 +5,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Heart, Star, CheckCircle, ArrowRight } from 'lucide-react';
 import { formatArea } from '../../utils/areaUtils';
+import { getImageUrl, getFallbackImageUrl } from '../../utils/imageUtils';
 import { propertyApi } from '../../services/api/property';
 import { useAuth } from '../../hooks/useAuth';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-
-const getImageUrl = (path: string | undefined | null): string => {
-  if (!path) return '/placeholder-property.jpg';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  if (path.startsWith('//')) return `http:${path}`;
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_URL}${cleanPath}`;
-};
 
 export interface PropertyCardProps {
   id: string;
@@ -36,6 +27,7 @@ export interface PropertyCardProps {
   onFavoriteToggle?: (id: string, favorited: boolean) => void;
   variant?: 'default' | 'compact' | 'horizontal';
   className?: string;
+  showFavorite?: boolean; // ✅ ADD THIS
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -56,12 +48,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   onFavoriteToggle,
   variant = 'default',
   className = '',
+  showFavorite = true, // ✅ ADD THIS - default to true
 }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [favorited, setFavorited] = useState(isFavorited);
   const [isLoading, setIsLoading] = useState(false);
   const [localFavoritesCount, setLocalFavoritesCount] = useState(favoritesCount);
+  const [imageError, setImageError] = useState(false);
 
   // Sync with props
   useEffect(() => {
@@ -76,10 +70,31 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     return `Rs ${price.toLocaleString()}`;
   };
 
-  const getImage = () => {
-    if (mainImage) return getImageUrl(mainImage);
-    if (images && images.length > 0) return getImageUrl(images[0]);
+  const getImage = (): string => {
+    if (imageError) {
+      return '/placeholder-property.jpg';
+    }
+    
+    if (mainImage) {
+      if (mainImage.startsWith('http://') || mainImage.startsWith('https://')) {
+        return mainImage;
+      }
+      return getImageUrl(mainImage);
+    }
+    
+    if (images && images.length > 0) {
+      const firstImage = images[0];
+      if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+        return firstImage;
+      }
+      return getImageUrl(firstImage);
+    }
+    
     return '/placeholder-property.jpg';
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
@@ -96,14 +111,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     setIsLoading(true);
 
     const previousFavorited = favorited;
-    const previousCount = localFavoritesCount;
     const optimisticFavorited = !favorited;
 
     // Optimistic UI update
     setFavorited(optimisticFavorited);
-    setLocalFavoritesCount((prev) =>
-      optimisticFavorited ? prev + 1 : Math.max(0, prev - 1)
-    );
 
     try {
       const result = await propertyApi.toggleFavorite(id);
@@ -111,24 +122,33 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
       setFavorited(serverFavorited);
       
-      if (serverFavorited !== optimisticFavorited) {
-        setLocalFavoritesCount((prev) =>
-          serverFavorited ? prev + 1 : Math.max(0, prev - 1)
-        );
-      }
+      // ✅ Update favorites count
+      setLocalFavoritesCount(prev => 
+        serverFavorited ? prev + 1 : Math.max(0, prev - 1)
+      );
 
-      // ✅ Call the callback to update parent state
+      // ✅ Call parent callback
       if (onFavoriteToggle) {
         onFavoriteToggle(id, serverFavorited);
       }
-      
-    } catch (error: any) {
-      // Rollback optimistic update
-      setFavorited(previousFavorited);
-      setLocalFavoritesCount(previousCount);
 
-      let errorMessage = 'Failed to save favorite. Please try again.';
+      // ✅ Dispatch custom event for notification badge
+      if (serverFavorited) {
+        // Increment notification count
+        const currentCount = parseInt(localStorage.getItem('favoriteNotifications') || '0');
+        localStorage.setItem('favoriteNotifications', String(currentCount + 1));
+        
+        // Dispatch event for sidebar to listen
+        window.dispatchEvent(new CustomEvent('favoriteToggled', { 
+          detail: { count: currentCount + 1, propertyId: id }
+        }));
+      }
+
+    } catch (error: any) {
+      // Rollback on error
+      setFavorited(previousFavorited);
       
+      let errorMessage = 'Failed to save favorite. Please try again.';
       if (error.response?.status === 401) {
         errorMessage = 'Session expired. Please login again.';
         setTimeout(() => navigate('/login'), 1000);
@@ -139,38 +159,43 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       }
       
       alert(errorMessage);
-      
     } finally {
       setIsLoading(false);
     }
   };
 
-  const FavoriteButton = () => (
-    <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
-      {localFavoritesCount > 0 && (
-        <span className="text-[9px] text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
-          {localFavoritesCount}
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={handleFavoriteClick}
-        disabled={isLoading}
-        className={`w-7 h-7 flex items-center justify-center shadow-md transition-all duration-200 rounded-full ${
-          favorited
-            ? 'bg-red-500 text-white'
-            : 'bg-white/90 backdrop-blur-sm text-gray-500 hover:bg-white'
-        } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
-        aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
-      >
-        {isLoading ? (
-          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <Heart className={`w-3.5 h-3.5 ${favorited ? 'fill-white' : ''}`} />
+  const FavoriteButton = () => {
+    if (!showFavorite) return null;
+    
+    return (
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+        {localFavoritesCount > 0 && (
+          <span className="text-[9px] text-white bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+            {localFavoritesCount}
+          </span>
         )}
-      </button>
-    </div>
-  );
+        <button
+          type="button"
+          onClick={handleFavoriteClick}
+          disabled={isLoading}
+          className={`w-7 h-7 flex items-center justify-center shadow-md transition-all duration-200 rounded-full ${
+            favorited
+              ? 'bg-red-500 text-white'
+              : 'bg-white/90 backdrop-blur-sm text-gray-500 hover:bg-white'
+          } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+          aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {isLoading ? (
+            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Heart className={`w-3.5 h-3.5 ${favorited ? 'fill-white' : ''}`} />
+          )}
+        </button>
+      </div>
+    );
+  };
+
+  const imageSrc = getImage();
 
   // Compact variant
   if (variant === 'compact') {
@@ -180,12 +205,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         <Link to={`/property/${id}`} className="block">
           <div className="flex items-center gap-4 p-3 bg-white hover:shadow-md transition-all duration-200">
             <img
-              src={getImage()}
+              src={imageSrc}
               alt={title}
               className="w-20 h-20 object-cover flex-shrink-0"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-              }}
+              onError={handleImageError}
             />
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-gray-900 truncate pr-8">{title}</h4>
@@ -217,12 +240,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           <div className="flex flex-col md:flex-row bg-white overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
             <div className="md:w-72 h-48 md:h-auto relative flex-shrink-0">
               <img
-                src={getImage()}
+                src={imageSrc}
                 alt={title}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-                }}
+                onError={handleImageError}
               />
               {isFeatured && (
                 <span className="absolute top-3 left-3 bg-[#D4AF37] text-white text-xs font-bold px-3 py-1 flex items-center gap-1">
@@ -266,13 +287,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       <Link to={`/property/${id}`} className="block">
         <div className="relative h-56 overflow-hidden bg-gray-100">
           <img
-            src={getImage()}
+            src={imageSrc}
             alt={title}
             className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
             loading="lazy"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-            }}
+            onError={handleImageError}
           />
 
           <div className="absolute top-2 left-2 flex flex-col gap-1">
