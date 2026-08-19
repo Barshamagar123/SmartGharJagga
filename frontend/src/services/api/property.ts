@@ -165,6 +165,8 @@ export const propertyApi = {
 
   /**
    * 10. TOGGLE FAVORITE
+   * POST /api/v1/properties/:id/favorite
+   * ✅ Buyer role only
    */
   toggleFavorite: async (propertyId: string): Promise<{ favorited: boolean }> => {
     const response = await apiClient.post(`/properties/${propertyId}/favorite`);
@@ -173,6 +175,8 @@ export const propertyApi = {
 
   /**
    * 11. GET FAVORITES
+   * GET /api/v1/properties/favorites
+   * ✅ Buyer role only
    */
   getFavorites: async (): Promise<Property[]> => {
     const response = await apiClient.get('/properties/favorites');

@@ -27,6 +27,7 @@ import SubscriptionPlans from './pages/Subscription/SubscriptionPlans.tsx';
 import PropertyDetailPremium from './pages/PropertyDetail/PropertyDetail';
 import FindMyMatch from './pages/FindMyMatch/FindMyMatch.tsx';
 import MapSearchPage from './pages/MapSearch/MapSearchPage.tsx';
+import Favorites from './pages/Favorites/Favorites.tsx';
 
 function App() {
   return (
@@ -45,7 +46,7 @@ function App() {
               <Route path="/property/:id/edit" element={<EditProperty />} />
               <Route path="/list-property" element={<AddProperty />} />
               <Route path="/my-properties" element={<MyProperties />} />
-              
+              <Route path='/favorites' element={<Favorites />} />
               {/* Auth */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
