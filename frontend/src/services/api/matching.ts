@@ -1,20 +1,16 @@
 // src/services/api/matching.ts
 
-import axios from 'axios';
-import type { PropertyType } from '../../types/property';
-import type { Purpose } from './property';
+import apiClient from './client';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
-
-export interface UserPreferences {
+export interface PreferenceRequest {
   budgetMin: number;
   budgetMax: number;
   location: string;
-  propertyType: PropertyType;
+  propertyType: string;
   bedrooms: number;
   bathrooms: number;
   amenities: string[];
-  purpose: Purpose;
+  purpose: string;
   parkingNeeded: boolean;
 }
 
@@ -23,7 +19,7 @@ export interface MatchResult {
   propertyTitle: string;
   price: number;
   location: string;
-  propertyType: PropertyType;
+  propertyType: string;
   bedrooms: number;
   bathrooms: number;
   images: string[];
@@ -32,66 +28,85 @@ export interface MatchResult {
   matchPercentage: string;
 }
 
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  budgetMin: number;
+  budgetMax: number;
+  location: string;
+  propertyType: string;
+  bedrooms: number;
+  bathrooms: number;
+  amenities: string[];
+  purpose: string;
+  parkingNeeded: boolean;
+  propertyVector: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const matchingApi = {
   // ✅ Save user preferences
-  savePreferences: async (preferences: UserPreferences): Promise<any> => {
-    const token = localStorage.getItem('token');
-    const response = await axios.post(
-      `${API_URL}/matching/preferences`,
-      preferences,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+  savePreferences: async (preferences: PreferenceRequest): Promise<UserPreferences> => {
+    try {
+      const response = await apiClient.post('/matching/preferences', preferences);
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Error saving preferences:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Please login to save preferences');
       }
-    );
-    return response.data;
+      throw error;
+    }
   },
 
   // ✅ Get property matches
-  getMatches: async (): Promise<MatchResult[]> => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/matching/properties`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data.data;
+  getPropertyMatches: async (): Promise<MatchResult[]> => {
+    try {
+      const response = await apiClient.get('/matching/properties');
+      return response.data.data || [];
+    } catch (error: any) {
+      console.error('Error getting matches:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Please login to view matches');
+      }
+      return [];
+    }
   },
 
   // ✅ Get user preferences
-  getUserPreferences: async (): Promise<UserPreferences> => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/matching/preferences`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data.data;
+  getUserPreferences: async (): Promise<UserPreferences | null> => {
+    try {
+      const response = await apiClient.get('/matching/preferences');
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null; // No preferences found
+      }
+      console.error('Error getting preferences:', error);
+      return null;
+    }
   },
 
   // ✅ Get match count
   getMatchCount: async (): Promise<number> => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_URL}/matching/count`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data.data.count;
+    try {
+      const response = await apiClient.get('/matching/count');
+      return response.data.data.count || 0;
+    } catch (error: any) {
+      console.error('Error getting match count:', error);
+      return 0;
+    }
   },
 
-  // ✅ Learn from user behavior
-  updateFromBehavior: async (propertyId: string): Promise<void> => {
-    const token = localStorage.getItem('token');
-    await axios.post(
-      `${API_URL}/matching/learn`,
-      { propertyId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  // ✅ Update preferences from behavior (learning)
+  updateFromBehavior: async (propertyId: string): Promise<UserPreferences> => {
+    try {
+      const response = await apiClient.post('/matching/learn', { propertyId });
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Error updating from behavior:', error);
+      throw error;
+    }
   },
 };

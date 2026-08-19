@@ -1,132 +1,75 @@
 // src/pages/AIMatching/components/MatchResults.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Badge } from '../common/Badge/Badge';
-import Card, { CardDescription, CardTitle, CardContent } from '../common/Card/Card';
-import {Button} from '../common/Button/Button'
+import { useMatching } from '../../hooks/useMatching';
+import { getImageUrl } from '../../utils/imageUtils';
 
-interface MatchProperty {
-  id: number;
-  title: string;
-  price: string;
-  location: string;
-  beds: number;
-  baths: number;
-  sqft: string;
-  image: string;
-  type: string;
-  matchScore: number;
-  featured: boolean;
+
+interface MatchResultsProps {
+  onLearnFromBehavior?: (propertyId: string) => void;
 }
 
-const MatchResults: React.FC = () => {
+const MatchResults: React.FC<MatchResultsProps> = ({ onLearnFromBehavior }) => {
+  const { matches, matchCount, loading, learnFromBehavior } = useMatching();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
 
-  const matchedProperties: MatchProperty[] = [
-    {
-      id: 1,
-      title: 'Aspen Ridge Villa',
-      price: 'Rs 4.8 Cr',
-      location: 'Lalitpur, Bhaisepati',
-      beds: 5,
-      baths: 4,
-      sqft: '4,200',
-      image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800',
-      type: 'VILLA',
-      matchScore: 95,
-      featured: true,
-    },
-    {
-      id: 2,
-      title: 'Greenwood Townhouse',
-      price: 'Rs 3.2 Cr',
-      location: 'Kathmandu, Baluwatar',
-      beds: 4,
-      baths: 3,
-      sqft: '3,100',
-      image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800',
-      type: 'HOUSE',
-      matchScore: 87,
-      featured: false,
-    },
-    {
-      id: 3,
-      title: 'Monsoon Loft',
-      price: 'Rs 1.4 Cr',
-      location: 'Kathmandu, Thamel',
-      beds: 2,
-      baths: 2,
-      sqft: '1,350',
-      image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-      type: 'APARTMENT',
-      matchScore: 78,
-      featured: false,
-    },
-    {
-      id: 4,
-      title: 'Hillside Estate',
-      price: 'Rs 5.2 Cr',
-      location: 'Kavre, Dhulikhel',
-      beds: 5,
-      baths: 5,
-      sqft: '5,600',
-      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
-      type: 'VILLA',
-      matchScore: 92,
-      featured: true,
-    },
-    {
-      id: 5,
-      title: 'Cedar Bungalow',
-      price: 'Rs 2.6 Cr',
-      location: 'Bhaktapur, Suryabinayak',
-      beds: 3,
-      baths: 3,
-      sqft: '2,400',
-      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800',
-      type: 'BUNGALOW',
-      matchScore: 82,
-      featured: false,
-    },
-    {
-      id: 6,
-      title: 'Riverstone Plot',
-      price: 'Rs 95 Lakh',
-      location: 'Pokhara, Lakeside',
-      beds: 0,
-      baths: 0,
-      sqft: '5,600',
-      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800',
-      type: 'LAND',
-      matchScore: 65,
-      featured: false,
-    },
-  ];
-
-  // Sort by match score (highest first)
-  const sortedProperties = [...matchedProperties].sort((a, b) => b.matchScore - a.matchScore);
-
-  // Pagination
-  const totalPages = Math.ceil(sortedProperties.length / itemsPerPage);
+  // ✅ Matches are already top 3 from the hook
+  const sortedMatches = [...matches].sort((a, b) => b.matchScore - a.matchScore);
+  
+  // ✅ No pagination needed for top 3, but keep it if you want
+  const totalPages = Math.ceil(sortedMatches.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentItems = sortedProperties.slice(startIndex, startIndex + itemsPerPage);
+  const currentItems = sortedMatches.slice(startIndex, startIndex + itemsPerPage);
 
   const getMatchColor = (score: number) => {
-    if (score >= 90) return 'bg-green-500 text-white';
-    if (score >= 75) return 'bg-blue-500 text-white';
-    if (score >= 60) return 'bg-yellow-500 text-white';
+    if (score >= 0.85) return 'bg-green-500 text-white';
+    if (score >= 0.65) return 'bg-blue-500 text-white';
+    if (score >= 0.50) return 'bg-yellow-500 text-white';
     return 'bg-gray-400 text-white';
   };
 
   const getMatchLabel = (score: number) => {
-    if (score >= 90) return '🌟 Excellent Match';
-    if (score >= 75) return '👍 Good Match';
-    if (score >= 60) return '👌 Fair Match';
+    const percentage = Math.round(score * 100);
+    if (percentage >= 85) return '🌟 Excellent Match';
+    if (percentage >= 65) return '👍 Good Match';
+    if (percentage >= 50) return '👌 Fair Match';
     return '💡 Possible Match';
   };
+
+  const handlePropertyClick = (propertyId: string) => {
+    if (learnFromBehavior) {
+      learnFromBehavior(propertyId);
+    }
+    if (onLearnFromBehavior) {
+      onLearnFromBehavior(propertyId);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D5A27] mx-auto"></div>
+          <p className="mt-4 text-gray-500">Loading matches...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (matches.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">🔍</div>
+        <h3 className="text-xl font-semibold text-gray-900">No Matches Found</h3>
+        <p className="text-gray-500 mt-2">
+          Try adjusting your preferences to find more properties
+        </p>
+      </div>
+    );
+  }
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
@@ -158,31 +101,45 @@ const MatchResults: React.FC = () => {
       {/* Header */}
       <motion.div variants={fadeInUp} className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
-            Your AI Matches
+          <h2 className="text-2xl font-bold text-gray-900">
+            Your Top 3 AI Matches
           </h2>
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Showing {sortedProperties.length} properties matched to your preferences
+          <p className="text-sm text-gray-500">
+            Showing your top {sortedMatches.length} matched properties
           </p>
         </div>
+        {matchCount > 3 && (
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">
+              +{matchCount - 3} more matches available
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-2">
-          <Badge variant="primary" size="lg">
+          <span className="px-3 py-1 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">
             🎯 AI Powered
-          </Badge>
+          </span>
         </div>
       </motion.div>
 
-      {/* Results */}
+      {/* Results - Only Top 3 */}
       {currentItems.map((property) => (
-        <motion.div key={property.id} variants={fadeInUp}>
-          <Card variant="hover" padding="none" className="overflow-hidden border border-[var(--color-primary-border)]">
+        <motion.div key={property.propertyId} variants={fadeInUp}>
+          <Link
+            to={`/property/${property.propertyId}`}
+            onClick={() => handlePropertyClick(property.propertyId)}
+            className="block bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 hover:shadow-xl transition-all duration-300"
+          >
             <div className="flex flex-col md:flex-row">
               {/* Image */}
               <div className="md:w-1/3 relative">
                 <img
-                  src={property.image}
-                  alt={property.title}
+                  src={getImageUrl(property.mainImage || property.images?.[0])}
+                  alt={property.propertyTitle}
                   className="w-full h-48 md:h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300/2D5A27/FFFFFF?text=No+Image';
+                  }}
                 />
                 {/* Match Score Badge */}
                 <div className="absolute top-3 right-3">
@@ -192,140 +149,97 @@ const MatchResults: React.FC = () => {
                         property.matchScore
                       )}`}
                     >
-                      <span className="text-xl font-bold">{property.matchScore}%</span>
+                      <span className="text-xl font-bold">{Math.round(property.matchScore * 100)}%</span>
                       <span className="text-[8px] font-medium uppercase">Match</span>
                     </div>
                   </div>
                 </div>
-                {property.featured && (
-                  <div className="absolute top-3 left-3">
-                    <Badge variant="gold">⭐ Featured</Badge>
+                {/* Rank Badge */}
+                <div className="absolute top-3 left-3">
+                  <div className="bg-black/70 text-white px-3 py-1 rounded-full text-xs font-medium">
+                    #{(sortedMatches.indexOf(property) + 1)} Match
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Content */}
               <div className="md:w-2/3 p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="primary" size="sm">
-                      {property.type}
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      size="sm"
-                      className={getMatchColor(property.matchScore)}
+                    <span className="px-2 py-0.5 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">
+                      {property.propertyType.replace('_', ' ')}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded-full ${getMatchColor(property.matchScore)}`}
                     >
                       {getMatchLabel(property.matchScore)}
-                    </Badge>
+                    </span>
                   </div>
-                  <CardTitle className="text-xl group-hover:text-[#2D5A27] transition-colors">
-                    {property.title}
-                  </CardTitle>
-                  <CardDescription className="text-sm flex items-center gap-1 mt-1">
+                  <h3 className="text-xl font-semibold text-gray-900 hover:text-[#2D5A27] transition-colors">
+                    {property.propertyTitle}
+                  </h3>
+                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                     <span>📍</span> {property.location}
-                  </CardDescription>
+                  </p>
 
-                  <div className="flex items-center gap-4 text-sm text-[var(--color-text-secondary)] mt-3">
-                    {property.beds > 0 && <span>🛏️ {property.beds} Beds</span>}
-                    {property.baths > 0 && <span>🛁 {property.baths} Baths</span>}
-                    {property.sqft && <span>📐 {property.sqft} sqft</span>}
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mt-3">
+                    {property.bedrooms > 0 && <span>🛏️ {property.bedrooms} Beds</span>}
+                    {property.bathrooms > 0 && <span>🛁 {property.bathrooms} Baths</span>}
                   </div>
 
                   <div className="mt-3">
                     <span className="text-2xl font-bold text-[#2D5A27]">
-                      {property.price}
+                      Rs {(property.price / 10000000).toFixed(1)} Cr
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-primary-border)]">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-[var(--color-text-tertiary)]">
-                      AI Match: {property.matchScore}%
+                    <span className="text-sm text-gray-400">
+                      AI Match: {Math.round(property.matchScore * 100)}%
                     </span>
-                    <div className="w-24 h-2 bg-[var(--color-primary-border)] rounded-full overflow-hidden">
+                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          property.matchScore >= 90
+                          property.matchScore >= 0.85
                             ? 'bg-green-500'
-                            : property.matchScore >= 75
+                            : property.matchScore >= 0.65
                             ? 'bg-blue-500'
-                            : property.matchScore >= 60
+                            : property.matchScore >= 0.50
                             ? 'bg-yellow-500'
                             : 'bg-gray-400'
                         }`}
-                        style={{ width: `${property.matchScore}%` }}
+                        style={{ width: `${Math.round(property.matchScore * 100)}%` }}
                       />
                     </div>
                   </div>
-                  <Link
-                    to={`/property/${property.id}`}
-                    className="px-4 py-2 text-sm font-medium text-[#2D5A27] border-2 border-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-all duration-200"
-                  >
-                    View Details
-                  </Link>
+                  <span className="text-sm font-medium text-[#2D5A27]">
+                    View Details →
+                  </span>
                 </div>
               </div>
             </div>
-          </Card>
+          </Link>
         </motion.div>
       ))}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <motion.div variants={fadeInUp} className="flex justify-center items-center gap-2 mt-8">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 border border-[var(--color-primary-border)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-surface)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            Previous
-          </button>
-          {Array.from({ length: totalPages }).map((_, i) => (
+      {/* ✅ Show "More Matches" button if there are more than 3 */}
+      {matchCount > 3 && (
+        <motion.div variants={fadeInUp}>
+          <div className="bg-gradient-to-r from-[#E8F0E4] to-[#2D5A27]/10 rounded-xl p-6 text-center border border-[#2D5A27]/20">
+            <p className="text-sm text-gray-600">
+              You have {matchCount - 3} more matches waiting for you!
+            </p>
             <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                currentPage === i + 1
-                  ? 'bg-[#2D5A27] text-white'
-                  : 'border border-[var(--color-primary-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-surface)]'
-              }`}
+              onClick={() => window.location.href = '/properties'}
+              className="mt-3 px-6 py-2 bg-[#2D5A27] text-white rounded-lg hover:bg-[#23461E] transition-colors text-sm font-medium"
             >
-              {i + 1}
+              View All {matchCount} Matches
             </button>
-          ))}
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 border border-[var(--color-primary-border)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-surface)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            Next
-          </button>
+          </div>
         </motion.div>
       )}
-
-      {/* Premium Upgrade Prompt */}
-      <motion.div variants={fadeInUp}>
-        <Card variant="elevated" padding="md" className="bg-gradient-to-r from-[#E8F0E4] to-[#2D5A27]/10 border border-[#2D5A27]/20">
-          <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🚀</span>
-              <div>
-                <CardTitle className="text-base">Want More Matches?</CardTitle>
-                <CardDescription>
-                  Upgrade to Premium for unlimited AI matches and priority support
-                </CardDescription>
-              </div>
-            </div>
-            <Link to="/subscription">
-              <Button variant="gold" size="md">
-                Upgrade Now
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </motion.div>
     </motion.div>
   );
 };

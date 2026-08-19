@@ -1,10 +1,11 @@
 // src/pages/AIMatching/components/PreferenceForm.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Card, { CardDescription, CardTitle, CardContent } from '../common/Card/Card';
-import {Button} from '../common/Button/Button'
-import { Badge } from '../common/Badge/Badge';
+
+import { useAuth } from '../../context/AuthContext';
+import { useMatching } from '../../hooks/useMatching';
+
 
 interface PreferenceFormProps {
   onFindMatches: () => void;
@@ -19,31 +20,138 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
   onReset,
   showResults,
 }) => {
-  const [budget, setBudget] = useState(5000000);
-  const [location, setLocation] = useState('');
-  const [propertyType, setPropertyType] = useState('');
-  const [bedrooms, setBedrooms] = useState('');
-  const [bathrooms, setBathrooms] = useState('');
-  const [purpose, setPurpose] = useState('BUY');
+  const { isAuthenticated } = useAuth();
+  const { preferences, savePreferences } = useMatching();
+  
+  const [budgetMin, setBudgetMin] = useState(1000000);
+  const [budgetMax, setBudgetMax] = useState(50000000);
+  const [location, setLocation] = useState('Kathmandu');
+  const [propertyType, setPropertyType] = useState('HOUSE');
+  const [bedrooms, setBedrooms] = useState(0);
+  const [bathrooms, setBathrooms] = useState(0);
+  const [purpose, setPurpose] = useState('SALE');
+  const [parkingNeeded, setParkingNeeded] = useState(false);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const amenities = [
-    { id: 'parking', label: '🚗 Parking', selected: false },
-    { id: 'garden', label: '🌿 Garden', selected: false },
-    { id: 'pool', label: '🏊 Pool', selected: false },
-    { id: 'gym', label: '💪 Gym', selected: false },
-    { id: 'security', label: '🛡️ Security', selected: false },
-    { id: 'elevator', label: '🛗 Elevator', selected: false },
-    { id: 'ac', label: '❄️ AC', selected: false },
-    { id: 'furnished', label: '🛋️ Furnished', selected: false },
+    { id: 'parking', label: '🚗 Parking' },
+    { id: 'garden', label: '🌿 Garden' },
+    { id: 'pool', label: '🏊 Pool' },
+    { id: 'gym', label: '💪 Gym' },
+    { id: 'security', label: '🛡️ Security' },
+    { id: 'elevator', label: '🛗 Elevator' },
+    { id: 'ac', label: '❄️ AC' },
+    { id: 'furnished', label: '🛋️ Furnished' },
   ];
 
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  // ✅ Load existing preferences
+  useEffect(() => {
+    if (preferences) {
+      setBudgetMin(preferences.budgetMin || 1000000);
+      setBudgetMax(preferences.budgetMax || 50000000);
+      setLocation(preferences.location || 'Kathmandu');
+      setPropertyType(preferences.propertyType || 'HOUSE');
+      setBedrooms(preferences.bedrooms || 0);
+      setBathrooms(preferences.bathrooms || 0);
+      setPurpose(preferences.purpose || 'SALE');
+      setParkingNeeded(preferences.parkingNeeded || false);
+      setSelectedAmenities(preferences.amenities || []);
+    }
+  }, [preferences]);
 
   const toggleAmenity = (id: string) => {
     setSelectedAmenities((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
   };
+
+  // ✅ Validate before submitting
+  const validateForm = () => {
+    if (!location || location.trim() === '') {
+      setError('Please enter a location');
+      return false;
+    }
+    if (budgetMin <= 0) {
+      setError('Minimum budget must be greater than 0');
+      return false;
+    }
+    if (budgetMax <= budgetMin) {
+      setError('Maximum budget must be greater than minimum budget');
+      return false;
+    }
+    if (!propertyType) {
+      setError('Please select a property type');
+      return false;
+    }
+    setError(null);
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!isAuthenticated) {
+      alert('Please login to save preferences and find matches');
+      return;
+    }
+
+    // ✅ Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    // ✅ Prepare data for backend - MATCHING YOUR BACKEND SCHEMA
+    const preferencesData = {
+      budgetMin: Number(budgetMin),
+      budgetMax: Number(budgetMax),
+      location: location.trim(),
+      propertyType: propertyType.toUpperCase(), // HOUSE, APARTMENT, VILLA, etc.
+      bedrooms: Number(bedrooms),
+      bathrooms: Number(bathrooms),
+      amenities: selectedAmenities,
+      purpose: purpose, // SALE or RENT
+      parkingNeeded: parkingNeeded,
+    };
+
+    console.log('📤 Sending preferences:', preferencesData);
+
+    try {
+      const result = await savePreferences(preferencesData);
+      if (result) {
+        onFindMatches();
+      }
+    } catch (err: any) {
+      console.error('Error saving preferences:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.errors) {
+        // Handle validation errors from backend
+        const errors = err.response.data.errors;
+        const errorMessages = Object.values(errors).flat().join(', ');
+        setError(errorMessages);
+      } else {
+        setError('Failed to save preferences. Please try again.');
+      }
+    }
+  };
+
+  // ✅ Property type options (matching your backend enum)
+  const propertyTypeOptions = [
+    { value: 'HOUSE', label: 'House' },
+    { value: 'APARTMENT', label: 'Apartment' },
+    { value: 'VILLA', label: 'Villa' },
+    { value: 'RESIDENTIAL_LAND', label: 'Residential Land' },
+    { value: 'COMMERCIAL_LAND', label: 'Commercial Land' },
+    { value: 'AGRICULTURAL_LAND', label: 'Agricultural Land' },
+    { value: 'INDUSTRIAL_LAND', label: 'Industrial Land' },
+    { value: 'SHOP', label: 'Shop' },
+    { value: 'OFFICE', label: 'Office' },
+    { value: 'WAREHOUSE', label: 'Warehouse' },
+    { value: 'HOTEL', label: 'Hotel' },
+    { value: 'RESTAURANT', label: 'Restaurant' },
+  ];
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -61,201 +169,239 @@ const PreferenceForm: React.FC<PreferenceFormProps> = ({
       variants={fadeInUp}
       className="sticky top-24"
     >
-      <Card variant="elevated" padding="lg" className="border border-[var(--color-primary-border)]">
-        <CardContent className="p-0">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <CardTitle className="text-xl">Your Preferences</CardTitle>
-              <CardDescription>Tell us what you're looking for</CardDescription>
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Your Preferences</h2>
+            <p className="text-sm text-gray-500">Tell us what you're looking for</p>
+          </div>
+          {showResults && (
+            <button
+              onClick={onReset}
+              className="text-sm text-[#2D5A27] hover:underline"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {!isAuthenticated && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+            ⚠️ Please login to save preferences and get AI matches
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            ❌ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Purpose */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">
+              Purpose
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPurpose('SALE')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  purpose === 'SALE'
+                    ? 'bg-[#2D5A27] text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                🏠 Buy
+              </button>
+              <button
+                type="button"
+                onClick={() => setPurpose('RENT')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  purpose === 'RENT'
+                    ? 'bg-[#2D5A27] text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                📋 Rent
+              </button>
             </div>
-            {showResults && (
-              <Button variant="ghost" size="sm" onClick={onReset}>
-                Reset
-              </Button>
-            )}
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onFindMatches();
-            }}
-            className="space-y-5"
-          >
-            {/* Purpose */}
+          {/* Budget Range */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                Purpose
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPurpose('BUY')}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    purpose === 'BUY'
-                      ? 'bg-[#2D5A27] text-white shadow-md'
-                      : 'bg-[var(--color-primary-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-border)]'
-                  }`}
-                >
-                  🏠 Buy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPurpose('RENT')}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    purpose === 'RENT'
-                      ? 'bg-[#2D5A27] text-white shadow-md'
-                      : 'bg-[var(--color-primary-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-border)]'
-                  }`}
-                >
-                  📋 Rent
-                </button>
-              </div>
-            </div>
-
-            {/* Budget */}
-            <div>
-              <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                Budget (Rs {budget.toLocaleString()})
+              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                Min Budget (Rs)
               </label>
               <input
-                type="range"
-                min="100000"
-                max="20000000"
-                step="500000"
-                value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-                className="w-full h-2 bg-[var(--color-primary-border)] rounded-lg appearance-none cursor-pointer accent-[#2D5A27]"
+                type="number"
+                value={budgetMin}
+                onChange={(e) => setBudgetMin(Number(e.target.value))}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                placeholder="Min"
+                min="0"
               />
-              <div className="flex justify-between text-xs text-[var(--color-text-tertiary)] mt-1">
-                <span>Rs 1 Lakh</span>
-                <span>Rs 2 Cr</span>
-              </div>
             </div>
-
-            {/* Location */}
             <div>
-              <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                Preferred Location
+              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                Max Budget (Rs)
               </label>
               <input
-                type="text"
-                placeholder="e.g. Lalitpur, Kathmandu"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--color-primary-surface)] border border-[var(--color-primary-border)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                type="number"
+                value={budgetMax}
+                onChange={(e) => setBudgetMax(Number(e.target.value))}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                placeholder="Max"
+                min="0"
               />
             </div>
+          </div>
 
-            {/* Property Type */}
+          {/* Location */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">
+              Preferred Location
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Kathmandu, Lalitpur"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+            />
+          </div>
+
+          {/* Property Type */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">
+              Property Type
+            </label>
+            <select
+              value={propertyType}
+              onChange={(e) => setPropertyType(e.target.value)}
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+            >
+              {propertyTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Bedrooms & Bathrooms */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                Property Type
+              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                Bedrooms
               </label>
               <select
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[var(--color-primary-surface)] border border-[var(--color-primary-border)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+                value={bedrooms}
+                onChange={(e) => setBedrooms(Number(e.target.value))}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
               >
-                <option value="">Any Type</option>
-                <option value="house">House</option>
-                <option value="apartment">Apartment</option>
-                <option value="villa">Villa</option>
-                <option value="bungalow">Bungalow</option>
-                <option value="land">Land</option>
-                <option value="commercial">Commercial</option>
+                <option value={0}>Any</option>
+                <option value={1}>1+</option>
+                <option value={2}>2+</option>
+                <option value={3}>3+</option>
+                <option value={4}>4+</option>
+                <option value={5}>5+</option>
               </select>
             </div>
-
-            {/* Bedrooms & Bathrooms */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                  Bedrooms
-                </label>
-                <select
-                  value={bedrooms}
-                  onChange={(e) => setBedrooms(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[var(--color-primary-surface)] border border-[var(--color-primary-border)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
-                >
-                  <option value="">Any</option>
-                  <option value="1">1+</option>
-                  <option value="2">2+</option>
-                  <option value="3">3+</option>
-                  <option value="4">4+</option>
-                  <option value="5">5+</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                  Bathrooms
-                </label>
-                <select
-                  value={bathrooms}
-                  onChange={(e) => setBathrooms(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[var(--color-primary-surface)] border border-[var(--color-primary-border)] rounded-xl text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
-                >
-                  <option value="">Any</option>
-                  <option value="1">1+</option>
-                  <option value="2">2+</option>
-                  <option value="3">3+</option>
-                  <option value="4">4+</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Amenities */}
             <div>
-              <label className="text-sm font-semibold text-[var(--color-text-primary)] block mb-2">
-                Amenities
+              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                Bathrooms
               </label>
-              <div className="flex flex-wrap gap-2">
-                {amenities.map((amenity) => (
-                  <button
-                    key={amenity.id}
-                    type="button"
-                    onClick={() => toggleAmenity(amenity.id)}
-                    className={`px-3 py-1.5 text-xs rounded-full transition-all duration-200 ${
-                      selectedAmenities.includes(amenity.id)
-                        ? 'bg-[#2D5A27] text-white'
-                        : 'bg-[var(--color-primary-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-border)]'
-                    }`}
-                  >
-                    {amenity.label}
-                  </button>
-                ))}
-              </div>
+              <select
+                value={bathrooms}
+                onChange={(e) => setBathrooms(Number(e.target.value))}
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2D5A27] transition-all"
+              >
+                <option value={0}>Any</option>
+                <option value={1}>1+</option>
+                <option value={2}>2+</option>
+                <option value={3}>3+</option>
+                <option value={4}>4+</option>
+              </select>
             </div>
+          </div>
 
-            {/* Premium Lock */}
-            <div className="bg-[#E8F0E4] rounded-xl p-4 flex items-center gap-3">
-              <span className="text-2xl">🔒</span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-[#2D5A27]">Premium Feature</p>
-                <p className="text-xs text-[#4A7D42]">Upgrade to Premium for unlimited matches</p>
-              </div>
-              <Badge variant="gold">Premium</Badge>
+          {/* Parking */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">
+              Parking Required?
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setParkingNeeded(true)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  parkingNeeded
+                    ? 'bg-[#2D5A27] text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                ✅ Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setParkingNeeded(false)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  !parkingNeeded
+                    ? 'bg-[#2D5A27] text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                ❌ No
+              </button>
             </div>
+          </div>
 
-            {/* Buttons */}
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-              isLoading={isLoading}
-              loadingText="Finding Matches..."
-              className="font-semibold"
-            >
-              {isLoading ? 'Analyzing...' : 'Find Matches 🔍'}
-            </Button>
+          {/* Amenities */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-2">
+              Amenities
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {amenities.map((amenity) => (
+                <button
+                  key={amenity.id}
+                  type="button"
+                  onClick={() => toggleAmenity(amenity.id)}
+                  className={`px-3 py-1.5 text-xs rounded-full transition-all duration-200 ${
+                    selectedAmenities.includes(amenity.id)
+                      ? 'bg-[#2D5A27] text-white'
+                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {amenity.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            <p className="text-xs text-[var(--color-text-tertiary)] text-center">
-              {isLoading ? 'AI is analyzing your preferences...' : 'Powered by AI Cosine Similarity Matching'}
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+          {/* Buttons */}
+          <button
+            type="submit"
+            disabled={isLoading || !isAuthenticated}
+            className={`w-full py-3 rounded-xl text-white font-semibold transition-all duration-200 ${
+              isLoading || !isAuthenticated
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-[#2D5A27] hover:bg-[#23461E] shadow-lg shadow-[#2D5A27]/20'
+            }`}
+          >
+            {isLoading ? '⏳ Analyzing...' : '🔍 Find Matches'}
+          </button>
+
+          <p className="text-xs text-gray-400 text-center">
+            {isAuthenticated 
+              ? 'Powered by AI Cosine Similarity Matching' 
+              : 'Please login to use AI matching'}
+          </p>
+        </form>
+      </div>
     </motion.div>
   );
 };

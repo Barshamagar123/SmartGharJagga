@@ -1,29 +1,62 @@
 // src/pages/AIMatching/AIMatching.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '../../components/common/Button/Button';
-import { Card, CardTitle, CardDescription, CardContent } from '../../components/common/Card/Card';
-import { Badge } from '../../components/common/Badge/Badge';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useMatching } from '../../hooks/useMatching';
 import PreferenceForm from '../../components/AIMatching/PreferenceForm';
 import MatchResults from '../../components/AIMatching/MatchResults';
 
+
 const AIMatching: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth(); // ✅ Use isLoading, not loading
+  const { matches, loading, refreshMatches } = useMatching();
   const [showResults, setShowResults] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleFindMatches = () => {
+  // ✅ Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  const handleFindMatches = async () => {
     setIsLoading(true);
-    // Simulate AI processing
+    // Simulate AI processing delay
     setTimeout(() => {
       setIsLoading(false);
       setShowResults(true);
-    }, 2000);
+      refreshMatches();
+    }, 1500);
   };
 
   const handleReset = () => {
     setShowResults(false);
   };
+
+  const handleLearnFromBehavior = (propertyId: string) => {
+    console.log('Learning from property:', propertyId);
+    // The learning is handled in the MatchResults component
+  };
+
+  // ✅ Use authLoading from useAuth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-primary)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D5A27] mx-auto"></div>
+          <p className="mt-4 text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
@@ -36,7 +69,7 @@ const AIMatching: React.FC = () => {
 
   return (
     <div className="pt-16 md:pt-20 bg-[var(--color-primary)] min-h-screen">
-      <div className="max-w-7xl mx-auto px-8 py-8 md:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* Header */}
         <motion.div
           initial="hidden"
@@ -48,10 +81,10 @@ const AIMatching: React.FC = () => {
             <span className="text-2xl">🤖</span>
             <span className="text-sm font-semibold text-[#2D5A27]">AI-Powered Matching</span>
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--color-text-primary)]">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">
             Find Your <span className="text-[#2D5A27]">Perfect Match</span>
           </h1>
-          <p className="mt-3 text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+          <p className="mt-3 text-gray-500 max-w-2xl mx-auto">
             Tell us what you're looking for, and our AI will find the best properties that match your preferences.
           </p>
         </motion.div>
@@ -71,7 +104,7 @@ const AIMatching: React.FC = () => {
           {/* Right: Match Results */}
           <div className="lg:col-span-3">
             {showResults ? (
-              <MatchResults />
+              <MatchResults onLearnFromBehavior={handleLearnFromBehavior} />
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -79,21 +112,21 @@ const AIMatching: React.FC = () => {
                 transition={{ delay: 0.3 }}
                 className="h-full flex items-center justify-center"
               >
-                <Card variant="elevated" padding="lg" className="w-full text-center border border-[var(--color-primary-border)]">
-                  <CardContent className="py-12">
+                <div className="bg-white rounded-2xl shadow-lg p-8 w-full text-center border border-gray-100">
+                  <div className="py-8">
                     <div className="text-6xl mb-4">🔍</div>
-                    <CardTitle className="text-2xl">No Matches Yet</CardTitle>
-                    <CardDescription className="mt-2 max-w-md mx-auto">
+                    <h3 className="text-2xl font-bold text-gray-900">No Matches Yet</h3>
+                    <p className="text-gray-500 mt-2 max-w-md mx-auto">
                       Fill in your preferences on the left and click "Find Matches" to see AI-powered property recommendations.
-                    </CardDescription>
+                    </p>
                     <div className="mt-6 flex flex-wrap justify-center gap-3">
                       <span className="px-3 py-1 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">🏠 Houses</span>
                       <span className="px-3 py-1 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">🏢 Apartments</span>
                       <span className="px-3 py-1 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">🏡 Villas</span>
                       <span className="px-3 py-1 bg-[#E8F0E4] text-[#2D5A27] text-xs rounded-full">🌄 Land</span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             )}
           </div>
