@@ -55,7 +55,7 @@ export class PropertyService {
         area: data.area,
         areaUnit: data.areaUnit,
         propertyType: data.propertyType,
-        purpose: data.purpose || 'SALE', // ✅ NOW WORKS - type has purpose
+        purpose: data.purpose || 'SALE',
         amenities: data.amenities || [],
         images: imageUrls.length > 0 ? imageUrls : [],
         videos: videoUrls.length > 0 ? videoUrls : [],
@@ -73,7 +73,7 @@ export class PropertyService {
   }
 
   // ============================================
-  // 2. GET PROPERTIES - ✅ FIXED with favorite status
+  // 2. GET PROPERTIES - ✅ FIXED with favorite status & propertyId
   // ============================================
   async getProperties(filters: PropertyFilter, userId?: string) {
     const {
@@ -161,9 +161,10 @@ export class PropertyService {
       favoriteIds = new Set(favorites.map(f => f.propertyId));
     }
 
-    // ✅ Add isFavorited flag to each property
+    // ✅ Add isFavorited flag AND ensure propertyId is included
     const propertiesWithFavorites = properties.map(property => ({
       ...property,
+      propertyId: property.propertyId, // ✅ Ensure propertyId is included
       isFavorited: favoriteIds.has(property.id),
     }));
 
@@ -221,6 +222,7 @@ export class PropertyService {
 
     return {
       ...property,
+      propertyId: property.propertyId, // ✅ Ensure propertyId is included
       isFavorited,
     };
   }
@@ -275,7 +277,7 @@ export class PropertyService {
         area: data.area,
         areaUnit: data.areaUnit,
         propertyType: data.propertyType,
-        purpose: data.purpose, // ✅ NOW WORKS - type has purpose
+        purpose: data.purpose,
         amenities: data.amenities,
         parking: data.parking,
         floor: data.floor,
@@ -288,7 +290,10 @@ export class PropertyService {
       },
     });
 
-    return updatedProperty;
+    return {
+      ...updatedProperty,
+      propertyId: updatedProperty.propertyId, // ✅ Ensure propertyId is included
+    };
   }
 
   // ============================================
@@ -344,6 +349,7 @@ export class PropertyService {
     // ✅ User's own properties are not favorited by themselves
     return properties.map(property => ({
       ...property,
+      propertyId: property.propertyId, // ✅ Ensure propertyId is included
       isFavorited: false,
     }));
   }
@@ -369,7 +375,10 @@ export class PropertyService {
       },
     });
 
-    return updatedProperty;
+    return {
+      ...updatedProperty,
+      propertyId: updatedProperty.propertyId, // ✅ Ensure propertyId is included
+    };
   }
 
   // ============================================
@@ -384,6 +393,7 @@ export class PropertyService {
       },
       select: {
         id: true,
+        propertyId: true, // ✅ Include propertyId
         title: true,
         price: true,
         location: true,
@@ -453,6 +463,16 @@ export class PropertyService {
   async toggleFavorite(userId: string, propertyId: string) {
     const property = await this.prisma.property.findUnique({
       where: { id: propertyId },
+      select: {
+        id: true,
+        propertyId: true,
+        title: true,
+        location: true,
+        price: true,
+        propertyType: true,
+        bedrooms: true,
+        favoritesCount: true,
+      },
     });
 
     if (!property) {
@@ -473,12 +493,26 @@ export class PropertyService {
         where: { id: existing.id },
       });
 
-      await this.prisma.property.update({
+      const updatedProperty = await this.prisma.property.update({
         where: { id: propertyId },
         data: { favoritesCount: { decrement: 1 } },
+        select: {
+          id: true,
+          propertyId: true,
+          title: true,
+          location: true,
+          price: true,
+          propertyType: true,
+          bedrooms: true,
+          favoritesCount: true,
+        },
       });
 
-      return { favorited: false, message: 'Removed from favorites' };
+      return { 
+        favorited: false, 
+        message: 'Removed from favorites',
+        property: updatedProperty
+      };
     }
 
     await this.prisma.favorite.create({
@@ -488,12 +522,26 @@ export class PropertyService {
       },
     });
 
-    await this.prisma.property.update({
+    const updatedProperty = await this.prisma.property.update({
       where: { id: propertyId },
       data: { favoritesCount: { increment: 1 } },
+      select: {
+        id: true,
+        propertyId: true,
+        title: true,
+        location: true,
+        price: true,
+        propertyType: true,
+        bedrooms: true,
+        favoritesCount: true,
+      },
     });
 
-    return { favorited: true, message: 'Added to favorites' };
+    return { 
+      favorited: true, 
+      message: 'Added to favorites',
+      property: updatedProperty
+    };
   }
 
   // ============================================
@@ -528,9 +576,10 @@ export class PropertyService {
       return [];
     }
 
-    // ✅ Map to properties with isFavorited flag = true
+    // ✅ Map to properties with isFavorited flag = true AND ensure propertyId is included
     return favorites.map((favorite) => ({
       ...favorite.property,
+      propertyId: favorite.property.propertyId, // ✅ Ensure propertyId is included
       isFavorited: true, // ✅ Always true for favorites list
     }));
   }
@@ -602,6 +651,7 @@ export class PropertyService {
 
     return properties.map(property => ({
       ...property,
+      propertyId: property.propertyId, // ✅ Ensure propertyId is included
       isFavorited: favoriteIds.has(property.id),
     }));
   }
