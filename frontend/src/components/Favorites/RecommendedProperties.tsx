@@ -6,13 +6,13 @@ import { Link } from 'react-router-dom';
 import { 
   Sparkles, 
   ChevronRight,
-  Loader2,
   Eye,
   Star,
   Zap,
   Heart,
-  TrendingUp,
-  MapPin
+  MapPin,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { propertyApi } from '../../services/api/property';
 import { getMainImage, processImagePaths } from '../../utils/imageUtils';
@@ -30,6 +30,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
   const [recommendations, setRecommendations] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -37,37 +38,83 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
         setLoading(true);
         setError(null);
         
-        // Get user preferences from localStorage
-        const userPreferences = JSON.parse(localStorage.getItem('userPreferences') || '{}');
+        // ✅ Get favorite IDs to EXCLUDE them
+        const favoriteIds = new Set(favorites.map(f => f.id));
+        console.log('🔍 Favorite IDs to exclude:', favoriteIds);
         
-        // ✅ Build recommendation filters with proper types
-        const filters = buildRecommendationFilters(favorites, userPreferences);
+        // ✅ Build recommendation filters
+        const filters = buildRecommendationFilters(favorites);
+        console.log('📊 Filters:', filters);
         
-        // ✅ Fetch properties based on filters
+        // ✅ Fetch properties
         const response = await propertyApi.getAll({
           ...filters,
-          limit: 6,
+          limit: 30, // Fetch more to ensure we have enough after filtering
           sortBy: 'createdAt',
           sortOrder: 'desc'
         });
         
-        // Process properties
-        const processed = response.properties.map((prop: Property) => ({
-          ...prop,
-          mainImage: getMainImage(prop.mainImage, prop.images),
-          images: processImagePaths(prop.images),
-          isFavorited: favorites.some(f => f.id === prop.id)
-        }));
+        console.log('📦 Total properties fetched:', response.properties.length);
         
-        // ✅ Sort by match score (AI recommendation)
-        const sorted = processed.sort((a, b) => {
-          const scoreA = calculateMatchScore(a, favorites, userPreferences);
-          const scoreB = calculateMatchScore(b, favorites, userPreferences);
+        // ✅ Process and STRICTLY EXCLUDE favorited properties
+        const processed = response.properties
+          .map((prop: Property) => ({
+            ...prop,
+            mainImage: getMainImage(prop.mainImage, prop.images),
+            images: processImagePaths(prop.images),
+            isFavorited: false // ✅ Never show as favorited in recommendations
+          }))
+          // ✅ STRICTLY EXCLUDE already favorited properties
+          .filter(prop => {
+            const isFavorited = favoriteIds.has(prop.id);
+            if (isFavorited) {
+              console.log(`❌ Excluding favorited property: ${prop.title} (${prop.id})`);
+            }
+            return !isFavorited;
+          })
+          // ✅ Also exclude dismissed properties
+          .filter(prop => !dismissedIds.includes(prop.id));
+        
+        console.log('✅ Properties after excluding favorites:', processed.length);
+        
+        // ✅ If no properties found after filtering, try with broader filters
+        let finalProperties = processed;
+        
+        if (finalProperties.length === 0) {
+          console.log('🔄 No properties found, trying broader filters...');
+          const broaderFilters = buildBroaderFilters(favorites);
+          const broaderResponse = await propertyApi.getAll({
+            ...broaderFilters,
+            limit: 30,
+            sortBy: 'createdAt',
+            sortOrder: 'desc'
+          });
+          
+          finalProperties = broaderResponse.properties
+            .map((prop: Property) => ({
+              ...prop,
+              mainImage: getMainImage(prop.mainImage, prop.images),
+              images: processImagePaths(prop.images),
+              isFavorited: false
+            }))
+            .filter(prop => !favoriteIds.has(prop.id))
+            .filter(prop => !dismissedIds.includes(prop.id));
+          
+          console.log('✅ Properties after broader search:', finalProperties.length);
+        }
+        
+        // ✅ Sort by match score
+        const sorted = finalProperties.sort((a, b) => {
+          const scoreA = calculateMatchScore(a, favorites);
+          const scoreB = calculateMatchScore(b, favorites);
           return scoreB - scoreA;
         });
         
         // ✅ Take top 6 recommendations
-        setRecommendations(sorted.slice(0, 6));
+        const topRecommendations = sorted.slice(0, 6);
+        console.log('🏆 Top recommendations:', topRecommendations.length);
+        
+        setRecommendations(topRecommendations);
       } catch (err) {
         console.error('Error fetching recommendations:', err);
         setError('Failed to load recommendations');
@@ -83,13 +130,12 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       setLoading(false);
       setRecommendations([]);
     }
-  }, [favorites]);
+  }, [favorites, dismissedIds]);
 
-  // ✅ Build recommendation filters with proper types
-  const buildRecommendationFilters = (favorites: Property[], preferences: any) => {
+  // ✅ Build recommendation filters
+  const buildRecommendationFilters = (favorites: Property[]) => {
     if (favorites.length === 0) return {};
 
-    // Analyze favorite properties
     const locations = favorites.map(f => f.location).filter(Boolean);
     const propertyTypes = favorites.map(f => f.propertyType).filter(Boolean);
     const purposes = favorites.map(f => f.purpose).filter(Boolean);
@@ -106,7 +152,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       locationCounts[b] - locationCounts[a]
     )[0];
 
-    // ✅ Get most common property type with proper typing
+    // Get most common property type
     const typeCounts: Record<string, number> = {};
     propertyTypes.forEach(type => {
       if (type) typeCounts[type] = (typeCounts[type] || 0) + 1;
@@ -115,7 +161,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       typeCounts[b] - typeCounts[a]
     )[0] as PropertyType | undefined;
 
-    // ✅ Get most common purpose with proper typing
+    // Get most common purpose
     const purposeCounts: Record<string, number> = {};
     purposes.forEach(purpose => {
       if (purpose) purposeCounts[purpose] = (purposeCounts[purpose] || 0) + 1;
@@ -124,84 +170,98 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       purposeCounts[b] - purposeCounts[a]
     )[0] as PropertyPurpose | undefined;
 
-    // ✅ Return properly typed filters
     const filters: any = {
-      limit: 12,
+      limit: 30,
       sortBy: 'createdAt' as const,
       sortOrder: 'desc' as const,
     };
 
-    if (mostCommonLocation) {
-      filters.location = mostCommonLocation;
-    }
-
-    if (mostCommonType) {
-      filters.propertyType = mostCommonType;
-    }
-
-    if (mostCommonPurpose) {
-      filters.purpose = mostCommonPurpose;
-    }
-
+    if (mostCommonLocation) filters.location = mostCommonLocation;
+    if (mostCommonType) filters.propertyType = mostCommonType;
+    if (mostCommonPurpose) filters.purpose = mostCommonPurpose;
+    
     if (avgPrice > 0) {
       filters.minPrice = Math.max(0, avgPrice * 0.5);
       filters.maxPrice = avgPrice * 1.5;
     }
-
-    if (avgBedrooms > 0) {
-      filters.bedrooms = Math.round(avgBedrooms);
-    }
-
-    if (avgBathrooms > 0) {
-      filters.bathrooms = Math.round(avgBathrooms);
-    }
+    
+    if (avgBedrooms > 0) filters.bedrooms = Math.round(avgBedrooms);
+    if (avgBathrooms > 0) filters.bathrooms = Math.round(avgBathrooms);
 
     return filters;
   };
 
+  // ✅ Build broader filters for fallback
+  const buildBroaderFilters = (favorites: Property[]) => {
+    const filters = buildRecommendationFilters(favorites);
+    
+    // Widen the search
+    if (filters.minPrice) filters.minPrice = Math.max(0, filters.minPrice * 0.7);
+    if (filters.maxPrice) filters.maxPrice = filters.maxPrice * 1.3;
+    if (filters.bedrooms) {
+      // Don't filter by bedrooms to get more results
+      delete filters.bedrooms;
+    }
+    if (filters.bathrooms) {
+      delete filters.bathrooms;
+    }
+    
+    return filters;
+  };
+
   // ✅ Calculate AI match score
-  const calculateMatchScore = (property: Property, favorites: Property[], preferences: any): number => {
+  const calculateMatchScore = (property: Property, favorites: Property[]): number => {
+    if (favorites.length === 0) return 0;
+    
     let score = 0;
     let totalWeight = 0;
 
-    // Location match (30% weight)
+    // Location match (25%)
     if (property.location && favorites.some(f => f.location === property.location)) {
-      score += 30;
-    }
-    totalWeight += 30;
-
-    // Property type match (25% weight)
-    if (property.propertyType && favorites.some(f => f.propertyType === property.propertyType)) {
       score += 25;
+    } else if (property.location && favorites.some(f => f.location?.includes(property.location?.split(' ')[0] || ''))) {
+      score += 12;
     }
     totalWeight += 25;
 
-    // Price range match (20% weight)
-    if (favorites.length > 0) {
-      const avgPrice = favorites.reduce((sum, f) => sum + Number(f.price), 0) / favorites.length;
-      const priceRange = avgPrice * 0.3;
-      if (Math.abs(Number(property.price) - avgPrice) <= priceRange) {
-        score += 20;
-      }
+    // Property type match (20%)
+    if (property.propertyType && favorites.some(f => f.propertyType === property.propertyType)) {
+      score += 20;
     }
     totalWeight += 20;
 
-    // Bedrooms match (15% weight)
-    if (favorites.length > 0) {
-      const avgBedrooms = favorites.reduce((sum, f) => sum + (f.bedrooms || 0), 0) / favorites.length;
-      if (property.bedrooms && Math.abs(property.bedrooms - avgBedrooms) <= 1) {
-        score += 15;
-      }
+    // Price range match (25%)
+    const avgPrice = favorites.reduce((sum, f) => sum + Number(f.price), 0) / favorites.length;
+    const priceRange = avgPrice * 0.4;
+    if (Math.abs(Number(property.price) - avgPrice) <= priceRange) {
+      score += 25;
+    } else if (Math.abs(Number(property.price) - avgPrice) <= priceRange * 2) {
+      score += 12;
+    }
+    totalWeight += 25;
+
+    // Bedrooms match (15%)
+    const avgBedrooms = favorites.reduce((sum, f) => sum + (f.bedrooms || 0), 0) / favorites.length;
+    if (property.bedrooms && Math.abs(property.bedrooms - avgBedrooms) <= 1) {
+      score += 15;
+    } else if (property.bedrooms && Math.abs(property.bedrooms - avgBedrooms) <= 2) {
+      score += 8;
     }
     totalWeight += 15;
 
-    // Purpose match (10% weight)
+    // Purpose match (15%)
     if (property.purpose && favorites.some(f => f.purpose === property.purpose)) {
-      score += 10;
+      score += 15;
     }
-    totalWeight += 10;
+    totalWeight += 15;
 
-    return totalWeight > 0 ? (score / totalWeight) * 100 : 0;
+    return totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 0;
+  };
+
+  // ✅ Handle dismiss
+  const handleDismiss = (propertyId: string) => {
+    setDismissedIds(prev => [...prev, propertyId]);
+    setRecommendations(prev => prev.filter(p => p.id !== propertyId));
   };
 
   // ✅ Handle favorite toggle
@@ -255,7 +315,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center gap-3 mb-4">
           <Sparkles className="w-6 h-6 text-[#D4AF37]" />
-          <h3 className="text-xl font-serif font-bold text-[#0F172A]">AI Recommendations</h3>
+          <h3 className="text-xl font-serif font-bold text-[#0F172A]">You May Also Like</h3>
         </div>
         <div className="text-center py-8">
           <p className="text-[#475569]">{error}</p>
@@ -279,23 +339,23 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
             <Sparkles className="w-6 h-6 text-[#D4AF37]" />
           </div>
           <div>
-            <h3 className="text-xl font-serif font-bold text-[#0F172A]">AI Recommendations</h3>
+            <h3 className="text-xl font-serif font-bold text-[#0F172A]">You May Also Like</h3>
             <p className="text-sm text-[#475569]">Based on your saved properties</p>
           </div>
         </div>
         <div className="text-center py-8">
-          <div className="text-5xl mb-4">🤖</div>
+          <div className="text-5xl mb-4">🔮</div>
           <p className="text-[#475569]">
             {favorites.length === 0 
               ? 'Save some properties to get personalized recommendations!' 
-              : 'No recommendations available yet. Check back soon!'}
+              : 'No new recommendations available right now. Check back soon!'}
           </p>
         </div>
       </div>
     );
   }
 
-  // Success State - Show top 3 recommendations
+  // Success State
   const topRecommendations = recommendations.slice(0, 3);
 
   return (
@@ -308,13 +368,13 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
           </div>
           <div>
             <h3 className="text-xl font-serif font-bold text-[#0F172A]">
-              AI Recommendations
+              You May Also Like
             </h3>
             <p className="text-sm text-[#475569] flex items-center gap-1">
               <span>Based on your preferences</span>
               <span className="text-xs bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ml-2">
                 <Zap className="w-3 h-3" />
-                Smart Match
+                AI Smart Match
               </span>
             </p>
           </div>
@@ -332,7 +392,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       {/* Recommendations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {topRecommendations.map((property, index) => {
-          const matchScore = calculateMatchScore(property, favorites, {});
+          const matchScore = calculateMatchScore(property, favorites);
           return (
             <motion.div
               key={property.id}
@@ -342,6 +402,15 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
               className="group relative"
             >
               <div className="bg-[#F8FAFC] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+                {/* Dismiss Button */}
+                <button
+                  onClick={() => handleDismiss(property.id)}
+                  className="absolute top-2 right-2 z-10 p-1 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  aria-label="Dismiss recommendation"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
                 <Link to={`/property/${property.id}`} className="block">
                   {/* Image */}
                   <div className="relative h-48 overflow-hidden">
@@ -355,9 +424,9 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
                     />
                     
                     {/* Match Score Badge */}
-                    <div className="absolute top-3 right-3 bg-[#2D5A27]/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
+                    <div className="absolute bottom-3 right-3 bg-[#2D5A27]/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
                       <Star className="w-3 h-3 fill-white" />
-                      {Math.round(matchScore)}% Match
+                      {matchScore}% Match
                     </div>
 
                     {/* Verified Badge */}
@@ -408,16 +477,17 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
                       )}
                     </div>
 
-                    {/* Favorite Button */}
+                    {/* Save Button */}
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleFavoriteToggle(property.id, !property.isFavorited);
+                        handleFavoriteToggle(property.id, true);
                       }}
-                      className="mt-3 w-full py-1.5 text-sm font-medium border border-[#2D5A27] text-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-colors duration-200"
+                      className="mt-3 w-full py-1.5 text-sm font-medium border border-[#2D5A27] text-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-colors duration-200 flex items-center justify-center gap-1"
                     >
-                      {property.isFavorited ? '❤️ Saved' : '🤍 Save Property'}
+                      <Heart className="w-4 h-4" />
+                      Save to Favorites
                     </button>
                   </div>
                 </Link>
@@ -434,7 +504,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
             to="/properties?recommended=true"
             className="inline-flex items-center gap-2 text-sm text-[#2D5A27] font-medium hover:underline"
           >
-            View all {recommendations.length} AI recommendations
+            View all {recommendations.length} recommendations
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
