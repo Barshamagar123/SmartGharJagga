@@ -12,7 +12,9 @@ import {
   Heart,
   MapPin,
   RefreshCw,
-  X
+  X,
+  TrendingUp,
+  CheckCircle
 } from 'lucide-react';
 import { propertyApi } from '../../services/api/property';
 import { getMainImage, processImagePaths } from '../../utils/imageUtils';
@@ -25,18 +27,16 @@ interface RecommendedPropertiesProps {
 
 interface RecommendedProperty extends Property {
   matchScore?: number;
-}
-
-interface AnalysisResult {
-  locations: Record<string, number>;
-  propertyTypes: Record<string, number>;
-  purposes: Record<string, number>;
-  avgPrice: number;
-  avgBedrooms: number;
-  avgBathrooms: number;
-  minPrice: number;
-  maxPrice: number;
-  amenities: Record<string, number>;
+  matchDetails?: {
+    location: number;
+    price: number;
+    type: number;
+    bedrooms: number;
+    bathrooms: number;
+    parking: number;
+    amenities: number;
+    purpose: number;
+  };
 }
 
 const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({ 
@@ -60,18 +60,18 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
         setLoading(true);
         setError(null);
         
-        console.log('🔍 Starting recommendation engine...');
-        console.log('📊 Favorites count:', favorites.length);
+        console.log('🔍 Starting AI Recommendation Engine...');
+        console.log('📊 Analyzing', favorites.length, 'favorites...');
         
-        // ✅ STEP 1: Analyze favorites to find patterns
-        const analysis = analyzeFavorites(favorites);
-        console.log('📊 Analysis results:', analysis);
+        // ✅ STEP 1: Extract user preferences from favorites
+        const preferences = extractUserPreferences(favorites);
+        console.log('📊 User Preferences:', preferences);
         
-        // ✅ STEP 2: Build search filters based on analysis
-        const filters = buildRecommendationFilters(analysis);
-        console.log('📊 Search filters:', filters);
+        // ✅ STEP 2: Build search filters based on preferences
+        const filters = buildSearchFilters(preferences);
+        console.log('📊 Search Filters:', filters);
         
-        // ✅ STEP 3: Fetch properties
+        // ✅ STEP 3: Fetch properties matching preferences
         let allProperties: Property[] = [];
         
         try {
@@ -82,16 +82,16 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
             sortOrder: 'desc'
           });
           allProperties = response.properties || [];
-          console.log(`✅ Found ${allProperties.length} properties with filters`);
+          console.log(`✅ Found ${allProperties.length} properties matching preferences`);
         } catch (err) {
-          console.warn('⚠️ Filtered search failed, trying fallback...');
+          console.warn('⚠️ Filtered search failed, trying all properties...');
           const response = await propertyApi.getAll({
             limit: 50,
             sortBy: 'createdAt',
             sortOrder: 'desc'
           });
           allProperties = response.properties || [];
-          console.log(`✅ Found ${allProperties.length} properties (fallback)`);
+          console.log(`✅ Found ${allProperties.length} total properties`);
         }
         
         if (allProperties.length === 0) {
@@ -100,21 +100,19 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
           return;
         }
         
-        // ✅ STEP 4: Exclude favorites
+        // ✅ STEP 4: Exclude already favorited properties
         const favoriteIds = new Set(favorites.map(f => f.id));
         const favoriteTitles = new Set(favorites.map(f => f.title?.toLowerCase().trim()));
-        const favoritePropertyIds = new Set(favorites.map(f => f.propertyId));
         
         const availableProperties = allProperties
           .filter(prop => !favoriteIds.has(prop.id))
-          .filter(prop => !(prop.propertyId && favoritePropertyIds.has(prop.propertyId)))
           .filter(prop => {
             const title = prop.title?.toLowerCase().trim();
             return !(title && favoriteTitles.has(title));
           })
           .filter(prop => !dismissedIds.includes(prop.id));
         
-        console.log(`✅ Available after exclusions: ${availableProperties.length}`);
+        console.log(`✅ Available after excluding favorites: ${availableProperties.length}`);
         
         if (availableProperties.length === 0) {
           setError('No new properties available. You may have favorited everything!');
@@ -122,22 +120,33 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
           return;
         }
         
-        // ✅ STEP 5: Calculate match scores
-        const scoredProperties = availableProperties.map(prop => ({
-          ...prop,
-          mainImage: getMainImage(prop.mainImage, prop.images),
-          images: processImagePaths(prop.images),
-          isFavorited: false,
-          matchScore: calculateMatchScore(prop, favorites, analysis)
-        }));
+        // ✅ STEP 5: Calculate detailed match scores
+        const scoredProperties = availableProperties.map(prop => {
+          const matchDetails = calculateMatchDetails(prop, favorites, preferences);
+          const overallScore = calculateOverallScore(matchDetails);
+          
+          return {
+            ...prop,
+            mainImage: getMainImage(prop.mainImage, prop.images),
+            images: processImagePaths(prop.images),
+            isFavorited: false,
+            matchScore: overallScore,
+            matchDetails: matchDetails
+          };
+        });
         
-        // ✅ STEP 6: Sort by score and take top 6
+        // ✅ STEP 6: Sort by match score (highest first)
         const sorted = scoredProperties.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+        
+        // ✅ STEP 7: Take top 6 recommendations
         const topRecommendations = sorted.slice(0, 6);
         
-        console.log('🏆 Top recommendations:', topRecommendations.map(p => ({
+        console.log('🏆 Top Recommendations:', topRecommendations.map(p => ({
           title: p.title,
-          match: p.matchScore
+          location: p.location,
+          price: p.price,
+          match: p.matchScore,
+          details: p.matchDetails
         })));
         
         setRecommendations(topRecommendations);
@@ -152,20 +161,20 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
     fetchRecommendations();
   }, [favorites, dismissedIds]);
 
-  // ✅ Analyze favorites to find patterns
-  const analyzeFavorites = (favorites: Property[]): AnalysisResult | null => {
-    if (favorites.length === 0) return null;
-    
-    const analysis: AnalysisResult = {
-      locations: {},
-      propertyTypes: {},
-      purposes: {},
+  // ✅ Extract user preferences from favorites
+  const extractUserPreferences = (favorites: Property[]) => {
+    const preferences = {
+      locations: {} as Record<string, number>,
+      types: {} as Record<string, number>,
+      purposes: {} as Record<string, number>,
+      parking: { yes: 0, no: 0 },
       avgPrice: 0,
       avgBedrooms: 0,
       avgBathrooms: 0,
       minPrice: Infinity,
       maxPrice: 0,
-      amenities: {},
+      amenities: {} as Record<string, number>,
+      commonAmenities: [] as string[],
     };
     
     let totalPrice = 0;
@@ -173,162 +182,220 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
     let totalBathrooms = 0;
     
     favorites.forEach(fav => {
-      // Location patterns
+      // Location
       if (fav.location) {
-        analysis.locations[fav.location] = (analysis.locations[fav.location] || 0) + 1;
+        preferences.locations[fav.location] = (preferences.locations[fav.location] || 0) + 1;
       }
       
-      // Property type patterns
+      // Property Type
       if (fav.propertyType) {
-        analysis.propertyTypes[fav.propertyType] = (analysis.propertyTypes[fav.propertyType] || 0) + 1;
+        preferences.types[fav.propertyType] = (preferences.types[fav.propertyType] || 0) + 1;
       }
       
-      // Purpose patterns
+      // Purpose
       if (fav.purpose) {
-        analysis.purposes[fav.purpose] = (analysis.purposes[fav.purpose] || 0) + 1;
+        preferences.purposes[fav.purpose] = (preferences.purposes[fav.purpose] || 0) + 1;
       }
       
-      // Price ranges
+      // Parking
+      if (fav.parking !== undefined) {
+        preferences.parking[fav.parking ? 'yes' : 'no'] = (preferences.parking[fav.parking ? 'yes' : 'no'] || 0) + 1;
+      }
+      
+      // Price
       const price = Number(fav.price);
       totalPrice += price;
-      if (price < analysis.minPrice) analysis.minPrice = price;
-      if (price > analysis.maxPrice) analysis.maxPrice = price;
+      if (price < preferences.minPrice) preferences.minPrice = price;
+      if (price > preferences.maxPrice) preferences.maxPrice = price;
       
       // Bedrooms
-      if (fav.bedrooms) {
-        totalBedrooms += fav.bedrooms;
-      }
+      if (fav.bedrooms) totalBedrooms += fav.bedrooms;
       
       // Bathrooms
-      if (fav.bathrooms) {
-        totalBathrooms += fav.bathrooms;
-      }
+      if (fav.bathrooms) totalBathrooms += fav.bathrooms;
       
       // Amenities
       if (fav.amenities && fav.amenities.length > 0) {
         fav.amenities.forEach(amenity => {
-          analysis.amenities[amenity] = (analysis.amenities[amenity] || 0) + 1;
+          preferences.amenities[amenity] = (preferences.amenities[amenity] || 0) + 1;
         });
       }
     });
     
-    analysis.avgPrice = totalPrice / favorites.length;
-    analysis.avgBedrooms = favorites.length > 0 ? totalBedrooms / favorites.length : 0;
-    analysis.avgBathrooms = favorites.length > 0 ? totalBathrooms / favorites.length : 0;
+    // Calculate averages
+    preferences.avgPrice = totalPrice / favorites.length;
+    preferences.avgBedrooms = totalBedrooms / favorites.length;
+    preferences.avgBathrooms = totalBathrooms / favorites.length;
     
-    return analysis;
+    // Find common amenities (appearing in at least 50% of favorites)
+    const minAmenityCount = favorites.length * 0.5;
+    preferences.commonAmenities = Object.keys(preferences.amenities)
+      .filter(key => preferences.amenities[key] >= minAmenityCount);
+    
+    return preferences;
   };
 
-  // ✅ Build search filters from analysis
-  const buildRecommendationFilters = (analysis: AnalysisResult | null) => {
+  // ✅ Build search filters from preferences
+  const buildSearchFilters = (preferences: any) => {
     const filters: any = {
       limit: 50,
       sortBy: 'createdAt' as const,
       sortOrder: 'desc' as const,
     };
     
-    if (!analysis) return filters;
+    // Most common location
+    const topLocation = Object.keys(preferences.locations).sort(
+      (a, b) => preferences.locations[b] - preferences.locations[a]
+    )[0];
+    if (topLocation) filters.location = topLocation;
     
-    // Find most common location
-    const locationEntries = Object.entries(analysis.locations) as [string, number][];
-    if (locationEntries.length > 0) {
-      const topLocation = locationEntries.reduce((a, b) => a[1] > b[1] ? a : b);
-      if (topLocation) filters.location = topLocation[0];
+    // Most common property type
+    const topType = Object.keys(preferences.types).sort(
+      (a, b) => preferences.types[b] - preferences.types[a]
+    )[0];
+    if (topType) filters.propertyType = topType;
+    
+    // Most common purpose
+    const topPurpose = Object.keys(preferences.purposes).sort(
+      (a, b) => preferences.purposes[b] - preferences.purposes[a]
+    )[0];
+    if (topPurpose) filters.purpose = topPurpose;
+    
+    // Price range: 60% to 160% of average
+    if (preferences.avgPrice > 0) {
+      filters.minPrice = Math.max(0, Math.round(preferences.avgPrice * 0.6));
+      filters.maxPrice = Math.round(preferences.avgPrice * 1.6);
     }
     
-    // Find most common property type
-    const typeEntries = Object.entries(analysis.propertyTypes) as [string, number][];
-    if (typeEntries.length > 0) {
-      const topType = typeEntries.reduce((a, b) => a[1] > b[1] ? a : b);
-      if (topType) filters.propertyType = topType[0];
+    // Bedrooms
+    if (preferences.avgBedrooms > 0) {
+      filters.bedrooms = Math.round(preferences.avgBedrooms);
     }
     
-    // Find most common purpose
-    const purposeEntries = Object.entries(analysis.purposes) as [string, number][];
-    if (purposeEntries.length > 0) {
-      const topPurpose = purposeEntries.reduce((a, b) => a[1] > b[1] ? a : b);
-      if (topPurpose) filters.purpose = topPurpose[0];
+    // Bathrooms
+    if (preferences.avgBathrooms > 0) {
+      filters.bathrooms = Math.round(preferences.avgBathrooms);
     }
     
-    // Price range (60% to 160% of average)
-    if (analysis.avgPrice > 0) {
-      filters.minPrice = Math.max(0, analysis.avgPrice * 0.6);
-      filters.maxPrice = analysis.avgPrice * 1.6;
-    }
-    
-    // Bedrooms (round to nearest)
-    if (analysis.avgBedrooms > 0) {
-      filters.bedrooms = Math.round(analysis.avgBedrooms);
+    // Parking preference
+    const parkingPreference = preferences.parking.yes > preferences.parking.no;
+    if (parkingPreference) {
+      filters.parking = true;
     }
     
     return filters;
   };
 
-  // ✅ Calculate match score
-  const calculateMatchScore = (
+  // ✅ Calculate detailed match scores
+  const calculateMatchDetails = (
     property: Property, 
     favorites: Property[], 
-    analysis: AnalysisResult | null
-  ): number => {
-    if (!analysis || favorites.length === 0) return 50;
+    preferences: any
+  ) => {
+    const details = {
+      location: 0,
+      price: 0,
+      type: 0,
+      bedrooms: 0,
+      bathrooms: 0,
+      parking: 0,
+      amenities: 0,
+      purpose: 0,
+    };
     
-    let score = 0;
-    let totalWeight = 0;
-    
-    // 1. Location match (25%)
+    // 1. Location Match (25%)
     if (property.location) {
-      const locationCount = analysis.locations[property.location] || 0;
-      const locationValues = Object.values(analysis.locations) as number[];
-      const maxLocationCount = locationValues.length > 0 ? Math.max(...locationValues) : 1;
-      const locationMatch = (locationCount / maxLocationCount) * 25;
-      score += locationMatch;
-      totalWeight += 25;
+      const locationCount = preferences.locations[property.location] || 0;
+      const maxLocationCount = Math.max(...Object.values(preferences.locations) as number[], 1);
+      details.location = (locationCount / maxLocationCount) * 25;
     }
     
-    // 2. Property type match (20%)
-    if (property.propertyType) {
-      const typeCount = analysis.propertyTypes[property.propertyType] || 0;
-      const typeValues = Object.values(analysis.propertyTypes) as number[];
-      const maxTypeCount = typeValues.length > 0 ? Math.max(...typeValues) : 1;
-      const typeMatch = (typeCount / maxTypeCount) * 20;
-      score += typeMatch;
-      totalWeight += 20;
-    }
-    
-    // 3. Price match (25%)
-    if (analysis.avgPrice > 0) {
-      const priceDiff = Math.abs(Number(property.price) - analysis.avgPrice);
-      const priceRange = analysis.avgPrice * 0.4;
+    // 2. Price Match (20%)
+    if (preferences.avgPrice > 0) {
+      const priceDiff = Math.abs(Number(property.price) - preferences.avgPrice);
+      const priceRange = preferences.avgPrice * 0.4;
       if (priceDiff <= priceRange) {
-        score += 25;
+        details.price = 20;
       } else if (priceDiff <= priceRange * 2) {
-        score += 12;
+        details.price = 12;
       } else {
-        score += Math.max(0, 25 - (priceDiff / priceRange) * 5);
+        details.price = Math.max(0, 20 - (priceDiff / priceRange) * 4);
       }
-      totalWeight += 25;
     }
     
-    // 4. Bedrooms match (15%)
-    if (property.bedrooms && analysis.avgBedrooms > 0) {
-      const diff = Math.abs(property.bedrooms - analysis.avgBedrooms);
-      if (diff <= 0.5) score += 15;
-      else if (diff <= 1) score += 10;
-      else if (diff <= 2) score += 5;
-      totalWeight += 15;
+    // 3. Property Type Match (15%)
+    if (property.propertyType) {
+      const typeCount = preferences.types[property.propertyType] || 0;
+      const maxTypeCount = Math.max(...Object.values(preferences.types) as number[], 1);
+      details.type = (typeCount / maxTypeCount) * 15;
     }
     
-    // 5. Purpose match (15%)
+    // 4. Bedrooms Match (12%)
+    if (property.bedrooms && preferences.avgBedrooms > 0) {
+      const diff = Math.abs(property.bedrooms - preferences.avgBedrooms);
+      if (diff <= 0.5) details.bedrooms = 12;
+      else if (diff <= 1) details.bedrooms = 8;
+      else if (diff <= 2) details.bedrooms = 4;
+    }
+    
+    // 5. Bathrooms Match (10%)
+    if (property.bathrooms && preferences.avgBathrooms > 0) {
+      const diff = Math.abs(property.bathrooms - preferences.avgBathrooms);
+      if (diff <= 0.5) details.bathrooms = 10;
+      else if (diff <= 1) details.bathrooms = 6;
+      else if (diff <= 2) details.bathrooms = 3;
+    }
+    
+    // 6. Parking Match (8%)
+    if (property.parking !== undefined) {
+      const parkingPreference = preferences.parking.yes > preferences.parking.no;
+      if (property.parking === parkingPreference) {
+        details.parking = 8;
+      } else {
+        details.parking = 3;
+      }
+    }
+    
+    // 7. Amenities Match (5%)
+    if (property.amenities && property.amenities.length > 0 && preferences.commonAmenities.length > 0) {
+      const matchedAmenities = property.amenities.filter(a => 
+        preferences.commonAmenities.includes(a)
+      );
+      const matchRatio = matchedAmenities.length / preferences.commonAmenities.length;
+      details.amenities = matchRatio * 5;
+    }
+    
+    // 8. Purpose Match (5%)
     if (property.purpose) {
-      const purposeCount = analysis.purposes[property.purpose] || 0;
-      const purposeValues = Object.values(analysis.purposes) as number[];
-      const maxPurposeCount = purposeValues.length > 0 ? Math.max(...purposeValues) : 1;
-      const purposeMatch = (purposeCount / maxPurposeCount) * 15;
-      score += purposeMatch;
-      totalWeight += 15;
+      const purposeCount = preferences.purposes[property.purpose] || 0;
+      const maxPurposeCount = Math.max(...Object.values(preferences.purposes) as number[], 1);
+      details.purpose = (purposeCount / maxPurposeCount) * 5;
     }
     
-    return totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 50;
+    return details;
+  };
+
+  // ✅ Calculate overall score
+  const calculateOverallScore = (details: any): number => {
+    const total = 
+      details.location +
+      details.price +
+      details.type +
+      details.bedrooms +
+      details.bathrooms +
+      details.parking +
+      details.amenities +
+      details.purpose;
+    
+    return Math.round(total);
+  };
+
+  // ✅ Get match level
+  const getMatchLevel = (score: number) => {
+    if (score >= 80) return { label: 'Excellent Match', color: 'text-emerald-600', bg: 'bg-emerald-100' };
+    if (score >= 60) return { label: 'Great Match', color: 'text-blue-600', bg: 'bg-blue-100' };
+    if (score >= 40) return { label: 'Good Match', color: 'text-amber-600', bg: 'bg-amber-100' };
+    return { label: 'Fair Match', color: 'text-gray-600', bg: 'bg-gray-100' };
   };
 
   // ✅ Handle dismiss
@@ -388,7 +455,7 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center gap-3 mb-4">
           <Sparkles className="w-6 h-6 text-[#D4AF37]" />
-          <h3 className="text-xl font-serif font-bold text-[#0F172A]">You May Also Like</h3>
+          <h3 className="text-xl font-serif font-bold text-[#0F172A]">AI Recommendations</h3>
         </div>
         <div className="text-center py-8">
           <div className="text-5xl mb-4">🔮</div>
@@ -414,13 +481,13 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
             <Sparkles className="w-6 h-6 text-[#D4AF37]" />
           </div>
           <div>
-            <h3 className="text-xl font-serif font-bold text-[#0F172A]">You May Also Like</h3>
-            <p className="text-sm text-[#475569]">Based on your saved properties</p>
+            <h3 className="text-xl font-serif font-bold text-[#0F172A]">AI Recommendations</h3>
+            <p className="text-sm text-[#475569]">Personalized for you</p>
           </div>
         </div>
         <div className="text-center py-8">
           <div className="text-5xl mb-4">❤️</div>
-          <p className="text-[#475569]">Save some properties to get personalized recommendations!</p>
+          <p className="text-[#475569]">Save properties to get AI-powered recommendations!</p>
           <Link
             to="/properties"
             className="mt-4 inline-block px-6 py-2 bg-[#2D5A27] text-white rounded-lg hover:bg-[#23461E] transition-colors"
@@ -441,20 +508,20 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
             <Sparkles className="w-6 h-6 text-[#D4AF37]" />
           </div>
           <div>
-            <h3 className="text-xl font-serif font-bold text-[#0F172A]">You May Also Like</h3>
-            <p className="text-sm text-[#475569]">Based on your saved properties</p>
+            <h3 className="text-xl font-serif font-bold text-[#0F172A]">AI Recommendations</h3>
+            <p className="text-sm text-[#475569]">Personalized for you</p>
           </div>
         </div>
         <div className="text-center py-8">
           <div className="text-5xl mb-4">🔍</div>
-          <p className="text-[#475569]">No new recommendations available right now.</p>
+          <p className="text-[#475569]">No matching properties found right now.</p>
           <p className="text-sm text-[#475569] mt-1">Try saving more properties or check back later!</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-3 text-sm text-[#2D5A27] hover:underline flex items-center gap-1 mx-auto"
           >
             <RefreshCw className="w-4 h-4" />
-            Refresh Recommendations
+            Refresh
           </button>
         </div>
       </div>
@@ -472,13 +539,13 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
           </div>
           <div>
             <h3 className="text-xl font-serif font-bold text-[#0F172A]">
-              You May Also Like
+              AI Recommendations
             </h3>
             <p className="text-sm text-[#475569] flex items-center gap-1">
               <span>Based on your {favorites.length} saved {favorites.length === 1 ? 'property' : 'properties'}</span>
               <span className="text-xs bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ml-2">
                 <Zap className="w-3 h-3" />
-                AI Smart Match
+                Smart Match
               </span>
             </p>
           </div>
@@ -495,107 +562,138 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
 
       {/* Recommendations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {recommendations.slice(0, 3).map((property, index) => (
-          <motion.div
-            key={property.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="group relative"
-          >
-            <div className="bg-[#F8FAFC] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
-              {/* Dismiss Button */}
-              <button
-                onClick={() => handleDismiss(property.id)}
-                className="absolute top-2 right-2 z-10 p-1 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                aria-label="Dismiss recommendation"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        {recommendations.slice(0, 3).map((property, index) => {
+          const matchLevel = getMatchLevel(property.matchScore || 0);
+          return (
+            <motion.div
+              key={property.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="group relative"
+            >
+              <div className="bg-[#F8FAFC] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100">
+                {/* Dismiss Button */}
+                <button
+                  onClick={() => handleDismiss(property.id)}
+                  className="absolute top-2 right-2 z-10 p-1 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  aria-label="Dismiss recommendation"
+                >
+                  <X className="w-4 h-4" />
+                </button>
 
-              <Link to={`/property/${property.id}`} className="block">
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={getMainImage(property.mainImage, property.images)}
-                    alt={property.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
-                    }}
-                  />
-                  
-                  {/* Match Score Badge */}
-                  <div className="absolute bottom-3 right-3 bg-[#2D5A27]/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
-                    <Star className="w-3 h-3 fill-white" />
-                    {property.matchScore || 0}% Match
-                  </div>
-
-                  {/* Verified Badge */}
-                  {property.isVerified && (
-                    <div className="absolute top-3 left-3 bg-[#2D5A27] text-white px-2 py-0.5 rounded text-[10px] font-medium">
-                      ✓ Verified
+                <Link to={`/property/${property.id}`} className="block">
+                  {/* Image */}
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={getMainImage(property.mainImage, property.images)}
+                      alt={property.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-property.jpg';
+                      }}
+                    />
+                    
+                    {/* Match Score Badge */}
+                    <div className="absolute top-3 right-3 bg-[#2D5A27]/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
+                      <Star className="w-3 h-3 fill-white" />
+                      {property.matchScore || 0}% Match
                     </div>
-                  )}
 
-                  {/* Featured Badge */}
-                  {property.isFeatured && (
-                    <div className="absolute top-12 left-3 bg-[#D4AF37] text-white px-2 py-0.5 rounded text-[10px] font-medium">
-                      ⭐ Featured
+                    {/* Match Level Badge */}
+                    <div className={`absolute top-3 left-3 ${matchLevel.bg} px-2 py-0.5 rounded text-[10px] font-medium ${matchLevel.color}`}>
+                      {matchLevel.label}
                     </div>
-                  )}
-                </div>
 
-                {/* Content */}
-                <div className="p-4">
-                  <h4 className="font-semibold text-[#0F172A] truncate">
-                    {property.title}
-                  </h4>
-                  <p className="text-sm text-[#475569] flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-3 h-3" />
-                    {property.location}
-                  </p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-lg font-bold text-[#2D5A27]">
-                      ₹{Number(property.price).toLocaleString()}
-                      {Number(property.price) >= 10000000 && ' Cr'}
-                    </span>
-                    <div className="flex items-center gap-1 text-xs text-[#475569]">
-                      <Eye className="w-3 h-3" />
-                      {property.views || 0}
-                    </div>
-                  </div>
-                  
-                  {/* Property Details */}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-[#475569]">
-                    {property.bedrooms && (
-                      <span>🛏️ {property.bedrooms}</span>
+                    {/* Verified Badge */}
+                    {property.isVerified && (
+                      <div className="absolute top-12 left-3 bg-[#2D5A27] text-white px-2 py-0.5 rounded text-[10px] font-medium">
+                        ✓ Verified
+                      </div>
                     )}
-                    {property.bathrooms && (
-                      <span>🛁 {property.bathrooms}</span>
-                    )}
-                    {property.area && property.areaUnit && (
-                      <span>📐 {property.area} {property.areaUnit}</span>
+
+                    {/* Featured Badge */}
+                    {property.isFeatured && (
+                      <div className="absolute top-12 left-3 bg-[#D4AF37] text-white px-2 py-0.5 rounded text-[10px] font-medium">
+                        ⭐ Featured
+                      </div>
                     )}
                   </div>
 
-                  {/* Save Button */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleFavoriteToggle(property.id, true);
-                    }}
-                    className="mt-3 w-full py-1.5 text-sm font-medium border border-[#2D5A27] text-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-colors duration-200 flex items-center justify-center gap-1"
-                  >
-                    <Heart className="w-4 h-4" />
-                    Save to Favorites
-                  </button>
-                </div>
-              </Link>
-            </div>
-          </motion.div>
-        ))}
+                  {/* Content */}
+                  <div className="p-4">
+                    <h4 className="font-semibold text-[#0F172A] truncate">
+                      {property.title}
+                    </h4>
+                    <p className="text-sm text-[#475569] flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3 h-3" />
+                      {property.location}
+                    </p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-lg font-bold text-[#2D5A27]">
+                        ₹{Number(property.price).toLocaleString()}
+                        {Number(property.price) >= 10000000 && ' Cr'}
+                      </span>
+                      <div className="flex items-center gap-1 text-xs text-[#475569]">
+                        <Eye className="w-3 h-3" />
+                        {property.views || 0}
+                      </div>
+                    </div>
+                    
+                    {/* Property Details */}
+                    <div className="flex items-center gap-3 mt-2 text-xs text-[#475569]">
+                      {property.bedrooms && (
+                        <span>🛏️ {property.bedrooms}</span>
+                      )}
+                      {property.bathrooms && (
+                        <span>🛁 {property.bathrooms}</span>
+                      )}
+                      {property.area && property.areaUnit && (
+                        <span>📐 {property.area} {property.areaUnit}</span>
+                      )}
+                      {property.parking && (
+                        <span>🅿️ Parking</span>
+                      )}
+                    </div>
+
+                    {/* Match Details */}
+                    {property.matchDetails && (
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-2 text-[10px] text-[#475569]">
+                          <span className="flex items-center gap-0.5">
+                            <CheckCircle className="w-3 h-3 text-emerald-500" />
+                            {Math.round(property.matchDetails.location)}% Loc
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <TrendingUp className="w-3 h-3 text-blue-500" />
+                            {Math.round(property.matchDetails.price)}% Price
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <Star className="w-3 h-3 text-amber-500" />
+                            {Math.round(property.matchDetails.type)}% Type
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Save Button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleFavoriteToggle(property.id, true);
+                      }}
+                      className="mt-3 w-full py-1.5 text-sm font-medium border border-[#2D5A27] text-[#2D5A27] rounded-lg hover:bg-[#2D5A27] hover:text-white transition-colors duration-200 flex items-center justify-center gap-1"
+                    >
+                      <Heart className="w-4 h-4" />
+                      Save to Favorites
+                    </button>
+                  </div>
+                </Link>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* View More Link */}
@@ -610,6 +708,17 @@ const RecommendedProperties: React.FC<RecommendedPropertiesProps> = ({
           </Link>
         </div>
       )}
+
+      {/* Footer */}
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between text-xs text-[#475569]">
+          <span>✨ Powered by AI</span>
+          <span className="flex items-center gap-1">
+            <Star className="w-3 h-3 text-[#D4AF37] fill-[#D4AF37]" />
+            Smart Matching
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

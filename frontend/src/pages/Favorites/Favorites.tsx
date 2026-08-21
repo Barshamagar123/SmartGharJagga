@@ -100,80 +100,141 @@ const Favorites: React.FC = () => {
     localStorage.setItem('favoriteNotifications', '0');
   };
 
-  // ✅ Build comprehensive exclusion list
-  const buildExclusionList = (favoritesList: Property[]) => {
-    const exclude = {
-      ids: new Set<string>(),
-      propertyIds: new Set<string>(),
-      titles: new Set<string>(),
-      locationPrice: new Map<string, number>(),
+  // ✅ Extract user preferences from favorites
+  const extractUserPreferences = (favoritesList: Property[]) => {
+    const preferences = {
+      locations: {} as Record<string, number>,
+      types: {} as Record<string, number>,
+      purposes: {} as Record<string, number>,
+      parking: { yes: 0, no: 0 },
+      avgPrice: 0,
+      avgBedrooms: 0,
+      avgBathrooms: 0,
+      minPrice: Infinity,
+      maxPrice: 0,
+      amenities: {} as Record<string, number>,
     };
-
+    
+    let totalPrice = 0;
+    let totalBedrooms = 0;
+    let totalBathrooms = 0;
+    
     favoritesList.forEach(fav => {
-      if (fav.id) exclude.ids.add(fav.id);
-      if (fav.propertyId) exclude.propertyIds.add(fav.propertyId);
-      if (fav.title) {
-        exclude.titles.add(fav.title.toLowerCase().trim());
+      if (fav.location) {
+        preferences.locations[fav.location] = (preferences.locations[fav.location] || 0) + 1;
       }
-      if (fav.location && fav.price) {
-        const key = fav.location.toLowerCase().trim();
-        exclude.locationPrice.set(key, Number(fav.price));
+      
+      if (fav.propertyType) {
+        preferences.types[fav.propertyType] = (preferences.types[fav.propertyType] || 0) + 1;
+      }
+      
+      if (fav.purpose) {
+        preferences.purposes[fav.purpose] = (preferences.purposes[fav.purpose] || 0) + 1;
+      }
+      
+      if (fav.parking !== undefined) {
+        preferences.parking[fav.parking ? 'yes' : 'no'] = (preferences.parking[fav.parking ? 'yes' : 'no'] || 0) + 1;
+      }
+      
+      const price = Number(fav.price);
+      totalPrice += price;
+      if (price < preferences.minPrice) preferences.minPrice = price;
+      if (price > preferences.maxPrice) preferences.maxPrice = price;
+      
+      if (fav.bedrooms) totalBedrooms += fav.bedrooms;
+      if (fav.bathrooms) totalBathrooms += fav.bathrooms;
+      
+      if (fav.amenities && fav.amenities.length > 0) {
+        fav.amenities.forEach(amenity => {
+          preferences.amenities[amenity] = (preferences.amenities[amenity] || 0) + 1;
+        });
       }
     });
-
-    return exclude;
+    
+    preferences.avgPrice = totalPrice / favoritesList.length;
+    preferences.avgBedrooms = totalBedrooms / favoritesList.length;
+    preferences.avgBathrooms = totalBathrooms / favoritesList.length;
+    
+    return preferences;
   };
 
-  // ✅ Check if property should be excluded
-  const shouldExcludeProperty = (property: Property, exclude: any, favoritesList: Property[]) => {
-    // 1. Check by ID
-    if (exclude.ids.has(property.id)) {
-      return true;
+  // ✅ Calculate match score
+  const calculateMatchScore = (property: Property, favoritesList: Property[], preferences: any): number => {
+    if (favoritesList.length === 0) return 50;
+    
+    let score = 0;
+    let totalWeight = 0;
+    
+    // 1. Location match (25%)
+    if (property.location) {
+      const locationCount = preferences.locations[property.location] || 0;
+      const locationValues = Object.values(preferences.locations) as number[];
+      const maxLocationCount = locationValues.length > 0 ? Math.max(...locationValues) : 1;
+      const locationMatch = (locationCount / maxLocationCount) * 25;
+      score += locationMatch;
+      totalWeight += 25;
     }
-
-    // 2. Check by propertyId
-    if (property.propertyId && exclude.propertyIds.has(property.propertyId)) {
-      return true;
-    }
-
-    // 3. Check by title
-    if (property.title) {
-      const normalizedTitle = property.title.toLowerCase().trim();
-      if (exclude.titles.has(normalizedTitle)) {
-        return true;
+    
+    // 2. Price match (20%)
+    if (preferences.avgPrice > 0) {
+      const priceDiff = Math.abs(Number(property.price) - preferences.avgPrice);
+      const priceRange = preferences.avgPrice * 0.4;
+      if (priceDiff <= priceRange) {
+        score += 20;
+      } else if (priceDiff <= priceRange * 2) {
+        score += 12;
+      } else {
+        score += Math.max(0, 20 - (priceDiff / priceRange) * 4);
       }
+      totalWeight += 20;
     }
-
-    // 4. Check by location + price
-    if (property.location && property.price) {
-      const key = property.location.toLowerCase().trim();
-      const favPrice = exclude.locationPrice.get(key);
-      if (favPrice) {
-        const priceDiff = Math.abs(Number(property.price) - favPrice);
-        const threshold = favPrice * 0.1;
-        if (priceDiff <= threshold) {
-          return true;
-        }
-      }
+    
+    // 3. Property type match (15%)
+    if (property.propertyType) {
+      const typeCount = preferences.types[property.propertyType] || 0;
+      const typeValues = Object.values(preferences.types) as number[];
+      const maxTypeCount = typeValues.length > 0 ? Math.max(...typeValues) : 1;
+      const typeMatch = (typeCount / maxTypeCount) * 15;
+      score += typeMatch;
+      totalWeight += 15;
     }
-
-    // 5. Check by similarity
-    const hasSimilar = favoritesList.some(fav => {
-      const sameLocation = fav.location?.toLowerCase().trim() === property.location?.toLowerCase().trim();
-      const priceDiff = Math.abs(Number(fav.price) - Number(property.price));
-      const threshold = Number(fav.price) * 0.1;
-      const similarPrice = priceDiff <= threshold;
-      const sameType = fav.propertyType === property.propertyType;
-      const sameBedrooms = fav.bedrooms === property.bedrooms;
-      
-      return sameLocation && similarPrice && sameType && sameBedrooms;
-    });
-
-    if (hasSimilar) {
-      return true;
+    
+    // 4. Bedrooms match (12%)
+    if (property.bedrooms && preferences.avgBedrooms > 0) {
+      const diff = Math.abs(property.bedrooms - preferences.avgBedrooms);
+      if (diff <= 0.5) score += 12;
+      else if (diff <= 1) score += 8;
+      else if (diff <= 2) score += 4;
+      totalWeight += 12;
     }
-
-    return false;
+    
+    // 5. Bathrooms match (10%)
+    if (property.bathrooms && preferences.avgBathrooms > 0) {
+      const diff = Math.abs(property.bathrooms - preferences.avgBathrooms);
+      if (diff <= 0.5) score += 10;
+      else if (diff <= 1) score += 6;
+      else if (diff <= 2) score += 3;
+      totalWeight += 10;
+    }
+    
+    // 6. Parking match (8%)
+    if (property.parking !== undefined) {
+      const parkingPreference = preferences.parking.yes > preferences.parking.no;
+      score += property.parking === parkingPreference ? 8 : 3;
+      totalWeight += 8;
+    }
+    
+    // 7. Purpose match (10%)
+    if (property.purpose) {
+      const purposeCount = preferences.purposes[property.purpose] || 0;
+      const purposeValues = Object.values(preferences.purposes) as number[];
+      const maxPurposeCount = purposeValues.length > 0 ? Math.max(...purposeValues) : 1;
+      const purposeMatch = (purposeCount / maxPurposeCount) * 10;
+      score += purposeMatch;
+      totalWeight += 10;
+    }
+    
+    return totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 50;
   };
 
   // Fetch favorites
@@ -211,208 +272,128 @@ const Favorites: React.FC = () => {
         
         resetNotifications();
         
+        // ✅ Fetch recommendations after favorites load
         if (processed.length > 0) {
-          fetchRecommendations(processed);
+          await fetchRecommendations(processed);
+        } else {
+          setRecommendations([]);
+          setRecommendationsLoading(false);
         }
       } else {
         setError('Invalid response format');
         setFavorites([]);
+        setRecommendations([]);
       }
     } catch (err: any) {
       console.error('Error fetching favorites:', err);
       setError(err.response?.data?.message || 'Failed to load favorites');
       setFavorites([]);
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // ✅ Fetch AI Recommendations with proper exclusion
+  // ✅ Fetch AI Recommendations - FIXED: Gets ALL properties and scores them
   const fetchRecommendations = async (favoritesList: Property[]) => {
     try {
       setRecommendationsLoading(true);
       
-      // Build exclusion list
-      const exclude = buildExclusionList(favoritesList);
+      console.log('🔍 Fetching recommendations for', favoritesList.length, 'favorites...');
       
-      // Build filters
-      const filters = buildRecommendationFilters(favoritesList);
+      // ✅ Get ALL properties first (no filters)
+      let allProperties: Property[] = [];
       
-      // Fetch properties
-      const response = await propertyApi.getAll({
-        ...filters,
-        limit: 30,
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-      });
-      
-      // Process and filter properties
-      const processed = response.properties
-        .map((prop: Property) => ({
-          ...prop,
-          mainImage: getMainImage(prop.mainImage, prop.images),
-          images: processImagePaths(prop.images),
-          isFavorited: false
-        }))
-        // ✅ Apply multi-level exclusion
-        .filter(prop => !shouldExcludeProperty(prop, exclude, favoritesList))
-        .filter(prop => !dismissedIds.includes(prop.id));
-      
-      // If not enough properties, try broader search
-      let finalProperties = processed;
-      
-      if (finalProperties.length < 3) {
-        const broaderFilters = buildBroaderFilters(favoritesList);
-        const broaderResponse = await propertyApi.getAll({
-          ...broaderFilters,
-          limit: 30,
+      try {
+        const response = await propertyApi.getAll({
+          limit: 50,
           sortBy: 'createdAt',
           sortOrder: 'desc'
         });
-        
-        finalProperties = broaderResponse.properties
-          .map((prop: Property) => ({
-            ...prop,
-            mainImage: getMainImage(prop.mainImage, prop.images),
-            images: processImagePaths(prop.images),
-            isFavorited: false
-          }))
-          .filter(prop => !shouldExcludeProperty(prop, exclude, favoritesList))
-          .filter(prop => !dismissedIds.includes(prop.id));
+        allProperties = response.properties || [];
+        console.log(`✅ Found ${allProperties.length} total properties in database`);
+      } catch (err) {
+        console.error('❌ Failed to fetch properties:', err);
+        setRecommendations([]);
+        setRecommendationsLoading(false);
+        return;
       }
       
-      // ✅ Calculate match scores and add to properties
-      const sorted = finalProperties.map(prop => ({
-        ...prop,
-        matchScore: calculateMatchScore(prop, favoritesList)
-      })).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+      if (allProperties.length === 0) {
+        console.log('❌ No properties found in database');
+        setRecommendations([]);
+        setRecommendationsLoading(false);
+        return;
+      }
       
-      // Take top 4
-      setRecommendations(sorted.slice(0, 4));
+      // ✅ Exclude favorites
+      const favoriteIds = new Set(favoritesList.map(f => f.id));
+      const favoriteTitles = new Set(favoritesList.map(f => f.title?.toLowerCase().trim()));
+      
+      let availableProperties = allProperties
+        .filter(prop => !favoriteIds.has(prop.id))
+        .filter(prop => {
+          const title = prop.title?.toLowerCase().trim();
+          return !(title && favoriteTitles.has(title));
+        })
+        .filter(prop => !dismissedIds.includes(prop.id));
+      
+      console.log(`✅ Available after excluding favorites: ${availableProperties.length}`);
+      
+      if (availableProperties.length === 0) {
+        console.log('❌ No available properties after exclusions');
+        setRecommendations([]);
+        setRecommendationsLoading(false);
+        return;
+      }
+      
+      // ✅ Extract user preferences
+      const preferences = extractUserPreferences(favoritesList);
+      console.log('📊 User Preferences:', {
+        avgPrice: preferences.avgPrice,
+        avgBedrooms: preferences.avgBedrooms,
+        avgBathrooms: preferences.avgBathrooms,
+        topLocation: Object.keys(preferences.locations).sort((a, b) => preferences.locations[b] - preferences.locations[a])[0],
+        topType: Object.keys(preferences.types).sort((a, b) => preferences.types[b] - preferences.types[a])[0],
+        hasParking: preferences.parking.yes > preferences.parking.no,
+      });
+      
+      // ✅ Score ALL available properties
+      const scoredProperties = availableProperties.map(prop => {
+        const matchScore = calculateMatchScore(prop, favoritesList, preferences);
+        
+        return {
+          ...prop,
+          mainImage: getMainImage(prop.mainImage, prop.images),
+          images: processImagePaths(prop.images),
+          isFavorited: false,
+          matchScore: matchScore
+        };
+      });
+      
+      // ✅ Sort by score (highest first) and take top 4
+      const sorted = scoredProperties.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+      const topRecommendations = sorted.slice(0, 4);
+      
+      console.log('🏆 Top Recommendations:', topRecommendations.map(p => ({
+        title: p.title,
+        location: p.location,
+        price: p.price,
+        match: p.matchScore
+      })));
+      
+      // ✅ Show recommendations even with low scores if there are any
+      if (topRecommendations.length > 0) {
+        setRecommendations(topRecommendations);
+      } else {
+        setRecommendations([]);
+      }
     } catch (err) {
-      console.error('Error fetching recommendations:', err);
+      console.error('❌ Error fetching recommendations:', err);
+      setRecommendations([]);
     } finally {
       setRecommendationsLoading(false);
     }
-  };
-
-  // ✅ Build recommendation filters
-  const buildRecommendationFilters = (favoritesList: Property[]) => {
-    if (favoritesList.length === 0) return {};
-
-    const locationCounts: Record<string, number> = {};
-    const typeCounts: Record<string, number> = {};
-    const purposeCounts: Record<string, number> = {};
-    
-    let totalPrice = 0;
-    let totalBedrooms = 0;
-    let totalBathrooms = 0;
-    
-    favoritesList.forEach(f => {
-      if (f.location) locationCounts[f.location] = (locationCounts[f.location] || 0) + 1;
-      if (f.propertyType) typeCounts[f.propertyType] = (typeCounts[f.propertyType] || 0) + 1;
-      if (f.purpose) purposeCounts[f.purpose] = (purposeCounts[f.purpose] || 0) + 1;
-      totalPrice += Number(f.price);
-      totalBedrooms += (f.bedrooms || 0);
-      totalBathrooms += (f.bathrooms || 0);
-    });
-    
-    const avgPrice = totalPrice / favoritesList.length;
-    const avgBedrooms = Math.round(totalBedrooms / favoritesList.length);
-    const avgBathrooms = Math.round(totalBathrooms / favoritesList.length);
-    
-    const mostCommonLocation = Object.keys(locationCounts).sort((a, b) => 
-      locationCounts[b] - locationCounts[a]
-    )[0];
-    
-    const mostCommonType = Object.keys(typeCounts).sort((a, b) => 
-      typeCounts[b] - typeCounts[a]
-    )[0] as PropertyType | undefined;
-    
-    const mostCommonPurpose = Object.keys(purposeCounts).sort((a, b) => 
-      purposeCounts[b] - purposeCounts[a]
-    )[0] as PropertyPurpose | undefined;
-
-    const filters: any = {
-      limit: 30,
-      sortBy: 'createdAt' as const,
-      sortOrder: 'desc' as const,
-    };
-
-    if (mostCommonLocation) filters.location = mostCommonLocation;
-    if (mostCommonType) filters.propertyType = mostCommonType;
-    if (mostCommonPurpose) filters.purpose = mostCommonPurpose;
-    
-    if (avgPrice > 0) {
-      filters.minPrice = Math.max(0, avgPrice * 0.5);
-      filters.maxPrice = avgPrice * 1.5;
-    }
-    
-    if (avgBedrooms > 0) filters.bedrooms = avgBedrooms;
-    if (avgBathrooms > 0) filters.bathrooms = avgBathrooms;
-
-    return filters;
-  };
-
-  // ✅ Build broader filters
-  const buildBroaderFilters = (favoritesList: Property[]) => {
-    const filters = buildRecommendationFilters(favoritesList);
-    
-    if (filters.minPrice) filters.minPrice = Math.max(0, filters.minPrice * 0.5);
-    if (filters.maxPrice) filters.maxPrice = filters.maxPrice * 2;
-    delete filters.bedrooms;
-    delete filters.bathrooms;
-    
-    return filters;
-  };
-
-  // ✅ Calculate AI match score
-  const calculateMatchScore = (property: Property, favoritesList: Property[]): number => {
-    if (favoritesList.length === 0) return 0;
-    
-    let score = 0;
-    let totalWeight = 0;
-
-    // Location match (25%)
-    if (property.location && favoritesList.some(f => f.location === property.location)) {
-      score += 25;
-    } else if (property.location && favoritesList.some(f => f.location?.includes(property.location?.split(' ')[0] || ''))) {
-      score += 12;
-    }
-    totalWeight += 25;
-
-    // Property type match (20%)
-    if (property.propertyType && favoritesList.some(f => f.propertyType === property.propertyType)) {
-      score += 20;
-    }
-    totalWeight += 20;
-
-    // Price range match (25%)
-    const avgPrice = favoritesList.reduce((sum, f) => sum + Number(f.price), 0) / favoritesList.length;
-    const priceRange = avgPrice * 0.4;
-    if (Math.abs(Number(property.price) - avgPrice) <= priceRange) {
-      score += 25;
-    } else if (Math.abs(Number(property.price) - avgPrice) <= priceRange * 2) {
-      score += 12;
-    }
-    totalWeight += 25;
-
-    // Bedrooms match (15%)
-    const avgBedrooms = favoritesList.reduce((sum, f) => sum + (f.bedrooms || 0), 0) / favoritesList.length;
-    if (property.bedrooms && Math.abs(property.bedrooms - avgBedrooms) <= 1) {
-      score += 15;
-    } else if (property.bedrooms && Math.abs(property.bedrooms - avgBedrooms) <= 2) {
-      score += 8;
-    }
-    totalWeight += 15;
-
-    // Purpose match (15%)
-    if (property.purpose && favoritesList.some(f => f.purpose === property.purpose)) {
-      score += 15;
-    }
-    totalWeight += 15;
-
-    return totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 0;
   };
 
   useEffect(() => {
@@ -459,7 +440,6 @@ const Favorites: React.FC = () => {
     }
   };
 
-  // ✅ Handle dismiss recommendation
   const handleDismissRecommendation = (propertyId: string) => {
     setDismissedIds(prev => [...prev, propertyId]);
     setRecommendations(prev => prev.filter(p => p.id !== propertyId));
@@ -798,13 +778,52 @@ const Favorites: React.FC = () => {
           {/* RIGHT COLUMN - AI Recommendations (1/4 width) */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              <AIRecommendationsSidebar
-                recommendations={recommendations}
-                loading={recommendationsLoading}
-                favorites={favorites}
-                onFavoriteToggle={handleFavoriteToggle}
-                onDismiss={handleDismissRecommendation}
-              />
+              {recommendationsLoading ? (
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                    <h3 className="font-serif font-bold text-[#0F172A]">AI Picks</h3>
+                    <span className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      Loading...
+                    </span>
+                  </div>
+                  {[1, 2, 3, 4].map(n => (
+                    <div key={n} className="flex gap-3 mb-3 animate-pulse">
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2 mb-1" />
+                        <div className="h-3 bg-gray-200 rounded w-1/3" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : recommendations.length > 0 ? (
+                <AIRecommendationsSidebar
+                  recommendations={recommendations}
+                  loading={false}
+                  favorites={favorites}
+                  onFavoriteToggle={handleFavoriteToggle}
+                  onDismiss={handleDismissRecommendation}
+                />
+              ) : (
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                    <h3 className="font-serif font-bold text-[#0F172A]">AI Picks</h3>
+                    <span className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      Smart
+                    </span>
+                  </div>
+                  <div className="text-center py-6">
+                    <div className="text-3xl mb-2">🔍</div>
+                    <p className="text-sm text-[#475569]">No matching properties found</p>
+                    <p className="text-xs text-[#475569] mt-1">Add more properties to get recommendations</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1198,7 +1217,7 @@ const AIRecommendationsSidebar: React.FC<AIRecommendationsSidebarProps> = ({
           <h3 className="font-serif font-bold text-[#0F172A]">AI Picks</h3>
           <span className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
             <Zap className="w-3 h-3" />
-            Smart
+            Loading...
           </span>
         </div>
         {[1, 2, 3, 4].map(n => (
@@ -1221,10 +1240,15 @@ const AIRecommendationsSidebar: React.FC<AIRecommendationsSidebarProps> = ({
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-[#D4AF37]" />
           <h3 className="font-serif font-bold text-[#0F172A]">AI Picks</h3>
+          <span className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <Zap className="w-3 h-3" />
+            Smart
+          </span>
         </div>
         <div className="text-center py-6">
-          <div className="text-3xl mb-2">🔮</div>
-          <p className="text-sm text-[#475569]">Save more properties to get personalized recommendations</p>
+          <div className="text-3xl mb-2">🔍</div>
+          <p className="text-sm text-[#475569]">No matching properties found</p>
+          <p className="text-xs text-[#475569] mt-1">Add more properties to get recommendations</p>
         </div>
       </div>
     );
@@ -1236,7 +1260,7 @@ const AIRecommendationsSidebar: React.FC<AIRecommendationsSidebarProps> = ({
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#D4AF37]" />
           <h3 className="font-serif font-bold text-[#0F172A]">AI Picks</h3>
-          <span className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+          <span className="text-xs bg-[#2D5A27]/10 text-[#2D5A27] px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
             <Zap className="w-3 h-3" />
             Smart
           </span>
@@ -1262,7 +1286,6 @@ const AIRecommendationsSidebar: React.FC<AIRecommendationsSidebarProps> = ({
               transition={{ delay: index * 0.08 }}
               className="group relative"
             >
-              {/* Dismiss Button */}
               <button
                 onClick={() => onDismiss(property.id)}
                 className="absolute -top-1 -right-1 z-10 p-0.5 bg-gray-200 hover:bg-red-500 rounded-full text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
