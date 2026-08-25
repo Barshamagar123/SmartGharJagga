@@ -42,6 +42,8 @@ const FindMyMatch: React.FC = () => {
   } = useMatching();
 
   const [step, setStep] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [hasLoadedMatches, setHasLoadedMatches] = useState(false);
   const [answers, setAnswers] = useState<Answers>({
     budget: '',
     budgetMin: 0,
@@ -53,19 +55,35 @@ const FindMyMatch: React.FC = () => {
     parking: false,
   });
 
-  // Load existing preferences
+  // ✅ Load existing preferences but DON'T auto-load matches
   useEffect(() => {
     if (preferences) {
       setAnswers(prev => ({
         ...prev,
-        budgetMin: preferences.budgetMin,
-        budgetMax: preferences.budgetMax,
+        budgetMin: preferences.budgetMin || 0,
+        budgetMax: preferences.budgetMax || 0,
         location: preferences.location ? [preferences.location] : [],
         type: [preferences.propertyType?.toLowerCase() || ''],
         parking: preferences.parkingNeeded || false,
       }));
+      
+      // ✅ Only show results if user has saved preferences AND we've loaded matches
+      // But we won't auto-load matches - user must click "See my matches"
+      if (preferences.budgetMin > 0 && preferences.budgetMax > 0) {
+        // Don't set showResults to true automatically
+        // The user must click the button to see results
+      }
     }
   }, [preferences]);
+
+  // ✅ Reset showResults when user changes steps
+  useEffect(() => {
+    if (step < 3) {
+      // If user goes back to edit, hide results
+      setShowResults(false);
+      setHasLoadedMatches(false);
+    }
+  }, [step]);
 
   const handleSavePreferences = async () => {
     if (!isAuthenticated) {
@@ -73,9 +91,25 @@ const FindMyMatch: React.FC = () => {
       return;
     }
 
+    // ✅ Validate all required fields
+    if (!answers.budgetMin || !answers.budgetMax) {
+      alert('Please select a budget range');
+      return;
+    }
+
+    if (answers.location.length === 0) {
+      alert('Please select at least one location');
+      return;
+    }
+
+    if (answers.type.length === 0) {
+      alert('Please select at least one property type');
+      return;
+    }
+
     const success = await savePreferences({
-      budgetMin: answers.budgetMin || 1000000,
-      budgetMax: answers.budgetMax || 50000000,
+      budgetMin: answers.budgetMin,
+      budgetMax: answers.budgetMax,
       location: answers.location[0] || 'Kathmandu',
       propertyType: (answers.type[0]?.toUpperCase() || 'HOUSE') as any,
       bedrooms: 0,
@@ -86,7 +120,37 @@ const FindMyMatch: React.FC = () => {
     });
 
     if (success) {
+      // ✅ Load matches and show results
       await loadMatches();
+      setHasLoadedMatches(true);
+      setShowResults(true);
+    }
+  };
+
+  const isStepComplete = (stepIndex: number): boolean => {
+    switch (stepIndex) {
+      case 0:
+        return answers.budget !== '' && answers.budgetMin > 0 && answers.budgetMax > 0;
+      case 1:
+        return answers.location.length > 0;
+      case 2:
+        return answers.type.length > 0;
+      case 3:
+        return true; // Must-haves are optional
+      default:
+        return false;
+    }
+  };
+
+  const handleNextStep = () => {
+    if (!isStepComplete(step)) {
+      return;
+    }
+    
+    if (step === 3) {
+      handleSavePreferences();
+    } else {
+      setStep(s => s + 1);
     }
   };
 
@@ -174,14 +238,16 @@ const FindMyMatch: React.FC = () => {
           Find My Match
         </h1>
         <p className="text-sm mt-1" style={{ color: '#5C6570' }}>
-          About 90 seconds. Results re-rank while you answer — nothing is hidden until the fifth result.
+          {showResults 
+            ? '🎯 Here are your AI-powered property matches' 
+            : 'Answer all questions to get AI-powered property recommendations'}
         </p>
       </div>
 
       <StepTracker
         steps={steps}
         currentStep={step}
-        onStepClick={(index) => setStep(index)}
+        onStepClick={(index) => index <= step && setStep(index)}
       />
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -200,20 +266,28 @@ const FindMyMatch: React.FC = () => {
               </button>
             )}
             <button
-              onClick={() => {
-                if (step === 3) {
-                  handleSavePreferences();
-                } else {
-                  setStep(s => s + 1);
-                }
-              }}
+              onClick={handleNextStep}
               className="px-5 py-2.5 rounded text-sm font-semibold transition-colors hover:bg-[#23461E]"
-              style={{ background: '#2D5A27', color: '#FFFFFF', fontFamily: 'Mukta' }}
-              disabled={saving}
+              style={{
+                background: '#2D5A27',
+                color: '#FFFFFF',
+                fontFamily: 'Mukta',
+                opacity: isStepComplete(step) ? 1 : 0.5,
+                cursor: isStepComplete(step) ? 'pointer' : 'not-allowed',
+              }}
+              disabled={!isStepComplete(step) || saving}
             >
               {saving ? 'Saving...' : step < 3 ? 'Continue →' : 'See my matches'}
             </button>
           </div>
+
+          {!isStepComplete(step) && step < 3 && (
+            <div className="mt-2 text-sm" style={{ color: '#B07C1E' }}>
+              ⚠️ {step === 0 ? 'Please select a budget range' :
+                  step === 1 ? 'Please select at least one location' :
+                  step === 2 ? 'Please select at least one property type' : ''}
+            </div>
+          )}
 
           {error && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -222,21 +296,31 @@ const FindMyMatch: React.FC = () => {
           )}
         </div>
 
-        {/* Right: live results */}
+        {/* Right: live results - ✅ ONLY show after user clicks "See my matches" */}
         <div>
           <div className="flex items-baseline justify-between mb-3">
             <span className="text-sm font-mono" style={{ color: '#5C6570' }}>
-              MATCHING AS YOU ANSWER
+              {showResults ? '🎯 MATCH RESULTS' : '📝 COMPLETE ALL STEPS'}
             </span>
+            {showResults && (
+              <span className="text-xs px-2 py-1 rounded-full bg-green-50 text-green-600">
+                {matchCount} matches
+              </span>
+            )}
           </div>
           <div className="font-bold mb-4" style={{ fontFamily: 'Khand', fontSize: 32, color: '#14181D' }}>
-            {loading ? 'Loading...' : `${matchCount} verified properties still match`}
+            {showResults 
+              ? loading 
+                ? 'Loading matches...' 
+                : `${matchCount} properties match your preferences`
+              : '🔮 AI Matching'}
           </div>
 
           <MatchResults
             matches={matches}
             matchCount={matchCount}
             loading={loading}
+            showResults={showResults}
             onLearn={learnFromBehavior}
           />
         </div>
