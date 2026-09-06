@@ -8,6 +8,7 @@ import { Button } from '../../components/common/Button/Button';
 import { Card, CardContent } from '../../components/common/Card/Card';
 import { authApi } from '../../services/api/auth';
 import Input from '../../components/common/Input/Input';
+import { toast } from 'react-hot-toast';
 
 interface UserProfile {
   id: string;
@@ -25,7 +26,7 @@ interface UserProfile {
 }
 
 const Profile: React.FC = () => {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -33,6 +34,7 @@ const Profile: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [roleChanging, setRoleChanging] = useState(false);
   
   // Form states
   const [name, setName] = useState('');
@@ -42,7 +44,7 @@ const Profile: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-  // ✅ Fetch profile data using authApi
+  // ✅ Fetch profile data
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -67,7 +69,7 @@ const Profile: React.FC = () => {
     fetchProfile();
   }, [isAuthenticated, navigate]);
 
-  // ✅ Update profile using authApi
+  // ✅ Update profile
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -91,16 +93,22 @@ const Profile: React.FC = () => {
         phone: updatedUser.phone,
       };
       localStorage.setItem('user', JSON.stringify(updatedUserData));
-      window.location.reload();
+      
+      toast.success('Profile updated successfully!');
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (err: any) {
       console.error('Profile update error:', err);
       setError(err.response?.data?.message || 'Failed to update profile. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Change password using authApi
+  // ✅ Change password
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -108,11 +116,13 @@ const Profile: React.FC = () => {
 
     if (newPassword !== confirmPassword) {
       setError('New passwords do not match');
+      toast.error('New passwords do not match');
       return;
     }
 
     if (newPassword.length < 8) {
       setError('Password must be at least 8 characters');
+      toast.error('Password must be at least 8 characters');
       return;
     }
 
@@ -125,6 +135,7 @@ const Profile: React.FC = () => {
       });
       
       setSuccess('Password changed successfully!');
+      toast.success('Password changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -132,44 +143,66 @@ const Profile: React.FC = () => {
     } catch (err: any) {
       console.error('Password change error:', err);
       setError(err.response?.data?.message || 'Failed to change password. Please try again.');
+      toast.error(err.response?.data?.message || 'Failed to change password');
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Handle Role Change - Using authApi
+  // ✅ ✅ FIXED: Handle Role Change
   const handleRoleChange = async (newRole: string) => {
     setError('');
     setSuccess('');
-    setLoading(true);
+    setRoleChanging(true);
 
     try {
-      // ✅ Use authApi.updateRole (correct URL)
+      console.log(`🔄 Changing role to: ${newRole}`);
+      
+      // ✅ Call API to update role
       const updatedUser = await authApi.updateRole(newRole);
       
+      console.log('✅ Role updated successfully:', updatedUser);
+      
+      // ✅ Update local state
+      setProfile(updatedUser);
       setSuccess(`Role changed to ${newRole} successfully!`);
+      toast.success(`✅ Role changed to ${newRole}`);
       
-      // Update local user
-      const updatedUserData = { 
-        ...user, 
-        role: newRole,
-        name: user?.name,
-        email: user?.email,
-      };
-      localStorage.setItem('user', JSON.stringify(updatedUserData));
+      // ✅ Update localStorage with new role
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      storedUser.role = newRole;
+      storedUser.name = updatedUser.name || storedUser.name;
+      localStorage.setItem('user', JSON.stringify(storedUser));
       
-      if (profile) {
-        setProfile({ ...profile, role: newRole });
+      // ✅ Update user in context
+      if (user) {
+        const updatedContextUser = { ...user, role: newRole };
+        localStorage.setItem('user', JSON.stringify(updatedContextUser));
       }
       
+      // ✅ Refresh user from API to get fresh token
+      await refreshUser();
+      
+      // ✅ Show role change message
       setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+        const shouldRelogin = window.confirm(
+          `✅ Role changed to ${newRole}. Do you want to login again to refresh your session?`
+        );
+        if (shouldRelogin) {
+          logout();
+          navigate('/login');
+        } else {
+          window.location.reload();
+        }
+      }, 1000);
+      
     } catch (err: any) {
       console.error('Role change error:', err);
-      setError(err.response?.data?.message || 'Failed to change role. Please try again.');
+      const errorMsg = err.response?.data?.message || 'Failed to change role. Please try again.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setLoading(false);
+      setRoleChanging(false);
     }
   };
 
@@ -185,16 +218,12 @@ const Profile: React.FC = () => {
     );
   }
 
-  // ✅ Not authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <p className="text-gray-600">Please login to view your profile</p>
-          <Button
-            onClick={() => navigate('/login')}
-            className="mt-4"
-          >
+          <Button onClick={() => navigate('/login')} className="mt-4">
             Go to Login
           </Button>
         </div>
@@ -226,12 +255,14 @@ const Profile: React.FC = () => {
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-4">
               <span className="text-xl">❌</span>
               <span>{error}</span>
+              <button onClick={() => setError('')} className="ml-auto text-red-400 hover:text-red-600">✕</button>
             </div>
           )}
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-4">
               <span className="text-xl">✅</span>
               <span>{success}</span>
+              <button onClick={() => setSuccess('')} className="ml-auto text-green-400 hover:text-green-600">✕</button>
             </div>
           )}
 
@@ -239,7 +270,6 @@ const Profile: React.FC = () => {
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-start gap-6">
-                {/* Avatar */}
                 <div className="flex-shrink-0">
                   <div className="w-24 h-24 rounded-full bg-[#2D5A27] flex items-center justify-center text-white text-3xl font-bold">
                     {profile?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -251,12 +281,11 @@ const Profile: React.FC = () => {
                   )}
                 </div>
 
-                {/* User Info */}
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900">{profile?.name}</h2>
                   <p className="text-gray-600">{profile?.email}</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Role: <span className="font-medium">{profile?.role}</span>
+                    Role: <span className="font-medium text-[#2D5A27]">{profile?.role}</span>
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     {profile?.isEmailVerified ? (
@@ -277,7 +306,7 @@ const Profile: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* ✅ ROLE SWITCHER SECTION */}
+          {/* ✅ ROLE SWITCHER - FIXED */}
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -288,6 +317,8 @@ const Profile: React.FC = () => {
                 <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
                   profile?.role === 'SELLER' 
                     ? 'bg-purple-100 text-purple-700' 
+                    : profile?.role === 'ADMIN'
+                    ? 'bg-red-100 text-red-700'
                     : 'bg-blue-100 text-blue-700'
                 }`}>
                   Current: {profile?.role}
@@ -297,12 +328,12 @@ const Profile: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => handleRoleChange('BUYER')}
-                  disabled={profile?.role === 'BUYER' || loading}
+                  disabled={profile?.role === 'BUYER' || roleChanging}
                   className={`p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-3 ${
                     profile?.role === 'BUYER'
                       ? 'border-[#2D5A27] bg-[#2D5A27]/5 cursor-default'
                       : 'border-gray-200 hover:border-[#2D5A27]/50 hover:bg-gray-50'
-                  } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  } ${roleChanging ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <div className="text-3xl">🏠</div>
                   <div className="text-left">
@@ -316,12 +347,12 @@ const Profile: React.FC = () => {
 
                 <button
                   onClick={() => handleRoleChange('SELLER')}
-                  disabled={profile?.role === 'SELLER' || loading}
+                  disabled={profile?.role === 'SELLER' || roleChanging}
                   className={`p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-3 ${
                     profile?.role === 'SELLER'
                       ? 'border-[#2D5A27] bg-[#2D5A27]/5 cursor-default'
                       : 'border-gray-200 hover:border-[#2D5A27]/50 hover:bg-gray-50'
-                  } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  } ${roleChanging ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <div className="text-3xl">📈</div>
                   <div className="text-left">
@@ -334,7 +365,7 @@ const Profile: React.FC = () => {
                 </button>
               </div>
 
-              {loading && (
+              {roleChanging && (
                 <div className="mt-3 flex items-center justify-center gap-2 text-sm text-gray-500">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#2D5A27]"></div>
                   Updating role...
@@ -342,7 +373,7 @@ const Profile: React.FC = () => {
               )}
 
               <p className="text-xs text-gray-400 mt-3">
-                ⚡ Changing role will update your dashboard experience
+                ⚡ Changing role will update your dashboard experience and require re-login
               </p>
             </CardContent>
           </Card>

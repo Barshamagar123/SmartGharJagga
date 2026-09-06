@@ -26,6 +26,7 @@ interface AuthContextType {
   logout: () => void;
   googleLogin: (userData: any, accessToken: string, refreshToken: string) => void;
   updateUser: (userData: any) => void;
+  refreshUser: () => Promise<void>; // ✅ NEW: Refresh user from API
 }
 
 // ✅ Create context
@@ -255,6 +256,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(formattedUser);
   };
 
+  // ✅ NEW: Refresh user from API (gets fresh role from database)
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.log('❌ No token found to refresh user');
+        return;
+      }
+
+      console.log('🔄 Refreshing user data from API...');
+      const userData = await authApi.getProfile();
+      
+      if (userData) {
+        const data = userData as any;
+        console.log('🔍 Fresh User Data:', data);
+        console.log('🔍 Fresh Role:', data.role);
+        
+        const formattedUser: User = {
+          id: data.id || '',
+          email: data.email || '',
+          name: data.name || '',
+          role: data.role || 'BUYER',
+          isVerified: data.isVerified || false,
+          isEmailVerified: data.isEmailVerified || false,
+          avatarUrl: data.avatarUrl || null,
+          phone: data.phone || '',
+          isGoogleUser: data.isGoogleUser || false,
+          googleId: data.googleId || null,
+        };
+        
+        console.log('✅ Refreshed User:', formattedUser);
+        console.log('✅ Refreshed Role:', formattedUser.role);
+        
+        // ✅ Update state and localStorage
+        setUser(formattedUser);
+        localStorage.setItem('user', JSON.stringify(formattedUser));
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing user:', error);
+    }
+  };
+
   // ✅ Logout
   const logout = () => {
     console.log('🔍 Logging out...');
@@ -276,6 +319,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         googleLogin,
         updateUser,
+        refreshUser, // ✅ NEW
       }}
     >
       {children}

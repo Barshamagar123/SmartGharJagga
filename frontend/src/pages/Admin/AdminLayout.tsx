@@ -9,6 +9,8 @@ import {
   ChevronDown, MessageCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+// ✅ Import NotificationBell component
+import NotificationBell from '../../components/admin/NotificationBell';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -59,7 +61,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* ✅ Sidebar - Sticky and fixed */}
+      {/* Sidebar - Sticky and fixed */}
       <aside
         className={`fixed lg:sticky top-0 z-50 w-72 h-screen bg-gradient-to-b from-[#0F3D2E] to-[#1B6B45] transition-all duration-300 flex-shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -106,7 +108,7 @@ const AdminLayout: React.FC = () => {
           )}
         </div>
 
-        {/* ✅ Navigation - Scrollable but sidebar stays fixed */}
+        {/* Navigation - Scrollable but sidebar stays fixed */}
         <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-80px)]">
           {menuItems.map((item) => (
             <button
@@ -152,7 +154,7 @@ const AdminLayout: React.FC = () => {
         </nav>
       </aside>
 
-      {/* ✅ Mobile Overlay */}
+      {/* Mobile Overlay */}
       {isMobile && sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
@@ -160,7 +162,7 @@ const AdminLayout: React.FC = () => {
         />
       )}
 
-      {/* ✅ Main Content */}
+      {/* Main Content */}
       <div className="flex-1 min-w-0">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
@@ -198,11 +200,8 @@ const AdminLayout: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <button className="p-2 hover:bg-gray-100 rounded-lg relative transition-colors">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </button>
+              {/* ✅ Notification Bell Component */}
+              <NotificationBell />
               
               {/* User Profile */}
               <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
@@ -219,7 +218,7 @@ const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* ✅ Page Content */}
+        {/* Page Content */}
         <main className="p-6">
           <Outlet />
         </main>
