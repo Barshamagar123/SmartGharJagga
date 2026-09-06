@@ -2,33 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Search, Filter, MoreVertical, CheckCircle,
-  Eye, Trash2, Star, User, MessageCircle, Calendar,
-  ChevronDown, ChevronUp, Clock, RefreshCw
+  Search, Filter, CheckCircle,
+  Eye, Trash2, Star, Calendar,
+  Clock, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { adminApi } from '../../../services/api/admin';
+import type {Review} from '../../../services/api/admin';
 import DataTable from '../../../components/admin/DataTable';
 import { Button } from '../../../components/common/Button/Button';
 import StatusBadge from '../../../components/admin/StatusBadge';
-
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  isApproved: boolean;
-  createdAt: string;
-  reviewer: {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl?: string;
-  };
-  property: {
-    id: string;
-    title: string;
-    location: string;
-  };
-}
 
 const XCircle = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,11 +21,13 @@ const XCircle = ({ className }: { className?: string }) => (
 const ReviewManagement: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRating, setFilterRating] = useState('all');
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchReviews();
@@ -51,33 +35,63 @@ const ReviewManagement: React.FC = () => {
 
   const fetchReviews = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      console.log('🔍 Fetching reviews...');
       const data = await adminApi.getAllReviews();
-      setReviews(data);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
+      console.log('✅ Reviews fetched:', data);
+      setReviews(data || []);
+    } catch (error: any) {
+      console.error('❌ Error fetching reviews:', error);
+      setError(error.response?.data?.message || 'Failed to load reviews. Please try again.');
+      setReviews([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleApproveReview = async (id: string) => {
-    if (window.confirm('Are you sure you want to approve this review?')) {
+    if (!window.confirm('Are you sure you want to approve this review?')) return;
+    
+    try {
+      setActionLoading(true);
       await adminApi.approveReview(id);
-      fetchReviews();
+      await fetchReviews();
+    } catch (error) {
+      console.error('Error approving review:', error);
+      alert('Failed to approve review. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleRejectReview = async (id: string) => {
-    if (window.confirm('Are you sure you want to reject this review?')) {
+    if (!window.confirm('Are you sure you want to reject this review?')) return;
+    
+    try {
+      setActionLoading(true);
       await adminApi.rejectReview(id);
-      fetchReviews();
+      await fetchReviews();
+    } catch (error) {
+      console.error('Error rejecting review:', error);
+      alert('Failed to reject review. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDeleteReview = async (id: string) => {
-    if (window.confirm('Are you sure you want to permanently delete this review?')) {
+    if (!window.confirm('Are you sure you want to permanently delete this review?')) return;
+    
+    try {
+      setActionLoading(true);
       await adminApi.deleteReview(id);
-      fetchReviews();
+      await fetchReviews();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Failed to delete review. Please try again.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -105,13 +119,17 @@ const ReviewManagement: React.FC = () => {
   };
 
   const filteredReviews = reviews.filter((review) => {
-    const matchesSearch = review.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.reviewer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.property.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      review.comment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      review.reviewer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      review.property?.title?.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStatus = filterStatus === 'all' ||
-                         (filterStatus === 'approved' && review.isApproved) ||
-                         (filterStatus === 'pending' && !review.isApproved);
+      (filterStatus === 'approved' && review.isApproved) ||
+      (filterStatus === 'pending' && !review.isApproved);
+    
     const matchesRating = filterRating === 'all' || review.rating === parseInt(filterRating);
+    
     return matchesSearch && matchesStatus && matchesRating;
   });
 
@@ -128,7 +146,7 @@ const ReviewManagement: React.FC = () => {
     {
       key: 'reviewer',
       label: 'Reviewer',
-      render: (row: any) => (
+      render: (row: Review) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#EDF5EC] flex items-center justify-center text-[#1B6B45] font-semibold text-sm">
             {row.reviewer?.name?.charAt(0) || 'U'}
@@ -143,22 +161,22 @@ const ReviewManagement: React.FC = () => {
     {
       key: 'property',
       label: 'Property',
-      render: (row: any) => (
+      render: (row: Review) => (
         <div>
-          <p className="font-medium text-gray-900 truncate max-w-[200px]">{row.property?.title}</p>
-          <p className="text-xs text-gray-500">{row.property?.location}</p>
+          <p className="font-medium text-gray-900 truncate max-w-[200px]">{row.property?.title || 'N/A'}</p>
+          <p className="text-xs text-gray-500">{row.property?.location || 'N/A'}</p>
         </div>
       )
     },
     {
       key: 'rating',
       label: 'Rating',
-      render: (row: any) => renderStars(row.rating)
+      render: (row: Review) => renderStars(row.rating)
     },
     {
       key: 'comment',
       label: 'Comment',
-      render: (row: any) => (
+      render: (row: Review) => (
         <p className="text-sm text-gray-600 truncate max-w-[200px]">
           {row.comment || 'No comment'}
         </p>
@@ -167,19 +185,29 @@ const ReviewManagement: React.FC = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (row: any) => (
+      render: (row: Review) => (
         <StatusBadge status={row.isApproved ? 'approved' : 'pending'} />
+      )
+    },
+    {
+      key: 'createdAt',
+      label: 'Date',
+      render: (row: Review) => (
+        <div className="text-sm text-gray-500">
+          {new Date(row.createdAt).toLocaleDateString()}
+        </div>
       )
     },
     {
       key: 'actions',
       label: 'Actions',
-      render: (row: any) => (
+      render: (row: Review) => (
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => handleViewDetails(row)}
             className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600 hover:text-blue-700 transition-colors"
             title="View Details"
+            disabled={actionLoading}
           >
             <Eye className="w-4 h-4" />
           </button>
@@ -189,6 +217,7 @@ const ReviewManagement: React.FC = () => {
                 onClick={() => handleApproveReview(row.id)}
                 className="p-1.5 hover:bg-green-50 rounded-lg text-green-600 hover:text-green-700 transition-colors"
                 title="Approve"
+                disabled={actionLoading}
               >
                 <CheckCircle className="w-4 h-4" />
               </button>
@@ -196,6 +225,7 @@ const ReviewManagement: React.FC = () => {
                 onClick={() => handleRejectReview(row.id)}
                 className="p-1.5 hover:bg-red-50 rounded-lg text-red-600 hover:text-red-700 transition-colors"
                 title="Reject"
+                disabled={actionLoading}
               >
                 <XCircle className="w-4 h-4" />
               </button>
@@ -205,6 +235,7 @@ const ReviewManagement: React.FC = () => {
             onClick={() => handleDeleteReview(row.id)}
             className="p-1.5 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600 transition-colors"
             title="Delete"
+            disabled={actionLoading}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -212,6 +243,52 @@ const ReviewManagement: React.FC = () => {
       )
     },
   ];
+
+  // Loading State
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Review Management</h1>
+            <p className="text-gray-500">Manage all property reviews</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B6B45] mx-auto" />
+            <p className="mt-4 text-gray-500">Loading reviews...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Review Management</h1>
+            <p className="text-gray-500">Manage all property reviews</p>
+          </div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-red-800">Failed to Load Reviews</h3>
+          <p className="text-red-600 mt-1">{error}</p>
+          <button
+            onClick={fetchReviews}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 inline mr-2" />
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -222,8 +299,8 @@ const ReviewManagement: React.FC = () => {
           <p className="text-gray-500">Manage all property reviews</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={fetchReviews}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={fetchReviews} disabled={actionLoading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${actionLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -290,11 +367,19 @@ const ReviewManagement: React.FC = () => {
 
       {/* Reviews Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <DataTable
-          columns={columns}
-          data={filteredReviews}
-          loading={loading}
-        />
+        {filteredReviews.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-5xl mb-4">📝</div>
+            <h3 className="text-lg font-semibold text-gray-900">No Reviews Found</h3>
+            <p className="text-gray-500 mt-1">No reviews match your search or filter criteria</p>
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={filteredReviews}
+            loading={loading}
+          />
+        )}
       </div>
 
       {/* Detail Modal */}
@@ -332,8 +417,8 @@ const ReviewManagement: React.FC = () => {
               {/* Property Info */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Property</h4>
-                <p className="font-medium text-gray-900">{selectedReview.property?.title}</p>
-                <p className="text-sm text-gray-500">{selectedReview.property?.location}</p>
+                <p className="font-medium text-gray-900">{selectedReview.property?.title || 'N/A'}</p>
+                <p className="text-sm text-gray-500">{selectedReview.property?.location || 'N/A'}</p>
               </div>
 
               {/* Comment */}
@@ -369,6 +454,7 @@ const ReviewManagement: React.FC = () => {
                         handleApproveReview(selectedReview.id);
                         setShowDetailModal(false);
                       }}
+                      disabled={actionLoading}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Approve Review
@@ -380,6 +466,7 @@ const ReviewManagement: React.FC = () => {
                         handleRejectReview(selectedReview.id);
                         setShowDetailModal(false);
                       }}
+                      disabled={actionLoading}
                     >
                       <XCircle className="w-4 h-4 mr-2" />
                       Reject Review
@@ -394,6 +481,7 @@ const ReviewManagement: React.FC = () => {
                     setShowDetailModal(false);
                   }}
                   className="text-red-500 hover:bg-red-50"
+                  disabled={actionLoading}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Review
