@@ -3,9 +3,35 @@
 import { PrismaClient } from '@prisma/client';
 import { ApiError } from '@/utils/apiError';
 import { CreateNotificationRequest, NotificationResponse } from './notification.types';
+// ✅ Import WebSocket server
+import { io, adminSockets } from '../../server.js';
 
 export class NotificationService {
   constructor(private prisma: PrismaClient) {}
+
+  // ✅ Add WebSocket emission method
+  private async emitNotificationToAdmins(notification: NotificationResponse): Promise<void> {
+    try {
+      const adminSocketIds = Array.from(adminSockets.values());
+      
+      if (adminSocketIds.length > 0) {
+        io.to(adminSocketIds).emit('notification:new', {
+          notificationId: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          data: notification.data,
+          timestamp: notification.createdAt,
+        });
+        
+        console.log(`📤 Sent real-time notification to ${adminSocketIds.length} admins`);
+      } else {
+        console.log('⚠️ No admins connected to receive real-time notification');
+      }
+    } catch (error) {
+      console.error('❌ Error emitting notification via WebSocket:', error);
+    }
+  }
 
   // ============================================
   // 1. CREATE NOTIFICATION
@@ -20,7 +46,6 @@ export class NotificationService {
           userId: data.userId,
           data: data.data || {},
         },
-        // ✅ Explicitly select all fields including updatedAt
         select: {
           id: true,
           title: true,
@@ -35,6 +60,10 @@ export class NotificationService {
       });
 
       console.log(`📤 Notification created: ${data.title} for user ${data.userId}`);
+      
+      // ✅ Emit WebSocket event
+      await this.emitNotificationToAdmins(notification as NotificationResponse);
+      
       return notification as NotificationResponse;
     } catch (error) {
       console.error('❌ Error creating notification:', error);
@@ -79,7 +108,6 @@ export class NotificationService {
               userId: admin.id,
               data: data || {},
             },
-            // ✅ Explicitly select all fields including updatedAt
             select: {
               id: true,
               title: true,
@@ -95,7 +123,13 @@ export class NotificationService {
         )
       );
 
-      console.log(`📤 Notification sent to ${notifications.length} admins`);
+      console.log(`📤 Notification sent to ${notifications.length} admins (DB saved)`);
+      
+      // ✅ Emit WebSocket events for each notification
+      for (const notification of notifications) {
+        await this.emitNotificationToAdmins(notification as NotificationResponse);
+      }
+
       return notifications as NotificationResponse[];
     } catch (error) {
       console.error('❌ Error creating notifications for admins:', error);
@@ -124,7 +158,6 @@ export class NotificationService {
           orderBy: { createdAt: 'desc' },
           skip,
           take: limit,
-          // ✅ Explicitly select all fields including updatedAt
           select: {
             id: true,
             title: true,
@@ -161,7 +194,6 @@ export class NotificationService {
   // ============================================
   async markAsRead(notificationId: string, userId: string): Promise<NotificationResponse> {
     try {
-      // First check if notification exists and belongs to user
       const notification = await this.prisma.notification.findFirst({
         where: {
           id: notificationId,
@@ -176,7 +208,6 @@ export class NotificationService {
       const updated = await this.prisma.notification.update({
         where: { id: notificationId },
         data: { isRead: true },
-        // ✅ Explicitly select all fields including updatedAt
         select: {
           id: true,
           title: true,
@@ -223,7 +254,6 @@ export class NotificationService {
   // ============================================
   async deleteNotification(notificationId: string, userId: string): Promise<{ success: boolean }> {
     try {
-      // First check if notification exists and belongs to user
       const notification = await this.prisma.notification.findFirst({
         where: {
           id: notificationId,
@@ -355,26 +385,5 @@ export class NotificationService {
     };
 
     await this.createNotificationForAdmins(title, message, 'PROPERTY_SOLD', data);
-  }
-
-  // ============================================
-  // 12. SEND USER REGISTERED NOTIFICATION
-  // ============================================
-  async sendUserRegisteredNotification(
-    userName: string,
-    userEmail: string,
-    userId: string,
-    role: string
-  ): Promise<void> {
-    const title = '👤 New User Registered';
-    const message = `${userName} (${userEmail}) has registered as ${role}`;
-    const data = {
-      userId,
-      userName,
-      userEmail,
-      role,
-    };
-
-    await this.createNotificationForAdmins(title, message, 'USER_REGISTERED', data);
   }
 }

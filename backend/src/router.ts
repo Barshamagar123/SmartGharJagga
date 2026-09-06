@@ -13,6 +13,8 @@ import reviewRoutes from '@/modules/review/review.routes';
 // ✅ ADD THIS IMPORT
 import paymentRoutes from '@/modules/payment/payment.routes'; 
 import adminRoutes from '@/modules/admin/admin.routes';
+import notificationRoutes from '@/modules/notification/notification.routes';
+
 const router = Router();
 
 router.get('/', (_req, res) => {
@@ -35,6 +37,7 @@ router.use('/messages', messageRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/payments', paymentRoutes); // ✅ Now works
 router.use('/admin', adminRoutes); // ✅ Register admin routes
+router.use('/notifications', notificationRoutes);
 
 router.get('/health', (_req, res) => {
   res.status(200).json({
