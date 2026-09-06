@@ -86,10 +86,10 @@ export class AuthService {
   }
 
   // ============================================
-  // 2. LOGIN (Updated for Google Users)
+  // 2. LOGIN - ✅ PERMANENT ADMIN FIX
   // ============================================
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const user = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { email: credentials.email },
     });
 
@@ -117,25 +117,47 @@ export class AuthService {
         throw new ApiError(401, 'Invalid email or password');
       }
     } else {
-      // This should not happen for Google users, but just in case
       throw new ApiError(401, 'Invalid credentials');
     }
 
+    // ✅✅✅ PERMANENT FIX: Auto set ADMIN role for admin email ✅✅✅
+    const ADMIN_EMAILS = [
+      'admin@smartgharjagga.com',
+      'admin@gmail.com',
+      'superadmin@gmail.com',
+    ];
+
+    if (ADMIN_EMAILS.includes(credentials.email.toLowerCase()) && user.role !== 'ADMIN') {
+      // ✅ Force update to ADMIN
+      user = await this.prisma.user.update({
+        where: { email: credentials.email },
+        data: { 
+          role: 'ADMIN',
+          isVerified: true,
+          isEmailVerified: true,
+          isActive: true,
+        },
+      });
+      console.log(`🔧 Auto-fixed admin role for: ${credentials.email}`);
+    }
+
+    // ✅ Last login update
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() },
     });
 
+    // ✅ Generate token with role from DATABASE (always correct)
     const accessToken = this.generateAccessToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role, // ✅ ALWAYS FROM DATABASE
     });
     
     const refreshToken = this.generateRefreshToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role, // ✅ ALWAYS FROM DATABASE
     });
 
     await this.cacheService.set(
@@ -149,7 +171,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: user.role, // ✅ ALWAYS CORRECT
         isVerified: user.isEmailVerified,
         avatarUrl: user.avatarUrl,
       },
@@ -228,7 +250,6 @@ export class AuthService {
       return;
     }
 
-    // ✅ Check if user is a Google user
     if (user.googleId && !user.passwordHash) {
       throw new ApiError(400, 'This account uses Google Sign-In. Password reset is not available. Please use "Sign in with Google".');
     }
@@ -262,7 +283,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // ✅ Check if user is a Google user
     if (user.googleId && !user.passwordHash) {
       throw new ApiError(400, 'This account uses Google Sign-In. Password reset is not available.');
     }
@@ -315,7 +335,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 9. CHANGE PASSWORD (Updated for Google Users)
+  // 9. CHANGE PASSWORD
   // ============================================
   async changePassword(
     userId: string,
@@ -330,7 +350,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // ✅ Check if user is a Google user
     if (user.googleId && !user.passwordHash) {
       throw new ApiError(400, 'This account uses Google Sign-In. Password change is not available. Please use Google to sign in.');
     }
@@ -353,7 +372,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 10. GET PROFILE (Updated with Google info)
+  // 10. GET PROFILE - ✅ PERMANENT FIX
   // ============================================
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -378,7 +397,7 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // ✅ Add Google user indicator to response
+    // ✅ Add Google user indicator
     const { passwordHash, ...userWithoutPassword } = user;
 
     return {
@@ -415,7 +434,6 @@ export class AuthService {
       },
     });
 
-    // ✅ Add Google user indicator
     return {
       ...user,
       isGoogleUser: user.googleId ? true : false,
@@ -470,7 +488,7 @@ export class AuthService {
   }
 
   // ============================================
-  // 14. LINK GOOGLE ACCOUNT TO EXISTING USER
+  // 14. LINK GOOGLE ACCOUNT
   // ============================================
   async linkGoogleAccount(
     userId: string,
@@ -485,7 +503,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // Check if Google ID is already linked to another account
     const existingGoogleUser = await this.prisma.user.findUnique({
       where: { googleId },
     });
@@ -516,7 +533,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // Check if user has a password (can't unlink if no password set)
     if (!user.passwordHash) {
       throw new ApiError(400, 'Cannot unlink Google account. Please set a password first.');
     }
@@ -544,7 +560,6 @@ export class AuthService {
       throw new ApiError(404, 'User not found');
     }
 
-    // Check if user already has a password
     if (user.passwordHash) {
       throw new ApiError(400, 'User already has a password set');
     }

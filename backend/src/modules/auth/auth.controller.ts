@@ -8,37 +8,29 @@ import { ApiResponse } from '@/utils/apiResponse';
 import { ApiError } from '@/utils/apiError';
 import { config } from '@/config';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
 export class AuthController {
   constructor(
     private authService: AuthService,
     private googleAuthService: GoogleAuthService,
-    private prisma: PrismaClient // ✅ Added prisma
+    private prisma: PrismaClient
   ) {}
 
   // ============================================
   // AUTHENTICATION METHODS
   // ============================================
 
-  /**
-   * Register a new user
-   */
   register = asyncHandler(async (req: Request, res: Response) => {
     const result = await this.authService.register(req.body);
     ApiResponse.success(res, 201, 'User registered successfully', result);
   });
 
-  /**
-   * Login user
-   */
   login = asyncHandler(async (req: Request, res: Response) => {
     const result = await this.authService.login(req.body);
     ApiResponse.success(res, 200, 'Login successful', result);
   });
 
-  /**
-   * Logout user
-   */
   logout = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     const accessToken = req.headers.authorization?.split(' ')[1];
@@ -51,9 +43,6 @@ export class AuthController {
     ApiResponse.success(res, 200, 'Logout successful');
   });
 
-  /**
-   * Refresh access token
-   */
   refreshToken = asyncHandler(async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
     const result = await this.authService.refreshToken(refreshToken);
@@ -64,27 +53,18 @@ export class AuthController {
   // PASSWORD MANAGEMENT
   // ============================================
 
-  /**
-   * Forgot password - send reset email
-   */
   forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     await this.authService.forgotPassword(email);
     ApiResponse.success(res, 200, 'Password reset email sent');
   });
 
-  /**
-   * Reset password with token
-   */
   resetPassword = asyncHandler(async (req: Request, res: Response) => {
     const { token, newPassword } = req.body;
     await this.authService.resetPassword(token, newPassword);
     ApiResponse.success(res, 200, 'Password reset successfully');
   });
 
-  /**
-   * Change password (authenticated)
-   */
   changePassword = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new ApiError(401, 'Authentication required');
@@ -97,18 +77,12 @@ export class AuthController {
   // EMAIL VERIFICATION
   // ============================================
 
-  /**
-   * Verify email with token
-   */
   verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { token } = req.query;
     await this.authService.verifyEmail(token as string);
     ApiResponse.success(res, 200, 'Email verified successfully');
   });
 
-  /**
-   * Resend verification email
-   */
   resendVerification = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     await this.authService.resendVerificationEmail(email);
@@ -119,9 +93,6 @@ export class AuthController {
   // PROFILE MANAGEMENT
   // ============================================
 
-  /**
-   * Get user profile
-   */
   getProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new ApiError(401, 'Authentication required');
@@ -129,9 +100,6 @@ export class AuthController {
     ApiResponse.success(res, 200, 'Profile fetched successfully', user);
   });
 
-  /**
-   * Update user profile
-   */
   updateProfile = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new ApiError(401, 'Authentication required');
@@ -139,9 +107,6 @@ export class AuthController {
     ApiResponse.success(res, 200, 'Profile updated successfully', user);
   });
 
-  /**
-   * Delete/Deactivate account
-   */
   deleteAccount = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new ApiError(401, 'Authentication required');
@@ -153,11 +118,6 @@ export class AuthController {
   // GOOGLE OAUTH METHODS
   // ============================================
 
-  /**
-   * Google OAuth Callback Handler
-   * Handles the callback from Google after authentication
-   * Redirects to frontend with tokens
-   */
   googleAuthCallback = asyncHandler(async (req: Request, res: Response) => {
     const user = req.user as any;
     
@@ -167,10 +127,7 @@ export class AuthController {
     }
 
     try {
-      // Process Google user and generate tokens
       const result = await this.googleAuthService.handleGoogleCallback(user);
-
-      // ✅ Pass isNewUser flag to frontend
       const redirectUrl = `${config.FRONTEND_URL}/auth/callback?` +
         `accessToken=${encodeURIComponent(result.accessToken)}&` +
         `refreshToken=${encodeURIComponent(result.refreshToken)}&` +
@@ -185,43 +142,33 @@ export class AuthController {
     }
   });
 
-  /**
-   * Get Google OAuth URL
-   * Returns the URL to initiate Google OAuth (optional helper)
-   */
   getGoogleAuthUrl = asyncHandler(async (req: Request, res: Response) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const authUrl = `${baseUrl}/api/v1/auth/google`;
-    
     ApiResponse.success(res, 200, 'Google auth URL', { url: authUrl });
   });
 
-  /**
-   * Check if user is authenticated with Google
-   * Returns user info if authenticated
-   */
   checkGoogleAuth = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new ApiError(401, 'Authentication required');
     
     const user = await this.authService.getProfile(userId);
-    
-    // Check if user signed up with Google
-    const isGoogleUser = user.googleId ? true : false;
-    
     ApiResponse.success(res, 200, 'Google auth status', {
-      isGoogleUser,
+      isGoogleUser: user.googleId ? true : false,
       user,
     });
   });
 
   // ============================================
-  // ✅ ROLE MANAGEMENT (NEW)
+  // ✅ ROLE MANAGEMENT (PERMANENT FIX - 10 YEARS)
   // ============================================
 
   /**
-   * Update user role
-   * Allows users to switch between BUYER and SELLER
+   * ✅ PERMANENT FIX: Update user role
+   * - Validates role
+   * - Updates database
+   * - Generates NEW token with updated role
+   * - Returns fresh user data with new token
    */
   updateRole = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
@@ -230,14 +177,17 @@ export class AuthController {
     const { role } = req.body;
     
     // ✅ Validate role
-    if (!role || !['BUYER', 'SELLER', 'ADMIN'].includes(role)) {
-      throw new ApiError(400, 'Invalid role. Must be BUYER, SELLER, or ADMIN');
+    const validRoles = ['BUYER', 'SELLER', 'ADMIN'];
+    if (!role || !validRoles.includes(role.toUpperCase())) {
+      throw new ApiError(400, `Invalid role. Must be one of: ${validRoles.join(', ')}`);
     }
 
-    // ✅ Update user role
-    const user = await this.prisma.user.update({
+    const normalizedRole = role.toUpperCase();
+
+    // ✅ Update user role in database
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: { role: normalizedRole },
       select: {
         id: true,
         email: true,
@@ -253,12 +203,26 @@ export class AuthController {
       },
     });
 
-    ApiResponse.success(res, 200, 'Role updated successfully', user);
+    // ✅ Generate NEW token with updated role
+    const newToken = jwt.sign(
+      { 
+        id: updatedUser.id, 
+        email: updatedUser.email, 
+        role: updatedUser.role 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // ✅ Return updated user with new token
+    ApiResponse.success(res, 200, 'Role updated successfully', {
+      user: updatedUser,
+      token: newToken, // ✅ Send new token to frontend
+    });
   });
 
   /**
-   * Get user role
-   * Returns current role of the user
+   * ✅ Get current user role
    */
   getRole = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
@@ -269,6 +233,7 @@ export class AuthController {
       select: {
         id: true,
         role: true,
+        updatedAt: true,
       },
     });
 
@@ -276,6 +241,57 @@ export class AuthController {
       throw new ApiError(404, 'User not found');
     }
 
-    ApiResponse.success(res, 200, 'Role fetched successfully', { role: user.role });
+    ApiResponse.success(res, 200, 'Role fetched successfully', { 
+      role: user.role,
+      lastUpdated: user.updatedAt,
+    });
+  });
+
+  /**
+   * ✅ SYNC ROLE: Self-healing endpoint
+   * Frontend calls this when role mismatch is detected
+   * Returns fresh user data with correct role
+   */
+  syncRole = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new ApiError(401, 'Authentication required');
+
+    // ✅ Get fresh user from database
+    const freshUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isVerified: true,
+        isEmailVerified: true,
+        avatarUrl: true,
+        phone: true,
+        googleId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!freshUser) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    // ✅ Generate new token with correct role
+    const newToken = jwt.sign(
+      { 
+        id: freshUser.id, 
+        email: freshUser.email, 
+        role: freshUser.role 
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    ApiResponse.success(res, 200, 'Role synced successfully', {
+      user: freshUser,
+      token: newToken,
+    });
   });
 }
