@@ -1,6 +1,6 @@
 // src/components/property/PropertyFormStep1.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Star,
   AlertCircle,
@@ -17,7 +17,6 @@ import {
   Building2,
   Tag,
   Hash,
-  ArrowLeft
 } from 'lucide-react';
 import {
   PROPERTY_TYPE_OPTIONS,
@@ -25,7 +24,6 @@ import {
 } from '../../constants/filters';
 import { AREA_UNIT_OPTIONS } from '../../utils/areaUtils';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 
 interface Step1Props {
   formData: any;
@@ -33,21 +31,212 @@ interface Step1Props {
   onValidationChange?: (isValid: boolean) => void;
 }
 
+// ✅ FIXED Text Input Component - no parent update on every keystroke
+const TextInput: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  className?: string;
+  icon?: React.ReactNode;
+  maxLength?: number;
+  error?: boolean;
+}> = ({
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  className = '',
+  icon,
+  maxLength,
+  error,
+}) => {
+  const [localValue, setLocalValue] = useState<string>(value || '');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ✅ Only update local when prop changes (parent updates)
+  useEffect(() => {
+    // Only update if not currently focused
+    if (document.activeElement !== inputRef.current) {
+      setLocalValue(value || '');
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    // ✅ Don't call onChange here - only on blur
+  };
+
+  const handleBlurEvent = () => {
+    // ✅ Update parent only on blur
+    onChange(localValue);
+    onBlur?.();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      inputRef.current?.blur();
+    }
+  };
+
+  return (
+    <div className="relative">
+      {icon && (
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
+          {icon}
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="text"
+        value={localValue}
+        onChange={handleChange}
+        onBlur={handleBlurEvent}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder || ''}
+        maxLength={maxLength}
+        className={`w-full ${icon ? 'pl-12' : 'pl-4'} pr-4 py-3 bg-white border rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20 ${className} ${
+          error ? 'border-rose-300 ring-2 ring-rose-50' : 'border-gray-200'
+        }`}
+      />
+    </div>
+  );
+};
+
+// ✅ TextArea with same pattern - update parent only on blur
+const TextAreaInput: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}> = ({
+  value,
+  onChange,
+  placeholder,
+  className = '',
+  rows = 4,
+}) => {
+  const [localValue, setLocalValue] = useState<string>(value || '');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (document.activeElement !== textareaRef.current) {
+      setLocalValue(value || '');
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalValue(e.target.value);
+  };
+
+  const handleBlur = () => {
+    onChange(localValue);
+  };
+
+  return (
+    <textarea
+      ref={textareaRef}
+      rows={rows}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder={placeholder || ''}
+      className={`w-full px-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 resize-none focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20 ${className}`}
+    />
+  );
+};
+
+// ✅ Number Input Component - update parent only on blur
+const NumberInput: React.FC<{
+  value: number | null;
+  onChange: (value: number | null) => void;
+  placeholder?: string;
+  className?: string;
+  icon?: React.ReactNode;
+  min?: number;
+  max?: number;
+  step?: number;
+}> = ({
+  value,
+  onChange,
+  placeholder,
+  className = '',
+  icon,
+  min,
+  max,
+  step = 1,
+}) => {
+  const [localValue, setLocalValue] = useState<string>(value?.toString() || '');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current) {
+      setLocalValue(value?.toString() || '');
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalValue(e.target.value);
+  };
+
+  const handleBlur = () => {
+    const numValue = parseFloat(localValue);
+    if (!isNaN(numValue) && numValue >= 0) {
+      const finalValue = max !== undefined ? Math.min(numValue, max) : numValue;
+      const finalValueMin = min !== undefined ? Math.max(finalValue, min) : finalValue;
+      onChange(finalValueMin);
+      setLocalValue(finalValueMin.toString());
+    } else if (localValue === '') {
+      onChange(null);
+    } else {
+      setLocalValue(value?.toString() || '');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+      inputRef.current?.blur();
+    }
+  };
+
+  return (
+    <div className="relative">
+      {icon && (
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          {icon}
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        value={localValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder || '0'}
+        className={`w-full ${icon ? 'pl-12' : 'pl-4'} pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20 ${className}`}
+      />
+    </div>
+  );
+};
+
 const PropertyFormStep1: React.FC<Step1Props> = ({
   formData = {},
   updateField,
   onValidationChange
 }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const safeFormData = formData || {};
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const canMarkFeatured = user?.role === 'SELLER' || user?.role === 'ADMIN';
 
-  // Validation
-  const validate = (field: string, value: any) => {
+  const validate = useCallback((field: string, value: any) => {
     switch (field) {
       case 'title':
         if (!value || value.length < 10) return 'Title must be at least 10 characters';
@@ -59,32 +248,41 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
       case 'propertyType':
         if (!value) return 'Please select a property type';
         return '';
-      case 'location':
-        if (!value) return 'Location is required';
-        return '';
       default:
         return '';
     }
-  };
+  }, []);
 
   useEffect(() => {
     const newErrors: Record<string, string> = {
       title: validate('title', safeFormData.title),
       price: validate('price', safeFormData.price),
       propertyType: validate('propertyType', safeFormData.propertyType),
-      location: validate('location', safeFormData.location)
     };
 
     setErrors(newErrors);
     const isValid = !Object.values(newErrors).some((error) => error !== '');
     onValidationChange?.(isValid);
-  }, [safeFormData, onValidationChange]);
+  }, [safeFormData, validate, onValidationChange]);
 
   const handleBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
-  // Input Component - Spacious
+  // ✅ Handlers - parent updates only happen on blur now
+  const handleTextChange = useCallback((field: string, value: string) => {
+    updateField(field, value);
+  }, [updateField]);
+
+  const handleBooleanChange = useCallback((field: string, value: boolean) => {
+    updateField(field, value);
+  }, [updateField]);
+
+  const handleNumberChange = useCallback((field: string, value: number | null) => {
+    updateField(field, value);
+  }, [updateField]);
+
+  // Input Component wrapper
   const FormInput = ({
     label,
     icon: Icon,
@@ -104,7 +302,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
       </div>
       <div className="relative">
         {Icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
             <Icon size={18} strokeWidth={1.5} />
           </div>
         )}
@@ -121,16 +319,10 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      
-
-      {/* FORM - Same padding as navbar (px-8) */}
-      {/* ========================================== */}
       <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* ========================================== */}
           {/* LEFT COLUMN */}
-          {/* ========================================== */}
           <div className="space-y-6">
             
             {/* Basic Info */}
@@ -146,33 +338,28 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 <FormInput
                   label="Property Title"
                   required
-                  icon={Hash}
                   error={errors.title}
                   touched={touched.title}
                   hint={`${safeFormData.title?.length || 0}/100`}
                 >
-                  <input
-                    type="text"
-                    placeholder="e.g. Modern Villa with Private Pool"
+                  <TextInput
                     value={safeFormData.title || ''}
-                    onChange={(e) => updateField('title', e.target.value)}
+                    onChange={(val) => handleTextChange('title', val)}
                     onBlur={() => handleBlur('title')}
-                    className={`w-full pl-12 pr-4 py-3 bg-white border rounded-xl transition-all outline-none text-base placeholder:text-gray-400 ${
-                      touched.title && errors.title
-                        ? 'border-rose-300 ring-2 ring-rose-50'
-                        : 'border-gray-200 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20'
-                    }`}
+                    placeholder="e.g. Modern Villa with Private Pool"
+                    maxLength={100}
+                    icon={<Hash size={18} strokeWidth={1.5} className="text-gray-400" />}
+                    error={touched.title && !!errors.title}
                   />
                 </FormInput>
 
                 <div>
                   <label className="text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    rows={4}
+                  <TextAreaInput
                     value={safeFormData.description || ''}
-                    onChange={(e) => updateField('description', e.target.value)}
+                    onChange={(val) => handleTextChange('description', val)}
                     placeholder="Describe the neighborhood, amenities, renovations, and unique features..."
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 resize-none focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                    rows={4}
                   />
                   <div className="flex justify-end mt-1.5">
                     <span className="text-xs text-gray-400">
@@ -196,19 +383,18 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 <FormInput
                   label="Listing Price"
                   required
-                  icon={Banknote}
                   error={errors.price}
                   touched={touched.price}
                 >
                   <div className="relative">
-                    <span className="absolute left-11 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 border-r border-gray-200 pr-2.5">Rs.</span>
-                    <input
-                      type="number"
-                      value={safeFormData.price || ''}
-                      onChange={(e) => updateField('price', e.target.value)}
-                      onBlur={() => handleBlur('price')}
+                    <span className="absolute left-11 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 border-r border-gray-200 pr-2.5 z-10">Rs.</span>
+                    <NumberInput
+                      value={safeFormData.price}
+                      onChange={(val) => handleNumberChange('price', val)}
                       placeholder="Enter price"
-                      className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                      min={0}
+                      step={1000}
+                      className="pl-9"
                     />
                   </div>
                 </FormInput>
@@ -216,13 +402,12 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 <FormInput
                   label="Property Type"
                   required
-                  icon={Building2}
                   error={errors.propertyType}
                   touched={touched.propertyType}
                 >
                   <select
                     value={safeFormData.propertyType || ''}
-                    onChange={(e) => updateField('propertyType', e.target.value)}
+                    onChange={(e) => handleTextChange('propertyType', e.target.value)}
                     onBlur={() => handleBlur('propertyType')}
                     className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base appearance-none cursor-pointer focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
                   >
@@ -240,7 +425,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                       <button
                         key={opt.value}
                         type="button"
-                        onClick={() => updateField('purpose', opt.value)}
+                        onClick={() => handleTextChange('purpose', opt.value)}
                         className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
                           safeFormData.purpose === opt.value
                             ? 'bg-[#2D5A27] text-white shadow-sm shadow-[#2D5A27]/30'
@@ -256,9 +441,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
             </div>
           </div>
 
-          {/* ========================================== */}
           {/* RIGHT COLUMN */}
-          {/* ========================================== */}
           <div className="space-y-6">
             
             {/* Specifications */}
@@ -271,57 +454,61 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-5">
-                <FormInput label="Bedrooms" icon={Bed}>
-                  <input
-                    type="number"
-                    value={safeFormData.bedrooms || ''}
-                    onChange={(e) => updateField('bedrooms', parseInt(e.target.value) || null)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                <FormInput label="Bedrooms">
+                  <NumberInput
+                    value={safeFormData.bedrooms}
+                    onChange={(val) => handleNumberChange('bedrooms', val)}
                     placeholder="0"
+                    min={0}
+                    max={20}
+                    icon={<Bed size={18} strokeWidth={1.5} className="text-gray-400" />}
                   />
                 </FormInput>
 
-                <FormInput label="Bathrooms" icon={Bath}>
-                  <input
-                    type="number"
-                    value={safeFormData.bathrooms || ''}
-                    onChange={(e) => updateField('bathrooms', parseInt(e.target.value) || null)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                <FormInput label="Bathrooms">
+                  <NumberInput
+                    value={safeFormData.bathrooms}
+                    onChange={(val) => handleNumberChange('bathrooms', val)}
                     placeholder="0"
+                    min={0}
+                    max={20}
+                    icon={<Bath size={18} strokeWidth={1.5} className="text-gray-400" />}
                   />
                 </FormInput>
 
-                <FormInput label="Floor" icon={Layers}>
-                  <input
-                    type="number"
-                    value={safeFormData.floor || ''}
-                    onChange={(e) => updateField('floor', parseInt(e.target.value) || null)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                <FormInput label="Floor">
+                  <NumberInput
+                    value={safeFormData.floor}
+                    onChange={(val) => handleNumberChange('floor', val)}
                     placeholder="0"
+                    min={0}
+                    max={100}
+                    icon={<Layers size={18} strokeWidth={1.5} className="text-gray-400" />}
                   />
                 </FormInput>
 
-                <FormInput label="Year Built" icon={Calendar}>
-                  <input
-                    type="number"
-                    value={safeFormData.yearBuilt || ''}
-                    onChange={(e) => updateField('yearBuilt', parseInt(e.target.value) || null)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                <FormInput label="Year Built">
+                  <NumberInput
+                    value={safeFormData.yearBuilt}
+                    onChange={(val) => handleNumberChange('yearBuilt', val)}
                     placeholder="2024"
+                    min={1900}
+                    max={2100}
+                    icon={<Calendar size={18} strokeWidth={1.5} className="text-gray-400" />}
                   />
                 </FormInput>
 
                 <div className="col-span-2">
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <FormInput label="Area" icon={Ruler}>
-                        <input
-                          type="number"
-                          value={safeFormData.area || ''}
-                          onChange={(e) => updateField('area', parseFloat(e.target.value) || null)}
-                          className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl transition-all outline-none text-base placeholder:text-gray-400 focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
+                      <FormInput label="Area">
+                        <NumberInput
+                          value={safeFormData.area}
+                          onChange={(val) => handleNumberChange('area', val)}
                           placeholder="0.00"
-                          step="0.01"
+                          min={0}
+                          step={0.01}
+                          icon={<Ruler size={18} strokeWidth={1.5} className="text-gray-400" />}
                         />
                       </FormInput>
                     </div>
@@ -329,7 +516,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                       <label className="text-sm font-medium text-gray-700 block mb-1.5">Unit</label>
                       <select
                         value={safeFormData.areaUnit || 'SQFT'}
-                        onChange={(e) => updateField('areaUnit', e.target.value)}
+                        onChange={(e) => handleTextChange('areaUnit', e.target.value)}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base font-medium text-gray-600 outline-none cursor-pointer focus:border-[#2D5A27] focus:ring-2 focus:ring-[#2D5A27]/20"
                       >
                         {AREA_UNIT_OPTIONS.map((opt) => (
@@ -343,7 +530,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                 <div className="col-span-2">
                   <button
                     type="button"
-                    onClick={() => updateField('parking', !safeFormData.parking)}
+                    onClick={() => handleBooleanChange('parking', !safeFormData.parking)}
                     className={`w-full py-3 px-4 rounded-xl border-2 flex items-center justify-center gap-3 transition-all text-base font-medium ${
                       safeFormData.parking
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
@@ -378,7 +565,7 @@ const PropertyFormStep1: React.FC<Step1Props> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => updateField('isFeatured', !safeFormData.isFeatured)}
+                    onClick={() => handleBooleanChange('isFeatured', !safeFormData.isFeatured)}
                     className={`relative w-12 h-6 rounded-full transition-colors ${
                       safeFormData.isFeatured ? 'bg-amber-400' : 'bg-gray-300'
                     }`}
